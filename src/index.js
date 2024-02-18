@@ -100,11 +100,11 @@ import indexRouter from "./routers/index.js";
 import { sendNotification } from "./utils/sendNotification.js";
 
 
-app.get('/', function (req, res) {
+
+app.use("/api/v1", indexRouter);
+app.get('/*', function (req, res) {
 	res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
-app.use("/api/v1", indexRouter);
-
 
 
 const io = new Server(server, {
