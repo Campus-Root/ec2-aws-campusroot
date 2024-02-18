@@ -34,7 +34,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 startCronJob();
 dbConnect();
 
-const whitelist = ["https://ppd8x9p4hp.us-east-1.awsapprunner.com", "https://campusroot.com"];
+const whitelist = ["https://viznu.dev"];
 app.set("trust proxy", 1); // trust first proxy
 app.use(
 	session({
@@ -98,12 +98,12 @@ app.use(morgan("tiny"));
 
 import indexRouter from "./routers/index.js";
 import { sendNotification } from "./utils/sendNotification.js";
-app.use("/api/v1", indexRouter);
 
-app.get('/*', function (req, res) {
+
+app.get('/', function (req, res) {
 	res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
-
+app.use("/api/v1", indexRouter);
 
 
 
