@@ -1,0 +1,18 @@
+import express from "express";
+import { Login, forgotPassword, verifyOtp } from "../controllers/auth/login.js";
+import { StudentRegister, TeamRegister, generateGoogleUrl, googleLogin, verifyEmail } from "../controllers/auth/register.js";
+import { authMiddleware, isAdmin } from "../middleware/auth.js";
+import { checkDisposableEmail, validateCredentials, validationErrorMiddleware } from "../middleware/validations.js";
+
+const router = express.Router();
+//        {{localhost:5000}}/api/v1/auth
+
+router.post("/login", Login);
+router.post("/student-register", validateCredentials, validationErrorMiddleware, checkDisposableEmail, StudentRegister);
+router.get("/verify/:email/:emailVerificationString", verifyEmail)
+router.post("/team-register", authMiddleware, isAdmin, TeamRegister);
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-otp", verifyOtp);
+router.get("/google", generateGoogleUrl)
+router.get("/google/login", googleLogin)
+export default router;

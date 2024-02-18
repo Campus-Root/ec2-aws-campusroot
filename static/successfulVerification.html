@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .container {
+      margin: 8% 15%;
+    }
+
+    img {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 3rem;
+    }
+
+    h3 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+
+    p {
+      margin-top: 10px;
+      font-size: 15px;
+      line-height: 22px;
+    }
+
+    .verify {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #000;
+      color: #14C6A4;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+
+    a {
+      display: inline-block;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="https://res.cloudinary.com/dffdp7skh/image/upload/v1706522917/campusrootLogo_lmygej.png" alt="logo" />
+    <h3>Dear {{userName}},</h3>
+    <h2>Congratulations! Your Email is Verified</h2>
+    <p>
+      You have successfully verified your email address with CampusRoot.
+      You can now access all the features of your account.
+    </p>
+    <p>
+      Please proceed to the <a href="https://campusroot.com/" class="verify">Home Page</a> to start exploring.
+    </p>
+    <p>
+      If you have any questions or need assistance, our support team is just
+      an email away at <a href="mailto:support@campusroot.com" style="color: #14C6A4;">support@campusroot.com</a>.
+    </p>
+    <p style="margin-bottom: 0;">Best Regards,</p>
+    <p style="font-weight: bold;">The CampusRoot Team</p>
+  </div>
+</body>
+</html>

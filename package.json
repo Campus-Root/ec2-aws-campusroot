@@ -1,0 +1,58 @@
+{
+  "name": "OneWindow-v1-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "pm2-runtime start src/index.js",
+    "build": "yarn install --frozen-lockfile"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "homepage": "",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.2",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cookie-session": "^2.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^6.7.0",
+    "express-session": "^1.17.3",
+    "express-validator": "^7.0.1",
+    "firebase-admin": "^12.0.0",
+    "fs": "^0.0.1-security",
+    "googleapis": "^129.0.0",
+    "handlebars": "^4.7.8",
+    "helmet": "^6.1.5",
+    "http-status-codes": "^2.2.0",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.4",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.4",
+    "path": "^0.12.7",
+    "pm2": "^5.3.0",
+    "socket.io": "^4.7.0",
+    "twilio": "^4.11.1",
+    "unirest": "^0.6.0",
+    "url": "^0.11.3",
+    "uuid": "^9.0.1",
+    "xss": "^1.0.14"
+  },
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0",
+    "supertest": "^6.3.3"
+  }
+}
