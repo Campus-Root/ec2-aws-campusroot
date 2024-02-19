@@ -254,7 +254,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     body: JSON.stringify({
       ug_gpa: ug_gpa,
       gre: gre,
-      sub_discipline: req.user.preference.courses[0]
+      sub_discipline: req.user.preference.courses.toString()
     })
   });
   const result = await response.json();
