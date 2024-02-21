@@ -34,7 +34,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 startCronJob();
 dbConnect();
 
-const whitelist = ["https://viznu.dev"];
+const whitelist = ["https://campusroot.com"];
 app.set("trust proxy", 1); // trust first proxy
 app.use(
 	session({
