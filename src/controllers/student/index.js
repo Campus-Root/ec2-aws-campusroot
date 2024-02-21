@@ -22,6 +22,10 @@ import Handlebars from "handlebars";
 import path from "path";
 import { fileURLToPath } from "url";
 import { gradeConversions } from "../../utils/gradeConversions.js";
+import exchangeModel from "../../models/ExchangeRates.js";
+import { costConversion } from "../../utils/currencyConversion.js";
+import { currencySymbols } from "../../utils/enum.js";
+const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 
 
 export const userNameAvailability = errorWrapper(async (req, res, next) => {
@@ -31,9 +35,9 @@ export const userNameAvailability = errorWrapper(async (req, res, next) => {
 })
 export const profile = errorWrapper(async (req, res, next) => {
   await Promise.all([
-    req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
-    req.user.populate("processCoordinator", "linkedIn name email displayPicSrc"),
-    Document.populate(req.user,
+    await req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
+    await req.user.populate("processCoordinator", "linkedIn name email displayPicSrc"),
+    await Document.populate(req.user,
       [{ path: "documents.personal.resume", select: "name contentType createdAt", },
       { path: "documents.personal.passportBD", select: "name contentType createdAt", },
       { path: "documents.personal.passportADD", select: "name contentType createdAt", },
@@ -242,7 +246,7 @@ export const editReview = errorWrapper(async (req, res, next) => {
 })
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
   const GRE = req.user.tests.filter(ele => ele.name == "Graduate Record Examination")
-  if (!GRE) return next(generateAPIError("add GRE test details", 400))
+  if (!GRE.scores) return next(generateAPIError("add GRE test details", 400))
   const gre = GRE.scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
   const ug = req.user.education.underGraduation
   if (!ug) return next(generateAPIError("add ug gpa", 400))
@@ -324,22 +328,22 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
 // }
 export const activity = errorWrapper(async (req, res, next) => {
   await Promise.all([
-    req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
-    req.user.populate("processCoordinator", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
-    applicationModel.populate(req.user, [
+    await req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
+    await req.user.populate("processCoordinator", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
+    await applicationModel.populate(req.user, [
       { path: "activity.applications.processing" },
       { path: "activity.applications.accepted" },
       { path: "activity.applications.rejected" },
       { path: "activity.applications.completed" },
       { path: "activity.applications.cancelled" },
     ]),
-    universityModel.populate(req.user, [
+    await universityModel.populate(req.user, [
       { path: "activity.shortListed.university recommendation.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university", select: "name logoSrc location type establishedYear " },
     ]),
-    courseModel.populate(req.user, [
+    await courseModel.populate(req.user, [
       { path: "recommendation.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration applicationDetails currency" },
     ]),
-    Document.populate(req.user, [
+    await Document.populate(req.user, [
       { path: "activity.applications.processing.docChecklist.doc activity.applications.accepted.docChecklist.doc activity.applications.rejected.docChecklist.doc activity.applications.completed.docChecklist.doc activity.applications.cancelled.docChecklist.doc", select: "name contentType createdAt" },
     ])
   ]);
@@ -460,8 +464,8 @@ export const uploadInProfile = errorWrapper(async (req, res, next) => {
   })
 
   await Promise.all([
-    req.user.save(),
-    Document.populate(req.user,
+   await req.user.save(),
+   await Document.populate(req.user,
       [{ path: "documents.personal.resume", select: "name contentType createdAt", },
       { path: "documents.personal.passportBD", select: "name contentType createdAt", },
       { path: "documents.personal.passportADD", select: "name contentType createdAt", },
@@ -522,9 +526,9 @@ export const deleteUploadedInProfile = errorWrapper(async (req, res, next) => {
     details: `path:${fieldPath}`
   })
   await Promise.all([
-    req.user.save(),
-    Document.findByIdAndRemove(documentId),
-    Document.populate(req.user,
+    await req.user.save(),
+    await  Document.findByIdAndRemove(documentId),
+    await Document.populate(req.user,
       [{ path: "documents.personal.resume", select: "name contentType createdAt", },
       { path: "documents.personal.passportBD", select: "name contentType createdAt", },
       { path: "documents.personal.passportADD", select: "name contentType createdAt", },
@@ -561,9 +565,9 @@ export const addShortListed = errorWrapper(async (req, res, next) => {
     details: `courseId:${courseId}&universityId:${universityId}`
   })
   await Promise.all([
-    req.user.save(),
-    universityModel.populate(req.user, { path: "activity.shortListed.university", select: "name logoSrc location type establishedYear ", }),
-    courseModel.populate(req.user, { path: "activity.shortListed.course", select: "name discipline tuitionFee studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails", },)
+    await req.user.save(),
+    await universityModel.populate(req.user, { path: "activity.shortListed.university", select: "name logoSrc location type establishedYear ", }),
+    await courseModel.populate(req.user, { path: "activity.shortListed.course", select: "name discipline tuitionFee studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails", },)
   ])
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -687,21 +691,21 @@ export const uploadInApplication = errorWrapper(async (req, res, next) => {
   })
   await req.user.save()
   await Promise.all([
-    application.save(),
-    universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " }),
-    courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration", }),
+    await application.save(),
+    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " }),
+    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration", }),
     Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
   ])
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-    
-      if (application.course.currency.code !== req.user.preference.currency) {
-        if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) {
-          next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
-        }
-        application.course.tuitionFee.tuitionFee = costConversion(application.course.tuitionFee.tuitionFee, application.course.currency.code, req.user.preference.currency, rates[application.course.currency.code], rates[req.user.preference.currency]);
-        application.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
+
+    if (application.course.currency.code !== req.user.preference.currency) {
+      if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) {
+        next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
       }
+      application.course.tuitionFee.tuitionFee = costConversion(application.course.tuitionFee.tuitionFee, application.course.currency.code, req.user.preference.currency, rates[application.course.currency.code], rates[req.user.preference.currency]);
+      application.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
+    }
   }
   res.status(200).json({ success: true, message: 'New Application Registered', data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
@@ -723,22 +727,22 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
   })
   await req.user.save()
   await Promise.all([
-    application.save(),
-    Document.findByIdAndDelete(documentId),
-    universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " }),
-    courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration", }),
-    Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
+    await application.save(),
+    await Document.findByIdAndDelete(documentId),
+    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " }),
+    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration", }),
+    await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
   ])
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-    
-      if (application.course.currency.code !== req.user.preference.currency) {
-        if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) {
-          next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
-        }
-        application.course.tuitionFee.tuitionFee = costConversion(application.course.tuitionFee.tuitionFee, application.course.currency.code, req.user.preference.currency, rates[application.course.currency.code], rates[req.user.preference.currency]);
-        application.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
+
+    if (application.course.currency.code !== req.user.preference.currency) {
+      if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) {
+        next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
       }
+      application.course.tuitionFee.tuitionFee = costConversion(application.course.tuitionFee.tuitionFee, application.course.currency.code, req.user.preference.currency, rates[application.course.currency.code], rates[req.user.preference.currency]);
+      application.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
+    }
   }
   return res.status(200).json({ success: true, message: `doc deleted`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
@@ -746,8 +750,8 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
 export const allStudents = errorWrapper(async (req, res, next) => {
   const students = await studentModel.find({}, "name displayPicSrc activity.admitReceived").populate("activity.admitReceived", "university course");
   await Promise.all([
-    universityModel.populate(students, { path: "activity.admitReceived.university", select: "name logoSrc location type ", }),
-    courseModel.populate(students, { path: "activity.admitReceived.course", select: "name schoolDetails", })
+    await  universityModel.populate(students, { path: "activity.admitReceived.university", select: "name logoSrc location type ", }),
+    await courseModel.populate(students, { path: "activity.admitReceived.course", select: "name schoolDetails", })
   ])
   return res.status(200).json({ success: true, message: `all students`, data: students, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
