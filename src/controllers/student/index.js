@@ -595,9 +595,12 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
 })
 export const apply = errorWrapper(async (req, res, next) => {
   let { universityId, courseId, intake } = req.body
-  if (!intake) return next(generateAPIError(`intake cannot be empty`, 400));
   if (! await universityModel.findById(universityId)) return next(generateAPIError(`invalid university Id`, 400));
-  if (! await courseModel.findById(courseId)) return next(generateAPIError(`invalid course Id`, 400));
+  const course = await courseModel.findById(courseId, "startDate")
+  if (!course) return next(generateAPIError(`invalid course Id`, 400));
+  if (!intake || new Date(intake) <= new Date()) return next(generateAPIError(`invalid intake`, 400));
+  const Exists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(intake).getUTCMonth())
+  if (Exists.length <= 0) return next(generateAPIError(`invalid doesn't exist`, 400));
   if (!req.user.processCoordinator) {
     const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator" } },
     {
