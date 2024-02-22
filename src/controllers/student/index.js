@@ -246,8 +246,8 @@ export const editReview = errorWrapper(async (req, res, next) => {
 })
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
   const GRE = req.user.tests.filter(ele => ele.name == "Graduate Record Examination")
-  if (!GRE.scores) return next(generateAPIError("add GRE test details", 400))
-  const gre = GRE.scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
+  if (!GRE[0].scores) return next(generateAPIError("add GRE test details", 400))
+  const gre = GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
   const ug = req.user.education.underGraduation
   if (!ug) return next(generateAPIError("add ug gpa", 400))
   let ug_gpa = (req.user.education.underGraduation.pattern != "gpa") ? gradeConversions(ug.pattern, "gpa", ug.totalScore) : ug.totalScore
@@ -464,8 +464,8 @@ export const uploadInProfile = errorWrapper(async (req, res, next) => {
   })
 
   await Promise.all([
-   await req.user.save(),
-   await Document.populate(req.user,
+    await req.user.save(),
+    await Document.populate(req.user,
       [{ path: "documents.personal.resume", select: "name contentType createdAt", },
       { path: "documents.personal.passportBD", select: "name contentType createdAt", },
       { path: "documents.personal.passportADD", select: "name contentType createdAt", },
@@ -527,7 +527,7 @@ export const deleteUploadedInProfile = errorWrapper(async (req, res, next) => {
   })
   await Promise.all([
     await req.user.save(),
-    await  Document.findByIdAndRemove(documentId),
+    await Document.findByIdAndRemove(documentId),
     await Document.populate(req.user,
       [{ path: "documents.personal.resume", select: "name contentType createdAt", },
       { path: "documents.personal.passportBD", select: "name contentType createdAt", },
@@ -753,7 +753,7 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
 export const allStudents = errorWrapper(async (req, res, next) => {
   const students = await studentModel.find({}, "name displayPicSrc activity.admitReceived").populate("activity.admitReceived", "university course");
   await Promise.all([
-    await  universityModel.populate(students, { path: "activity.admitReceived.university", select: "name logoSrc location type ", }),
+    await universityModel.populate(students, { path: "activity.admitReceived.university", select: "name logoSrc location type ", }),
     await courseModel.populate(students, { path: "activity.admitReceived.course", select: "name schoolDetails", })
   ])
   return res.status(200).json({ success: true, message: `all students`, data: students, AccessToken: req.AccessToken ? req.AccessToken : null });
