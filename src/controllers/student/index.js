@@ -600,7 +600,7 @@ export const apply = errorWrapper(async (req, res, next) => {
   if (!course) return next(generateAPIError(`invalid course Id`, 400));
   if (!intake || new Date(intake) <= new Date()) return next(generateAPIError(`invalid intake`, 400));
   const Exists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(intake).getUTCMonth())
-  if (Exists.length <= 0) return next(generateAPIError(`invalid doesn't exist`, 400));
+  if (Exists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400));
   if (!req.user.processCoordinator) {
     const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator" } },
     {
