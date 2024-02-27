@@ -54,6 +54,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data;
+                else if (ele.type === "name") filter.name = { $regex: ele.data, $options: "i" }
                 else if (ele.type === "AcademicTestName") filter["AdmissionsRequirements.AcademicRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "LanguageTestName") filter["AdmissionsRequirements.LanguageRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "openNow") {
