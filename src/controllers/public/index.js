@@ -8,6 +8,7 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { currencySymbols } from "../../utils/enum.js";
 import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
+import { disciplineRegexMatch, subDisciplineRegexMatch } from "../../utils/regex.js";
 
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
@@ -79,11 +80,11 @@ export const listings = errorWrapper(async (req, res, next) => {
                     filter.startDate = { $elemMatch: period };
                 }
                 else if (ele.type === "budget") {
-                    let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } },{ "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } },  { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } },  { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } } ];
+                    let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
                     filter["$or"] = currencyFilter.map(element => {
                         let lowerLimit = costConversion(ele.data.lowerLimit, req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
                         let upperLimit = costConversion(ele.data.upperLimit, req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-                        return { ...element,"tuitionFee.tuitionFee": { "$gte": lowerLimit,"$lte": upperLimit }};
+                        return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
                     });
                 }
                 else if (ele.type === "intake") {
@@ -198,8 +199,10 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
         ],
         courses: { $exists: true, $not: { $size: 0 } }
     };
+    const disciplineSearchResults = disciplineRegexMatch(req.query.search)
+    const subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
     if (req.query.country) uniKeyword["location.country"] = req.query.country
-    const uniSearchResults = await universityModel.find(uniKeyword, "name courses community logoSrc").limit(10).populate("courses", "name")
+    const uniSearchResults = await universityModel.find(uniKeyword, "name courses community logoSrc").limit(5).populate("courses", "name")
     const courseKeyword = {
         $or: [
             { name: { $regex: req.query.search, $options: "i" } },
@@ -207,6 +210,6 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
         ]
     };
     if (req.query.country) courseKeyword["location.country"] = req.query.country
-    const courseSearchResults = await courseModel.find(courseKeyword, "name location studyLevel").limit(10)
-    return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, courses: courseSearchResults } })
+    const courseSearchResults = await courseModel.find(courseKeyword, "name location studyLevel").limit(5)
+    return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, courses: courseSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
 })
