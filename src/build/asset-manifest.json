@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.739c7b07.css",
-    "main.js": "/static/js/main.eba81d37.js",
+    "main.js": "/static/js/main.cd430f5d.js",
     "static/js/787.0f7dc5a1.chunk.js": "/static/js/787.0f7dc5a1.chunk.js",
     "static/media/wall-paper.jpg": "/static/media/wall-paper.c03754b37b56132dd95b.jpg",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
@@ -22,6 +22,7 @@
     "static/media/UnitedKingdom.png": "/static/media/UnitedKingdom.8d1d9a216c094b4d663f.png",
     "static/media/slider3.png": "/static/media/slider3.6c9979a06d00879fce7d.png",
     "static/media/tail-dual-ring.gif": "/static/media/tail-dual-ring.f100965b3df565b3306b.gif",
+    "static/media/check_list.gif": "/static/media/check_list.9f1e8d67e35dd010962d.gif",
     "static/media/Canada.png": "/static/media/Canada.6a1acff0e14163596142.png",
     "static/media/UnitedStates.png": "/static/media/UnitedStates.d30d61fe1bd156d57bb0.png",
     "static/media/Australia.png": "/static/media/Australia.4557fa880f0470637e49.png",
@@ -49,11 +50,11 @@
     "static/media/pdf-icon.avif": "/static/media/pdf-icon.ef9d766ed1f05383db5a.avif",
     "index.html": "/index.html",
     "main.739c7b07.css.map": "/static/css/main.739c7b07.css.map",
-    "main.eba81d37.js.map": "/static/js/main.eba81d37.js.map",
+    "main.cd430f5d.js.map": "/static/js/main.cd430f5d.js.map",
     "787.0f7dc5a1.chunk.js.map": "/static/js/787.0f7dc5a1.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.739c7b07.css",
-    "static/js/main.eba81d37.js"
+    "static/js/main.cd430f5d.js"
   ]
 }
