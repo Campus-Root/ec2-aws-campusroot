@@ -217,6 +217,7 @@ export const postReview = errorWrapper(async (req, res, next) => {
     action: `review on university posted`,
     details: `reviewId:${post._id}`
   })
+  await userModel.populate(post, { path: "user", select: "name displayPicSrc" })
   await req.user.save()
   return res.status(200).json({ success: true, message: `review posted successfully`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
@@ -235,6 +236,7 @@ export const editReview = errorWrapper(async (req, res, next) => {
       action: `review on university updated`,
       details: `reviewId:${id}`
     })
+    await userModel.populate(post, { path: "user", select: "name displayPicSrc" })
     await req.user.save()
     return res.status(200).json({ success: true, message: `post deleted`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
   }
