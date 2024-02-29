@@ -12,7 +12,7 @@ import { disciplineRegexMatch, subDisciplineRegexMatch } from "../../utils/regex
 
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
-    const { page } = req.body, filter = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
+    const { page, search } = req.body, filter = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
     switch (req.params.name) {
@@ -111,6 +111,18 @@ export const listings = errorWrapper(async (req, res, next) => {
         case "destinations":
             const destinations = await destinationModel.find({}, "destinationPicSrc destinationName")
             return res.status(200).json({ success: true, message: `all destinations`, data: { list: destinations } })
+        case "search":
+            const [lists, universities] = await Promise.all([
+                courseModel.find({ $or: [{ name: { $regex: req.body.search, $options: "i" } }, { schoolName: { $regex: req.body.search, $options: "i" } }] }, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1 }).populate("university", "name location logoSrc type"),
+                universityModel.find({ $or: [{ name: { $regex: req.body.search, $options: "i" } }, { code: { $regex: req.body.search, $options: "i" } }], courses: { $exists: true, $not: { $size: 0 } } }, "courses").populate("courses", { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1 })
+            ]);
+            await universityModel.populate(universities, { path: "courses.university", select: "name location logoSrc type" });
+            const combinedList = universities.reduce((acc, ele) => {
+                acc.push(...ele.courses);
+                return acc;
+            }, []);
+            const slicedLists = [...lists, combinedList].slice(skip, skip + perPage);
+            return res.status(200).json({ success: true, message: `all destinations`, data: { list: slicedLists, currentPage: page, totalPages: Math.ceil(slicedLists.length / perPage), totalItems: slicedLists.length } });
     }
 })
 export const oneUniversity = errorWrapper(async (req, res, next) => {
