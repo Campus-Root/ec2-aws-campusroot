@@ -121,7 +121,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 acc.push(...ele.courses);
                 return acc;
             }, []);
-            const slicedLists = [...lists, combinedList].slice(skip, skip + perPage);
+            const slicedLists = [...lists, ...combinedList].slice(skip, skip + perPage);
             return res.status(200).json({ success: true, message: `all destinations`, data: { list: slicedLists, currentPage: page, totalPages: Math.ceil(slicedLists.length / perPage), totalItems: slicedLists.length } });
     }
 })
