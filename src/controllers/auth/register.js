@@ -6,13 +6,12 @@ import { teamModel } from "../../models/Team.js";
 import sendMail from "../../utils/sendEMAIL.js";
 import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
-import { oauth2student } from "../../utils/oAuthClient.js";
-import { google } from "googleapis";
 import chatModel from "../../models/Chat.js";
 import fs from "fs"
 import Handlebars from "handlebars";
 import path from "path";
 import { fileURLToPath } from "url";
+import { jwtDecode } from "jwt-decode";
 
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
@@ -87,63 +86,60 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
     res.cookie("CampusRoot_Refresh", RefreshToken,).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
     return res.status(200).json({ success: true, message: `${role} Registration successful`, data: { email, name, role }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
-export const generateGoogleUrl = errorWrapper(async (req, res, next) => {
-    const url = oauth2student.generateAuthUrl({ access_type: 'offline', scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"] });
-    res.status(200).json({ success: true, message: `auth url`, data: url });
-})
+
 export const googleLogin = errorWrapper(async (req, res, next) => {
-    const { tokens } = await oauth2student.getToken(req.query.code)
-    oauth2student.setCredentials(tokens);
-    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2student, });
-    const { data } = await oauth2.userinfo.get();
-    const teamMember = await teamModel.findOne({ email: data.email })
-    if (teamMember) return res.redirect(`${process.env.STUDENT_URL}/team`)
-    const alreadyExists = await studentModel.findOne({ email: data.email })
-    if (alreadyExists && alreadyExists.google.id) {
-        let AccessToken = jwt.sign({ id: alreadyExists._id }, ACCESS_SECRET, { expiresIn: "1h" });
-        let RefreshToken = jwt.sign({ id: alreadyExists._id }, REFRESH_SECRET, { expiresIn: "1y" });
-        alreadyExists.logs.push({ action: `Logged in using Google auth` })
-        await alreadyExists.save()
-        res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true, }).cookie("CampusRoot_Email", data.email, { sameSite: 'none', secure: true, });
-        return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: alreadyExists.userType } });
+    if (!req.body.credential) return next("credential undefined", 400)
+    try {
+        const { name, email, picture, email_verified, sub } = jwtDecode(req.body.credential)
+        const teamMember = await teamModel.findOne({ email: email })
+        if (teamMember) return res.redirect(`${process.env.STUDENT_URL}/team`)
+        let student = await studentModel.findOne({ email: email });
+        if (student) {
+            if (student.google && student.google.id) {
+                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
+                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
+                student.logs.push({ action: `Logged in using Google auth` });
+                await student.save();
+                res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
+                return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
+            } else {
+                student.name = name;
+                student.displayPicSrc = picture;
+                student.google = { id: sub };
+                if (email_verified) student.emailVerified = email_verified;
+                student.logs.push({ action: `Logged in using Google auth, name, displayPicSrc, google email details updated` });
+                await student.save();
+                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
+                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
+                res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
+                return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
+            }
+        } else {
+            student = await studentModel.create({ name: name, email: email, displayPicSrc: picture, google: { id: sub }, emailVerified: email_verified });
+            if (!email_verified) {
+                student.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
+                let subject = "Confirm Your Email to Activate Your CampusRoot Account";
+                const __dirname = path.dirname(fileURLToPath(import.meta.url));
+                const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
+                const source = fs.readFileSync(filePath, "utf-8").toString();
+                const template = Handlebars.compile(source);
+                const replacement = { userName: name, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` };
+                const htmlToSend = template(replacement);
+                await sendMail({ to: email, subject: subject, html: htmlToSend });
+            }
+            const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+            student.counsellor = Counsellors[0]._id;
+            const Counsellor = await teamModel.findById(Counsellors[0]._id);
+            Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
+            await Counsellor.save();
+            student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
+            await student.save();
+            await chatModel.create({ participants: [student._id, student.counsellor] });
+            let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
+            let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
+            res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
+            return res.status(200).json({ success: true, message: `Google Registration Successful`, data: { AccessToken, role: student.userType } });
+        }
     }
-    else if (alreadyExists) {
-        alreadyExists.name = data.name
-        alreadyExists.displayPicSrc = data.picture
-        alreadyExists.google = { id: data.id }
-        if (data.verified_email) alreadyExists.emailVerified = data.verified_email
-        alreadyExists.logs.push({ action: `Logged in using Google auth, name, displayPicSrc, google email details updated` })
-        await alreadyExists.save()
-        let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-        let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
-        res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true, }).cookie("CampusRoot_Email", data.email, { sameSite: 'none', secure: true, });
-        return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.role || student.userType } });
-    }
-    const student = await studentModel.create({ name: data.name, email: data.email, displayPicSrc: data.picture, google: { id: data.id }, emailVerified: data.verified_email })
-    if (!data.verified_email) {
-        student.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
-        let subject = "Confirm Your Email to Activate Your CampusRoot Account"
-        const __dirname = path.dirname(fileURLToPath(import.meta.url));
-        const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
-        const source = fs.readFileSync(filePath, "utf-8").toString();
-        const template = Handlebars.compile(source)
-        const replacement = { userName: data.name, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` }
-        const htmlToSend = template(replacement)
-        await sendMail({ to: email, subject: subject, html: htmlToSend });
-    }
-    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-    student.counsellor = Counsellors[0]._id;
-    const Counsellor = await teamModel.findById(Counsellors[0]._id);
-    Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
-    await Counsellor.save();
-    student.logs.push({
-        action: `Registered in using Google auth`,
-        details: `Social registration done`
-    })
-    await student.save();
-    await chatModel.create({ participants: [student._id, student.counsellor] });
-    let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-    let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
-    res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true, }).cookie("CampusRoot_Email", data.email, { sameSite: 'none', secure: true, });
-    return res.status(200).json({ success: true, message: `Google Registration Successful`, data: { AccessToken, role: student.role || student.userType } });
+    catch (error) { return next(generateAPIError(error.message, 400)) }
 })
