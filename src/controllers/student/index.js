@@ -622,6 +622,8 @@ export const apply = errorWrapper(async (req, res, next) => {
     await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
     await Document.updateMany({ user: req.user._id, type: "General" }, { $push: { viewers: processCoordinators[0]._id } })
   }
+  const alreadyExists = await applicationModel.find({ user: req.user._id, intake: intake, course: courseId })
+  if (alreadyExists) return next(generateAPIError(`Already applied for this intake`, 400));
   const newApplication = await applicationModel.create({
     counsellor: req.user.counsellor,
     university: universityId,
