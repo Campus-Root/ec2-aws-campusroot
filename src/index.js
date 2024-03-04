@@ -62,7 +62,14 @@ app.options('*', cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser())
 app.use(express.json({ type: ["application/json", "text/plain"], }));
-app.use(helmet.contentSecurityPolicy({ directives: { defaultSrc: ["'self'"], imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://www.4icu.org/", "https://icon-library.com/", "blob:"], }, }));
+app.use(helmet.contentSecurityPolicy({
+	directives: {
+	  defaultSrc: ["'self'"],
+	  imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://www.4icu.org/", "https://icon-library.com/", "blob:"],
+	  connectSrc: ["'self'", "https://ipapi.co"],
+	  scriptSrc: ["'self'", "https://accounts.google.com"]
+	},
+  }));
 app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);

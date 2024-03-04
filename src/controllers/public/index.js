@@ -48,6 +48,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
+                else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
                 else if (ele.type === "universityId") filter.university = { $in: ele.data };
                 else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
@@ -113,7 +114,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             return res.status(200).json({ success: true, message: `all destinations`, data: { list: destinations } })
         case "search":
             const [lists, universities] = await Promise.all([
-                courseModel.find({ $or: [{ name: { $regex: req.body.search, $options: "i" } }, { schoolName: { $regex: req.body.search, $options: "i" } }] }, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1 }).populate("university", "name location logoSrc type"),
+                courseModel.find({ name: { $regex: req.body.search, $options: "i" } }, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1 }).populate("university", "name location logoSrc type"),
                 universityModel.find({ $or: [{ name: { $regex: req.body.search, $options: "i" } }, { code: { $regex: req.body.search, $options: "i" } }], courses: { $exists: true, $not: { $size: 0 } } }, "courses").populate("courses", { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1 })
             ]);
             await universityModel.populate(universities, { path: "courses.university", select: "name location logoSrc type" });
