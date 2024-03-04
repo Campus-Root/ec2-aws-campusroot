@@ -20,6 +20,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
+                else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data;
                 // else if (ele.graduationRate === "graduationRate") filter.graduationRate = { $gte: ele.data };
                 // else if (ele.acceptanceRate === "acceptanceRate") filter.acceptanceRate = { $gte: ele.data };
@@ -95,7 +96,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                     filter.startDate = { $elemMatch: period };
                 }
             });
-            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, }).populate("university", "name location logoSrc type").skip(skip).limit(perPage);
+            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
                     if (!rates[ele.currency.code] || !rates[req.body.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
@@ -108,7 +109,8 @@ export const listings = errorWrapper(async (req, res, next) => {
             }
             totalDocs = await courseModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
-            return res.status(200).json({ success: true, message: `list of all courses`, data: { list: courses.sort(() => Math.random() - 0.5), currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
+            if (req.body.filterData.length > 0) courses = courses.sort(() => Math.random() - 0.5)
+            return res.status(200).json({ success: true, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "destinations":
             const destinations = await destinationModel.find({}, "destinationPicSrc destinationName")
             return res.status(200).json({ success: true, message: `all destinations`, data: { list: destinations } })
