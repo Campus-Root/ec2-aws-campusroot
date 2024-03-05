@@ -219,13 +219,5 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     const subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
     if (req.query.country) uniKeyword["location.country"] = req.query.country
     const uniSearchResults = await universityModel.find(uniKeyword, "name courses community logoSrc").limit(5).populate("courses", "name")
-    const courseKeyword = {
-        $or: [
-            { name: { $regex: req.query.search, $options: "i" } },
-            { studyLevel: { $regex: req.query.search, $options: "i" } }
-        ]
-    };
-    if (req.query.country) courseKeyword["location.country"] = req.query.country
-    const courseSearchResults = await courseModel.find(courseKeyword, "name location studyLevel").limit(5)
-    return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, courses: courseSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
+    return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
 })
