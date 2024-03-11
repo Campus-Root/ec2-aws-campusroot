@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.2b83c5d6.css",
-    "main.js": "/static/js/main.32cd4724.js",
+    "main.js": "/static/js/main.50acb6c9.js",
     "static/js/787.0f7dc5a1.chunk.js": "/static/js/787.0f7dc5a1.chunk.js",
     "static/media/wall-paper.jpg": "/static/media/wall-paper.c03754b37b56132dd95b.jpg",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
@@ -17,15 +17,10 @@
     "static/media/typing.gif": "/static/media/typing.33a0aaf3c4afb6832650.gif",
     "static/media/slider6.png": "/static/media/slider6.e1157622c801b774688c.png",
     "static/media/no-profile.png": "/static/media/no-profile.09d5a49b16332fabae1f.png",
-    "static/media/Ireland.png": "/static/media/Ireland.1c07fff63f65435fbd15.png",
     "static/media/bachelors.png": "/static/media/bachelors.fba764eb87f71d28347b.png",
-    "static/media/UnitedKingdom.png": "/static/media/UnitedKingdom.8d1d9a216c094b4d663f.png",
     "static/media/slider3.png": "/static/media/slider3.6c9979a06d00879fce7d.png",
     "static/media/tail-dual-ring.gif": "/static/media/tail-dual-ring.f100965b3df565b3306b.gif",
     "static/media/check_list.gif": "/static/media/check_list.9f1e8d67e35dd010962d.gif",
-    "static/media/Canada.png": "/static/media/Canada.6a1acff0e14163596142.png",
-    "static/media/UnitedStates.png": "/static/media/UnitedStates.d30d61fe1bd156d57bb0.png",
-    "static/media/Australia.png": "/static/media/Australia.4557fa880f0470637e49.png",
     "static/media/communities-background-img.png": "/static/media/communities-background-img.42391504be51b81b8350.png",
     "static/media/counsellor.png": "/static/media/counsellor.67c90c837c303b4f206b.png",
     "static/media/aiPage.png": "/static/media/aiPage.879f2364d0fb60a2d35d.png",
@@ -34,7 +29,6 @@
     "static/media/counsellorRecommend.svg": "/static/media/counsellorRecommend.2227a9b4d3130e20f68564250929f127.svg",
     "static/media/standardLoader.gif": "/static/media/standardLoader.b2a8fa3d8baba9fc720f.gif",
     "static/media/chatbox.gif": "/static/media/chatbox.c32763701e8758de735c.gif",
-    "static/media/NewZealand.png": "/static/media/NewZealand.7e8bb23a098ad6584e32.png",
     "static/media/facebook-icon.gif": "/static/media/facebook-icon.a673d075840558e5b412.gif",
     "static/media/counsellorCollab.png": "/static/media/counsellorCollab.e0d441210998ceff9f1f.png",
     "static/media/visaexpert.png": "/static/media/visaexpert.e0f689f651878284c2d4.png",
@@ -50,11 +44,11 @@
     "static/media/pdf-icon.avif": "/static/media/pdf-icon.ef9d766ed1f05383db5a.avif",
     "index.html": "/index.html",
     "main.2b83c5d6.css.map": "/static/css/main.2b83c5d6.css.map",
-    "main.32cd4724.js.map": "/static/js/main.32cd4724.js.map",
+    "main.50acb6c9.js.map": "/static/js/main.50acb6c9.js.map",
     "787.0f7dc5a1.chunk.js.map": "/static/js/787.0f7dc5a1.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.2b83c5d6.css",
-    "static/js/main.32cd4724.js"
+    "static/js/main.50acb6c9.js"
   ]
 }
