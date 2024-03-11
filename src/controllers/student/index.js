@@ -64,7 +64,7 @@ export const profile = errorWrapper(async (req, res, next) => {
 
 export const editPhone = errorWrapper(async (req, res, next) => {
   const { phone } = req.body
-  const existingPhone = studentModel.find({ $and: [{ "phone.countryCode": phone.number }, { "phone.countryCode": phone.number }] }, "phone")
+  const existingPhone = await studentModel.find({ "phone.countryCode": phone.countryCode, "phone.number": phone.number }, "phone")
   if (existingPhone.length > 0) return next(generateAPIError(`phone number already exists, Enter a new number`, 400));
   req.user.phone = phone;
   req.user.phoneVerified = false;
