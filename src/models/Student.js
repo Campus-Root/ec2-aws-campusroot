@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import userModel from "./User.js";
-import {  studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, DestinationTypeEnum, TestNamesEnum, TestDescriptionEnum ,possibilityOfAdmitEnum} from "../utils/enum.js";
+import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, DestinationTypeEnum, TestNamesEnum, TestDescriptionEnum, possibilityOfAdmitEnum } from "../utils/enum.js";
 
 const Student = mongoose.Schema(
     {
@@ -8,9 +8,11 @@ const Student = mongoose.Schema(
         google: { id: { type: String } },
         emailVerified: { type: Boolean, default: false },
         emailVerificationString: { type: String },
+        emailVerificationExpiry: { type: Date },
         phoneOtp: { type: String },
         phone: { countryCode: { type: String }, number: { type: String } },
         phoneVerified: { type: Boolean, default: false },
+        phoneVerificationExpiry: { type: Date },
         DOB: { type: Date },
         GuardianName: { type: String },
         GuardianOccupation: { type: String },
@@ -18,6 +20,7 @@ const Student = mongoose.Schema(
         GuardianContactNumber: { countryCode: { type: String }, number: { type: String } },
         GuardianContactNumberOtp: { type: String },
         GuardianContactNumberVerified: { type: Boolean, default: false },
+        GuardianContactNumberVerificationExpiry: { type: Date },
         Address: { type: String },
         LeadSource: { type: String },
         counsellor: { type: mongoose.Types.ObjectId, ref: "user" },

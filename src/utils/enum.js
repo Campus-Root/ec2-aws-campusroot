@@ -40,6 +40,7 @@ export const applicationStagesEnum = {
     I20_RECEIVED: "I20 Received",
 };
 export const TestDescriptionEnum = {
+    TOTAL:"Total",
     VERBAL_REASONING: "Verbal Reasoning",
     QUANTITATIVE_REASONING: "Quantitative Reasoning",
     ANALYTICAL_WRITING_ASSESSMENT: "Analytical Writing Assessment",
@@ -56,7 +57,6 @@ export const TestDescriptionEnum = {
     CONVERSATION: "Conversation",
     COMPREHENSION: "Comprehension",
     PRODUCTION: "production"
-
 };
 export const TeamRoleEnum = {
     TEAM: "processCoordinator",

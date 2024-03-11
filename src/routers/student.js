@@ -1,7 +1,7 @@
 // studentRouter
 
 import express from "express";
-import { editReview, editProfile, postReview, profile, activity, addShortListed, allStudents, userNameAvailability, verifyEmail, generateRecommendations, apply, uploadInProfile, uploadInApplication, deleteUploadedInProfile, deleteUploadedFromApplication, requestCancellation, removeShortListed, downloadDocument, getEvents, bookSlot, bookedSlots, singleStudent, sendUserOTP, verifyUserOTP, forceForwardApply, removeForceApply } from "../controllers/student/index.js";
+import { editReview, editProfile, postReview, profile, activity, addShortListed, allStudents, userNameAvailability, verifyEmail, generateRecommendations, apply, uploadInProfile, uploadInApplication, deleteUploadedInProfile, deleteUploadedFromApplication, requestCancellation, removeShortListed, downloadDocument, getEvents, bookSlot, bookedSlots, singleStudent, sendUserOTP, verifyUserOTP, forceForwardApply, removeForceApply, editPhone } from "../controllers/student/index.js";
 import { handleFile } from "../middleware/handleFile.js";
 import { authMiddleware, isStudent } from "../middleware/auth.js";
 
@@ -21,6 +21,7 @@ router.post("/verify-sms-otp", authMiddleware, isStudent, verifyUserOTP)
 
 router.get("/profile", authMiddleware, isStudent, profile);
 router.put("/profile", authMiddleware, isStudent, editProfile);
+router.put("/phone", authMiddleware, isStudent, editPhone);
 router.get("/counsellor-events", authMiddleware, isStudent, getEvents)
 router.post("/book-slot", authMiddleware, isStudent, bookSlot)
 router.get("/booked-slots", authMiddleware, isStudent, bookedSlots)

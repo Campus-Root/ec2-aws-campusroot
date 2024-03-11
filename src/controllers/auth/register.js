@@ -103,11 +103,11 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             } else {
-                student.name = name;
+                // student.name = name;
                 student.displayPicSrc = picture;
                 student.google = { id: sub };
                 if (email_verified) student.emailVerified = email_verified;
-                student.logs.push({ action: `Logged in using Google auth, name, displayPicSrc, google email details updated` });
+                student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 await student.save();
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
                 let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });

@@ -61,8 +61,28 @@ export const profile = errorWrapper(async (req, res, next) => {
   const profile = { ...req.user._doc, activity: {}, logs: [] }
   return res.status(200).json({ success: true, message: `complete profile`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
+
+export const editPhone = errorWrapper(async (req, res, next) => {
+  const { phone } = req.body
+  const existingPhone = studentModel.find({ $and: [{ "phone.countryCode": phone.number }, { "phone.countryCode": phone.number }] }, "phone")
+  if (existingPhone.length > 0) return next(generateAPIError(`phone number already exists, Enter a new number`, 400));
+  req.user.phone = phone;
+  req.user.phoneVerified = false;
+  const otp = Math.floor(Math.random() * (1000000));
+  req.user.phoneOtp = otp;
+  req.user.phoneVerificationExpiry = new Date(new Date().getTime() + 5 * 60000)
+  var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
+  if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
+  req.user.logs.push({
+    action: `profile info updated & otp sent for verification`,
+    details: `phone updated in profile`
+  })
+  await req.user.save()
+  return res.status(200).json({ success: true, message: `otp sent for verification, verify it before ${req.user.phoneVerificationExpiry}`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+})
+
 export const editProfile = errorWrapper(async (req, res, next) => {
-  const { displayPicSrc, school, plus2, underGraduation, phone, postGraduation, DOB, GuardianName, Address, LeadSource, GuardianOccupation, Gender, GuardianContactNumber, userName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+  const { displayPicSrc, school, plus2, underGraduation, postGraduation, DOB, GuardianName, Address, LeadSource, GuardianOccupation, Gender, GuardianContactNumber, userName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
   if (displayPicSrc) {
     req.user.displayPicSrc = displayPicSrc;
     req.user.logs.push({
@@ -98,15 +118,9 @@ export const editProfile = errorWrapper(async (req, res, next) => {
       details: `Gender updated`
     })
   }
-  if (phone) {
-    req.user.phone = phone;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `phone updated`
-    })
-  }
   if (GuardianContactNumber) {
     req.user.GuardianContactNumber = GuardianContactNumber;
+    req.user.GuardianContactNumberVerified = false;
     req.user.logs.push({
       action: `profile info updated`,
       details: `GuardianContactNumber updated`
@@ -247,6 +261,8 @@ export const editReview = errorWrapper(async (req, res, next) => {
   return res.status(200).json({ success: true, message: `review updated`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
+  if (!req.user.emailVerified) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
+  if (!req.user.phoneVerified) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
   const GRE = req.user.tests.filter(ele => ele.name == "Graduate Record Examination")
   if (!GRE[0].scores) return next(generateAPIError("add GRE test details", 400))
   const gre = GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
@@ -597,6 +613,8 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
 })
 export const apply = errorWrapper(async (req, res, next) => {
   let { universityId, courseId, intake } = req.body
+  if (!req.user.emailVerified) return next(generateAPIError(`do verify your email to process the application`, 400));
+  if (!req.user.phoneVerified) return next(generateAPIError(`do verify your phone number to process the application`, 400));
   if (! await universityModel.findById(universityId)) return next(generateAPIError(`invalid university Id`, 400));
   const course = await courseModel.findById(courseId, "startDate")
   if (!course) return next(generateAPIError(`invalid course Id`, 400));
@@ -789,7 +807,6 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
   return res.status(200).json({ success: true, message: `student details`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const verifyEmail = errorWrapper(async (req, res, next) => {
-
   let subject = "Verify Your Email to Activate Your CampusRoot Account"
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
@@ -807,17 +824,19 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
 })
 export const sendUserOTP = errorWrapper(async (req, res, next) => {
   const { type } = req.body
-  const otp = Math.floor(Math.random() * (1000000));
+  const otp = Math.floor(Math.random() * (1000000)), expiry = new Date(new Date().getTime() + 5 * 60000);
   switch (type) {
     case "phone":
       if (req.user.phone.number && req.user.phoneVerified) return next(generateAPIError("already verified", 400))
       req.user.phoneOtp = otp
+      req.user.phoneVerificationExpiry = expiry
       var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
       if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
       break;
     case "GuardianContactNumber":
       if (req.user.GuardianContactNumber.number && req.user.GuardianContactNumberVerified) return next(generateAPIError("already verified", 400))
       req.user.GuardianContactNumberOtp = otp
+      req.user.GuardianContactNumberVerificationExpiry = expiry
       var smsResponse = (req.user.GuardianContactNumber.countryCode === "+91") ? await sendOTP({ to: req.user.GuardianContactNumber.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.GuardianContactNumber.countryCode + req.user.GuardianContactNumber.number, otp: otp, region: "International" });
       if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
       break;
@@ -829,18 +848,20 @@ export const sendUserOTP = errorWrapper(async (req, res, next) => {
     details: ``
   })
   await req.user.save()
-  return res.status(200).json({ success: true, message: `otp sent for verification`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: `otp sent for verification, verify before ${expiry}`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const verifyUserOTP = errorWrapper(async (req, res, next) => {
   const { otp, type } = req.body
-  const user = await studentModel.findById(req.user._id, "GuardianContactNumberOtp phoneOtp logs")
+  const user = await studentModel.findById(req.user._id, "GuardianContactNumberOtp phoneOtp logs phoneVerificationExpiry GuardianContactNumberVerificationExpiry")
   switch (type) {
     case "phone":
       if (user.phoneOtp != otp) return next(generateAPIError("invalid otp", 400))
+      if (new Date() > new Date(user.phoneVerificationExpiry)) return next(generateAPIError("otp expired, generate again", 400))
       user.phoneVerified = true
       break;
     case "GuardianContactNumber":
       if (user.GuardianContactNumberOtp != otp) return next(generateAPIError("invalid otp", 400))
+      if (new Date() > new Date(user.GuardianContactNumberVerificationExpiry)) return next(generateAPIError("otp expired, generate again", 400))
       user.GuardianContactNumberVerified = true
       break;
     default: next(generateAPIError("invalid type", 400))
@@ -910,6 +931,8 @@ export const getEvents = errorWrapper(async (req, res, next) => {
 })
 export const bookSlot = errorWrapper(async (req, res, next) => {
   const { startTime, endTime, attendees, timeZone, notes } = req.body
+  if (!req.user.emailVerified) return next(generateAPIError(`do verify your email to book a slot`, 400));
+  if (!req.user.phoneVerified) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
   if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
   if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
   if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
