@@ -69,7 +69,14 @@ app.use(helmet.contentSecurityPolicy({
 	  connectSrc: ["'self'", "https://ipapi.co"],
 	  scriptSrc: ["'self'", "https://accounts.google.com"]
 	},
-  }));
+}));
+
+// Adding missing security headers
+app.use(helmet.frameguard({ action: 'sameorigin' }));
+app.use(helmet.noSniff());
+app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
+app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
+
 app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);
