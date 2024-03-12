@@ -8,7 +8,7 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { currencySymbols } from "../../utils/enum.js";
 import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
-import { disciplineRegexMatch, subDisciplineRegexMatch } from "../../utils/regex.js";
+import { disciplineRegexMatch, searchSimilarWords, subDisciplineRegexMatch } from "../../utils/regex.js";
 
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
@@ -46,6 +46,10 @@ export const listings = errorWrapper(async (req, res, next) => {
             totalPages = Math.ceil(totalDocs / perPage);
             return res.status(200).json({ success: true, message: `list of all universities`, data: { list: listOfUniversities.sort(() => Math.random() - 0.5), currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
+            // let searchFilterData = req.body.filterData.find(ele => ele.type === "name")
+            // let searchedDocs = await courseModel.countDocuments({ $or: [{ name: { $regex: searchFilterData.data, $options: "i" } }, { schoolName: { $regex: searchFilterData.data, $options: "i" } }] })
+            // let similarWords, message
+            // if (searchedDocs < 1) similarWords = searchSimilarWords(searchFilterData.data); 
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
