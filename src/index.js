@@ -65,7 +65,7 @@ app.use(express.json({ type: ["application/json", "text/plain"], }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
 	  defaultSrc: ["'self'"],
-	  imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://www.4icu.org/", "https://icon-library.com/", "blob:"],
+	  imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/","https://flagcdn.com/", "blob:"],
 	  connectSrc: ["'self'", "https://ipapi.co"],
 	  scriptSrc: ["'self'", "https://accounts.google.com"]
 	},

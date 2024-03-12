@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import userModel from "./User.js";
 import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, DestinationTypeEnum, TestNamesEnum, TestDescriptionEnum, possibilityOfAdmitEnum } from "../utils/enum.js";
+
 const Student = mongoose.Schema(
     {
         userName: { type: String },
