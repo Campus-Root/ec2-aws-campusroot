@@ -72,7 +72,7 @@ export const editPhone = errorWrapper(async (req, res, next) => {
   if (existingPhone.length > 0) return next(generateAPIError(`phone number already exists, Enter a new number`, 400));
   req.user.phone = phone;
   req.user.phoneVerified = false;
-  const otp = Math.floor(Math.random() * (1000000));
+  const otp = Math.floor(100000 + Math.random() * 900000);
   req.user.phoneOtp = otp;
   req.user.phoneVerificationExpiry = new Date(new Date().getTime() + 5 * 60000)
   var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
@@ -828,7 +828,7 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
 })
 export const sendUserOTP = errorWrapper(async (req, res, next) => {
   const { type } = req.body
-  const otp = Math.floor(Math.random() * (1000000)), expiry = new Date(new Date().getTime() + 5 * 60000);
+  const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
   switch (type) {
     case "phone":
       if (req.user.phone.number && req.user.phoneVerified) return next(generateAPIError("already verified", 400))
@@ -859,7 +859,7 @@ export const verifyUserOTP = errorWrapper(async (req, res, next) => {
   const user = await studentModel.findById(req.user._id, "GuardianContactNumberOtp phoneOtp logs phoneVerificationExpiry GuardianContactNumberVerificationExpiry")
   switch (type) {
     case "phone":
-      if (user.phoneOtp != otp) return next(generateAPIError("invalid otp", 400))
+      if (user.phoneOtp !== otp) return next(generateAPIError("invalid otp", 400))
       if (new Date() > new Date(user.phoneVerificationExpiry)) return next(generateAPIError("otp expired, generate again", 400))
       user.phoneVerified = true
       break;
