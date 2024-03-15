@@ -816,7 +816,8 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
   const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
   const source = fs.readFileSync(filePath, "utf-8").toString();
   const template = Handlebars.compile(source)
-  const replacement = { userName: req.user.name, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` }
+  req.user.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
+  const replacement = { userName: req.user.name, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${req.user.email}/${req.user.emailVerificationString}` }
   const htmlToSend = template(replacement)
   await sendMail({ to: req.user.email, subject: subject, html: htmlToSend });
   req.user.logs.push({
