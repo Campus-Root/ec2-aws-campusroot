@@ -43,7 +43,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     await student.save();
     await Counsellor.save();
     await chatModel.create({ participants: [student._id, student.counsellor] });
-    let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
+    let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "5m" });
     let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
     res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true, }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true, });
     return res.status(200).json({ success: true, message: `student registration successful`, data: { AccessToken, role: student.role || student.userType } });
@@ -76,7 +76,7 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
     const alreadyExists = await teamModel.findOne({ email: email });
     if (alreadyExists) return next(generateAPIError(`Email Already Registered`, 400));
     const user = await teamModel.create({ email, name, password: await bcrypt.hash(password, 12), role });
-    let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" });
+    let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "5m" });
     let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1y" });
     user.logs.push({
         action: `${role} Registration done`,
@@ -96,7 +96,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         let student = await studentModel.findOne({ email: email });
         if (student) {
             if (student.google && student.google.id) {
-                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
+                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "5m" });
                 let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
                 student.logs.push({ action: `Logged in using Google auth` });
                 await student.save();
@@ -109,7 +109,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 if (email_verified) student.emailVerified = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 await student.save();
-                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
+                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "5m" });
                 let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
                 res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
@@ -135,7 +135,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             await student.save();
             await chatModel.create({ participants: [student._id, student.counsellor] });
-            let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
+            let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "5m" });
             let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
             res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
             return res.status(200).json({ success: true, message: `Google Registration Successful`, data: { AccessToken, role: student.userType } });
