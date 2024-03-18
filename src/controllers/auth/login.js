@@ -21,7 +21,7 @@ export const Login = errorWrapper(async (req, res, next) => {
     if (!user.password) return next(generateAPIError("Please try another way", 401));
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) return next(generateAPIError("Invalid credentials. Please try again", 401));
-    let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "5m" })
+    let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" })
     let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1y" })
     user.logs.push({ action: "Logged In" })
     await user.save()

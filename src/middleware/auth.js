@@ -13,11 +13,10 @@ export const authMiddleware = async (req, res, next) => {
         next();
     } catch (error) {
         if (error.message != "jwt expired") return res.status(401).json({ success: false, message: `${error.message}`, data: null });
-        console.log(req.cookies.CampusRoot_Refresh);
         if (!req.cookies.CampusRoot_Refresh) return res.status(401).json({ success: false, message: `login again`, data: null });
         try {
             let decodedNew = jwt.verify(req.cookies.CampusRoot_Refresh, REFRESH_SECRET);
-            let AccessToken = jwt.sign({ id: decodedNew.id }, ACCESS_SECRET, { expiresIn: "5m" })
+            let AccessToken = jwt.sign({ id: decodedNew.id }, ACCESS_SECRET, { expiresIn: "1h" })
             let RefreshToken = jwt.sign({ id: decodedNew.id }, REFRESH_SECRET, { expiresIn: "1y" })
             res.cookie("CampusRoot_Refresh", RefreshToken, {
                 sameSite: 'none',
