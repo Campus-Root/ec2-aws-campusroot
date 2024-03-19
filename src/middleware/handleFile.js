@@ -6,10 +6,9 @@ export const handleFile = (req, res, next) => {
 		fileFilter: (req, file, cb) => {
 			console.log(file);
 			// const validFiles = ["image/jpeg", "image/png", "application/pdf"];
-			const validFiles = ["image/jpeg","image/jpg", "image/png", "application/pdf", "text/plain", "video/mp4", "audio/mpeg"]
+			const validFiles = ["image/jpeg", "image/jpg", "image/png", "application/pdf", "text/plain", "video/mp4", "audio/mpeg"]
 			if (validFiles.includes(file.mimetype)) return cb(null, true);
-
-			return cb(new Error("File should be jpeg, png, mp4, mpeg, or pdf"));
+			return cb(new Error("File should be jpeg, png, mp4, mpeg, or pdf"), false);
 		},
 		limits: { fileSize: 6 * 1000 * 1000 },
 	}).single("uploaded_file");
