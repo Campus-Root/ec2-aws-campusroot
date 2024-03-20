@@ -5,14 +5,14 @@ import universityModel from "../../models/University.js";
 import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const allStudents = errorWrapper(async (req, res, next) => {
-    const students = await studentModel.find({}, "name email displayPicSrc recommendation counsellor activity")
+    const students = await studentModel.find({}, "firstName lastName email displayPicSrc recommendation counsellor activity")
     return res.status(200).json({ success: true, message: `all students`, data: students, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 
 export const singleStudent = errorWrapper(async (req, res, next) => {
     const { id } = req.params
     const student = await studentModel.findById(id)
-    await student.populate("counsellor processCoordinator", "name email")
+    await student.populate("counsellor processCoordinator", "firstName lastName email")
     await student.populate("activity.applied.application")
     await student.populate("recommendation")
     await universityModel.populate(student, [{ path: "activity.applied.application.university", select: "name code logoSrc" },]);
@@ -23,17 +23,17 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
 
 
 export const allCounsellors = errorWrapper(async (req, res, next) => {
-    const counsellors = await teamModel.find({ role: "counsellor" }, "name email students displayPicSrc").populate("students", "name email displayPicSrc recommendation counsellor activity")
+    const counsellors = await teamModel.find({ role: "counsellor" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName  email displayPicSrc recommendation counsellor activity")
     return res.status(200).json({ success: true, message: `all counsellors`, data: counsellors, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 
 export const allprocessCoordinators = errorWrapper(async (req, res, next) => {
-    const processCoordinators = await teamModel.find({ role: "processCoordinator" }, "name email students displayPicSrc").populate("students", "name email displayPicSrc recommendation counsellor activity")
+    const processCoordinators = await teamModel.find({ role: "processCoordinator" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName email displayPicSrc recommendation counsellor activity")
     return res.status(200).json({ success: true, message: `all processCoordinators`, data: processCoordinators, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 
 export const allDevelopers = errorWrapper(async (req, res, next) => {
-    const developers = await teamModel.find({ role: "developer" }, "name email displayPicSrc")
+    const developers = await teamModel.find({ role: "developer" }, "firstName lastName email displayPicSrc")
     return res.status(200).json({ success: true, message: `all developers`, data: developers, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 
@@ -49,9 +49,9 @@ export const allDevelopers = errorWrapper(async (req, res, next) => {
 // return next(generateAPIError(`${error.name}:${error.message}`, 500));
 // }
 // }
-export const search = errorWrapper(async (req, res, next) => {
-    const keyword = req.query.search ? { $and: [{ role: req.query.role }, { $or: [{ name: { $regex: req.query.search, $options: "i" } }, { email: { $regex: req.query.search, $options: "i" } }] }] } : {};
-    const searchResults = await teamModel.find(keyword, "name displayPicSrc email")
+export const search = errorWrapper(async (req, res, next) => {  
+    const keyword = req.query.search ? { $and: [{ role: req.query.role }, { $or: [{ firstName: { $regex: req.query.search, $options: "i" } }, { lastName: { $regex: req.query.search, $options: "i" } },{ email: { $regex: req.query.search, $options: "i" } }] }] } : {};
+    const searchResults = await teamModel.find(keyword, "firstName lastName displayPicSrc email")
     return res.status(200).json({ success: true, message: `uname`, data: searchResults, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 
