@@ -11,7 +11,7 @@ const router = express.Router();
 // 
 router.get("/", authMiddleware, isProcessCoordinator, profile);
 router.get("/students/:id", authMiddleware, isProcessCoordinator, singleStudentProfile);
-router.get("/:applicationId", authMiddleware, isProcessCoordinator, singleApplications);
+router.get("/applications/:applicationId", authMiddleware, isProcessCoordinator, singleApplications); //
 router.post("/switch-stage", authMiddleware, isProcessCoordinator, switchStage);
 router.post("/add-to-checklist", authMiddleware, isProcessCoordinator, handleFile, addToChecklist)
 router.post("/edit-in-checklist", authMiddleware, isProcessCoordinator, editItemInChecklist)
