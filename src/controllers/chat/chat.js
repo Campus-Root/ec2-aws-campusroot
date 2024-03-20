@@ -12,7 +12,7 @@ export const postChat = errorWrapper(async (req, res, next) => {
     if (!friend) return next(generateAPIError(`Invalid friendId`, 400));
     let isChat = await chatModel
         .findOne({ chatName: null, participants: { $all: [req.decoded.id, friendId] } })
-        .populate("participants", "name displayPicSrc email userType role")
+        .populate("participants", "firstName lastName displayPicSrc email userType role")
         .populate("unSeenMessages.message")
         .populate("lastMessage");
     if (isChat) {
@@ -24,7 +24,7 @@ export const postChat = errorWrapper(async (req, res, next) => {
     }
     else {
         const createdChat = await chatModel.create({ participants: [req.decoded.id, friendId] });
-        const FullChat = await createdChat.populate("participants", "name displayPicSrc email userType role");
+        const FullChat = await createdChat.populate("participants", "firstName lastName displayPicSrc email userType role");
         const user = await userModel.findById(req.decoded.id)
         user.logs.push({
             action: "new chat initiated",
@@ -37,14 +37,14 @@ export const postChat = errorWrapper(async (req, res, next) => {
 export const fetchChats = errorWrapper(async (req, res, next) => {
     let result = await chatModel
         .find({ "participants": { $eq: req.decoded.id } })
-        .populate("participants", "name displayPicSrc email userType role")
+        .populate("participants", "firstName lastName displayPicSrc email userType role")
         .populate("unSeenMessages.message")
         .populate("lastMessage")
         .sort({ updatedAt: -1 })
         .lean();
     result = await userModel.populate(result, [
-        { path: "unSeenMessages.message.sender", select: "name displayPicSrc email userType role" },
-        { path: "admins", select: "name displayPicSrc email userType role" },
+        { path: "unSeenMessages.message.sender", select: "firstName lastName displayPicSrc email userType role" },
+        { path: "admins", select: "firstName lastName displayPicSrc email userType role" },
     ])
     for (const { unSeenMessages, lastMessage } of result) {
         unSeenMessages.forEach(ele => { ele.message.content = decrypt(ele.message.iv, ele.message.content); });
@@ -60,8 +60,8 @@ export const newGroup = errorWrapper(async (req, res, next) => {
     if (settings) groupChat.settings = settings
     if (displayPicSrc) groupChat.displayPicSrc = displayPicSrc
     const FullChat = await userModel.populate(groupChat,
-        [{ path: "participants", select: "name displayPicSrc email userType role" },
-        { path: "admins", select: "name displayPicSrc email userType role" }])
+        [{ path: "participants", select: "firstName lastName displayPicSrc email userType role" },
+        { path: "admins", select: "firstName lastName displayPicSrc email userType role" }])
     await groupChat.save()
     const user = await userModel.findById(req.decoded.id)
     user.logs.push({
@@ -139,6 +139,6 @@ export const exitGroup = errorWrapper(async (req, res, next) => {
 })
 export const search = errorWrapper(async (req, res, next) => {
     if (!req.query.search) return next(generateAPIError(`blank search`, 400));
-    const searchResults = await userModel.find({ name: { $regex: req.query.search, $options: "i" } }, "name displayPicSrc email userType").find({ _id: { $ne: req.decoded.id } })
+    const searchResults = await userModel.find({ $or: [{ firstName: { $regex: req.query.search, $options: "i" } }, { lastName: { $regex: req.query.search, $options: "i" } }] }, "firstName lastName displayPicSrc email userType").find({ _id: { $ne: req.decoded.id } })
     return res.status(200).json({ success: true, message: `uname`, data: searchResults, AccessToken: req.AccessToken ? req.AccessToken : null })
 })

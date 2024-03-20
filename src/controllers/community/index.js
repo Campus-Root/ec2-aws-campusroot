@@ -21,14 +21,14 @@ export const joinInCommunity = errorWrapper(async (req, res, next) => {
     })
     await user.save()
     await userModel.findOneAndUpdate({ _id: req.decoded.id }, { $push: { communities: communityId } })
-    await userModel.populate(community, { path: "participants", select: "name displayPicSrc" })
+    await userModel.populate(community, { path: "participants", select: "firstName lastName displayPicSrc" })
     await universityModel.populate(community, { path: "university", select: "name logoSrc location type establishedYear" })
     return res.status(200).json({ success: true, message: `join success`, data: community, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const fetchJoinedCommunities = errorWrapper(async (req, res, next) => {
     const user = await userModel.findById(req.decoded.id)
     await communityModel.populate(user, { path: "communities", select: "participants university posts", },)
-    await userModel.populate(user, { path: "communities.participants", select: "name displayPicSrc", },)
+    await userModel.populate(user, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
     await universityModel.populate(user, { path: "communities.university", select: "name logoSrc location type establishedYear", },)
     return res.status(200).json({ success: true, message: `joined communities`, data: user.communities, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
@@ -67,11 +67,11 @@ export const fetchPosts = errorWrapper(async (req, res, next) => {
                 },
                 populate: {
                     path: "comments.user",
-                    select: "name displayPicSrc"
+                    select: "firstName lastName displayPicSrc"
                 },
                 populate: {
                     path: "creator",
-                    select: "name displayPicSrc"
+                    select: "firstName lastName displayPicSrc"
                 }
             },
             {
@@ -80,11 +80,11 @@ export const fetchPosts = errorWrapper(async (req, res, next) => {
                 populate: [
                     {
                         path: "comments.user",
-                        select: "name displayPicSrc"
+                        select: "firstName lastName displayPicSrc"
                     },
                     {
                         path: "creator",
-                        select: "name displayPicSrc"
+                        select: "firstName lastName displayPicSrc"
                     }
                 ]
             }
@@ -117,16 +117,16 @@ export const myActivity = errorWrapper(async (req, res, next) => {
                 select: "contextType content vote comments creator attachment createdAt",
                 populate: [
                     { path: "attachment", select: "name contentType createdAt" },
-                    { path: "comments.user", select: "name displayPicSrc" },
-                    { path: "creator", select: "name displayPicSrc" }
+                    { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                    { path: "creator", select: "firstName lastName displayPicSrc" }
                 ]
             },
             {
                 path: "responses",
                 select: "contextType content vote comments creator attachment createdAt",
                 populate: [
-                    { path: "comments.user", select: "name displayPicSrc" },
-                    { path: "creator", select: "name displayPicSrc" }
+                    { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                    { path: "creator", select: "firstName lastName displayPicSrc" }
                 ]
             }
         ]);
@@ -164,8 +164,8 @@ export const postsInCommunity = errorWrapper(async (req, res, next) => {
                 select: "contextType content vote comments creator attachment",
                 populate: [
                     { path: "attachment", select: "name contentType createdAt" },
-                    { path: "comments.user", select: "name displayPicSrc" },
-                    { path: "creator", select: "name displayPicSrc" }
+                    { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                    { path: "creator", select: "firstName lastName displayPicSrc" }
                 ]
             },
             {
@@ -173,8 +173,8 @@ export const postsInCommunity = errorWrapper(async (req, res, next) => {
                 select: "contextType content vote comments creator attachment",
                 populate: [
                     { path: "attachment", select: "name contentType createdAt" },
-                    { path: "comments.user", select: "name displayPicSrc" },
-                    { path: "creator", select: "name displayPicSrc" }
+                    { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                    { path: "creator", select: "firstName lastName displayPicSrc" }
                 ]
             }
         ],
@@ -185,7 +185,7 @@ export const postsInCommunity = errorWrapper(async (req, res, next) => {
     },
     {
         path: "participants",
-        select: "name displayPicSrc "
+        select: "firstName lastName displayPicSrc "
     }]
     );
     if (!community) return next(generateAPIError("Invalid CommunityId", 400));
@@ -202,8 +202,8 @@ export const singlePost = errorWrapper(async (req, res, next) => {
             select: "contextType content vote comments creator attachment",
             populate: [
                 { path: "attachment", select: "name contentType createdAt" },
-                { path: "comments.user", select: "name displayPicSrc" },
-                { path: "creator", select: "name displayPicSrc" }
+                { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
         })
         .populate({
@@ -219,8 +219,8 @@ export const singlePost = errorWrapper(async (req, res, next) => {
             select: "contextType content vote comments creator attachment",
             populate: [
                 { path: "attachment", select: "name contentType createdAt" },
-                { path: "comments.user", select: "name displayPicSrc" },
-                { path: "creator", select: "name displayPicSrc" }
+                { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
         })
     return res.status(200).json({ success: true, message: `single post`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null })
@@ -242,8 +242,8 @@ export const feed = errorWrapper(async (req, res, next) => {
             select: "contextType content vote comments creator attachment",
             populate: [
                 { path: "attachment", select: "name contentType createdAt" },
-                { path: "comments.user", select: "name displayPicSrc" },
-                { path: "creator", select: "name displayPicSrc" }
+                { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
         })
         .populate({
@@ -251,8 +251,8 @@ export const feed = errorWrapper(async (req, res, next) => {
             select: "contextType content vote comments creator attachment",
             populate: [
                 { path: "attachment", select: "name contentType createdAt" },
-                { path: "comments.user", select: "name displayPicSrc" },
-                { path: "creator", select: "name displayPicSrc" }
+                { path: "comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
         })
         .skip((page - 1) * pageSize)
@@ -306,10 +306,10 @@ export const query = errorWrapper(async (req, res, next) => {
                 { path: "responses.attachment", select: "name contentType createdAt", },
             ])
             await userModel.populate(newPost, [
-                { path: "query.comments.user", select: "name displayPicSrc" },
-                { path: "responses.comments.user", select: "name displayPicSrc" },
-                { path: "query.creator", select: "name displayPicSrc" },
-                { path: "responses.creator", select: "name displayPicSrc" },
+                { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "responses.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "query.creator", select: "firstName lastName displayPicSrc" },
+                { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
             return res.status(200).json({ success: true, message: `${action} successful`, data: newPost, AccessToken: req.AccessToken ? req.AccessToken : null })
         case "update":
@@ -347,10 +347,10 @@ export const query = errorWrapper(async (req, res, next) => {
                 { path: "responses.attachment", select: "name contentType createdAt", },
             ])
             await userModel.populate(post, [
-                { path: "query.comments.user", select: "name displayPicSrc" },
-                { path: "responses.comments.user", select: "name displayPicSrc" },
-                { path: "query.creator", select: "name displayPicSrc" },
-                { path: "responses.creator", select: "name displayPicSrc" },
+                { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "responses.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "query.creator", select: "firstName lastName displayPicSrc" },
+                { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
             return res.status(200).json({ success: true, message: `${action} successful`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null })
         case "delete":
@@ -421,10 +421,10 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "responses.attachment", select: "name contentType createdAt", },
             ])
             await userModel.populate(post, [
-                { path: "query.comments.user", select: "name displayPicSrc" },
-                { path: "responses.comments.user", select: "name displayPicSrc" },
-                { path: "query.creator", select: "name displayPicSrc" },
-                { path: "responses.creator", select: "name displayPicSrc" },
+                { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "responses.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "query.creator", select: "firstName lastName displayPicSrc" },
+                { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
             return res.status(200).json({ success: true, message: `${action} successful`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null })
         case "update":
@@ -462,10 +462,10 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "responses.attachment", select: "name contentType createdAt", },
             ])
             await userModel.populate(Post, [
-                { path: "query.comments.user", select: "name displayPicSrc" },
-                { path: "responses.comments.user", select: "name displayPicSrc" },
-                { path: "query.creator", select: "name displayPicSrc" },
-                { path: "responses.creator", select: "name displayPicSrc" },
+                { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "responses.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "query.creator", select: "firstName lastName displayPicSrc" },
+                { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
             return res.status(200).json({ success: true, message: `${action} successful`, data: Post, AccessToken: req.AccessToken ? req.AccessToken : null })
         case "delete":
@@ -484,10 +484,10 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "responses.attachment", select: "name contentType createdAt", },
             ])
             await userModel.populate(postIs, [
-                { path: "query.comments.user", select: "name displayPicSrc" },
-                { path: "responses.comments.user", select: "name displayPicSrc" },
-                { path: "query.creator", select: "name displayPicSrc" },
-                { path: "responses.creator", select: "name displayPicSrc" },
+                { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "responses.comments.user", select: "firstName lastName displayPicSrc" },
+                { path: "query.creator", select: "firstName lastName displayPicSrc" },
+                { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
             user.logs.push({
                 action: "response deleted",
@@ -536,12 +536,12 @@ export const comment = errorWrapper(async (req, res, next) => {
     ])
     await Document.populate(context, { path: "attachment", select: "name contentType createdAt", },)
     await userModel.populate(context, [
-        { path: "creator", select: "name displayPicSrc" },
-        { path: "comments.user", select: "name displayPicSrc" },
-        { path: "post.query.comments.user", select: "name displayPicSrc" },
-        { path: "post.responses.comments.user", select: "name displayPicSrc" },
-        { path: "post.query.creator", select: "name displayPicSrc" },
-        { path: "post.responses.creator", select: "name displayPicSrc" },
+        { path: "creator", select: "firstName lastName displayPicSrc" },
+        { path: "comments.user", select: "firstName lastName displayPicSrc" },
+        { path: "post.query.comments.user", select: "firstName lastName displayPicSrc" },
+        { path: "post.responses.comments.user", select: "firstName lastName displayPicSrc" },
+        { path: "post.query.creator", select: "firstName lastName displayPicSrc" },
+        { path: "post.responses.creator", select: "firstName lastName displayPicSrc" },
     ])
     return res.status(200).json({ success: true, message: `${action} comment successful`, data: context, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
@@ -579,12 +579,12 @@ export const vote = errorWrapper(async (req, res, next) => {
     ])
     await Document.populate(context, { path: "attachment", select: "name contentType createdAt", },)
     await userModel.populate(context, [
-        { path: "creator", select: "name displayPicSrc" },
-        { path: "comments.user", select: "name displayPicSrc" },
-        { path: "post.query.comments.user", select: "name displayPicSrc" },
-        { path: "post.responses.comments.user", select: "name displayPicSrc" },
-        { path: "post.query.creator", select: "name displayPicSrc" },
-        { path: "post.responses.creator", select: "name displayPicSrc" },
+        { path: "creator", select: "firstName lastName displayPicSrc" },
+        { path: "comments.user", select: "firstName lastName displayPicSrc" },
+        { path: "post.query.comments.user", select: "firstName lastName displayPicSrc" },
+        { path: "post.responses.comments.user", select: "firstName lastName displayPicSrc" },
+        { path: "post.query.creator", select: "firstName lastName displayPicSrc" },
+        { path: "post.responses.creator", select: "firstName lastName displayPicSrc" },
     ])
     return res.status(200).json({ success: true, message: `${action} successful`, data: context, AccessToken: req.AccessToken ? req.AccessToken : null })
 })

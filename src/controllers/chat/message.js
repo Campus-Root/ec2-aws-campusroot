@@ -31,13 +31,13 @@ export const postMessages = errorWrapper(async (req, res, next) => {
         await messageModel.populate(message, { path: "repliedTo", select: "-chat" })
         message.repliedTo.decoded = decrypt(message.repliedTo.iv, message.repliedTo.content);
     }
-    await userModel.populate(message, { path: "sender", select: "name displayPicSrc email userType role" })
+    await userModel.populate(message, { path: "sender", select: "firstName lastName displayPicSrc email userType role" })
     await Document.populate(message, { path: "document", select: "name contentType createdAt" })
     chat.lastMessage = message._id
     chat.unSeenMessages.push({ message: message._id, seen: [req.decoded.id] })
     await chat.save()
-    await chat.populate("participants", "name displayPicSrc email userType role")
-    await chat.populate({ path: "unSeenMessages.message", populate: { path: "sender", select: "name displayPicSrc email userType role" } })
+    await chat.populate("participants", "firstName lastName displayPicSrc email userType role")
+    await chat.populate({ path: "unSeenMessages.message", populate: { path: "sender", select: "firstName lastName displayPicSrc email userType role" } })
     await chat.populate("lastMessage")
     chat.unSeenMessages.forEach(ele => { ele.message.content = decrypt(ele.message.iv, ele.message.content); });
     if (chat.lastMessage) chat.lastMessage.content = decrypt(chat.lastMessage.iv, chat.lastMessage.content)
@@ -52,8 +52,8 @@ export const fetchMessages = errorWrapper(async (req, res, next) => {
     const totalPages = Math.ceil(messagesCount / pageSize);
     const messages = await messageModel
         .find({ chat: chatId })
-        .populate("sender", "name displayPicSrc email userType role")
-        .populate("document", "name contentType createdAt")
+        .populate("sender", "firstName lastName displayPicSrc email userType role")
+        .populate("document", "firstName lastName contentType createdAt")
         .populate("repliedTo", "-chat")
         .sort({ updatedAt: -1 })
         .skip((page - 1) * pageSize)
@@ -84,7 +84,7 @@ export const seeMessages = errorWrapper(async (req, res, next) => {
     })
     chat.unSeenMessages = newUnSeenMessages
     await chat.save()
-    await userModel.populate(chat, [{ path: "participants", select: "name displayPicSrc" }, { path: "admins", select: "name displayPicSrc" },])
+    await userModel.populate(chat, [{ path: "participants", select: "firstName lastName displayPicSrc" }, { path: "admins", select: "firstName lastName displayPicSrc" },])
     await messageModel.populate(chat, [{ path: "unSeenMessages.message", }, { path: "lastMessage" }])
     if (chat.unSeenMessages) chat.unSeenMessages.forEach(ele => ele.message.content = decrypt(ele.message.iv, ele.message.content));
     if (chat.lastMessage) chat.lastMessage.content = decrypt(chat.lastMessage.iv, chat.lastMessage.content);
