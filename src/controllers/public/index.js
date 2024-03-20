@@ -136,7 +136,7 @@ export const oneUniversity = errorWrapper(async (req, res, next) => {
     let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 }).populate("courses", "name studyLevel tuitionFee duration courseType studyMode currency")
     if (!university) return res.status(400).json({ success: true, message: `university ID invalid`, data: null })
     university = await university.populate("userReviews", "rating user comment")
-    university = await university.populate("userReviews.user", "name displayPicSrc")
+    university = await university.populate("userReviews.user", "firstName lastName displayPicSrc")
     if (req.query.currency && university.currency.code !== req.query.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
         if (!rates[university.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
@@ -197,17 +197,17 @@ export const oneCourse = errorWrapper(async (req, res, next) => {
 export const PublicProfile = errorWrapper(async (req, res, next) => {
     const { id } = req.params
     if (!id) return res.status(400).json({ success: false, message: "no id provided", data: null })
-    const profile = await studentModel.findById(id, "_id displayPicSrc name activity")
+    const profile = await studentModel.findById(id, "firstName lastName displayPicSrc activity")
     if (!profile) return res.status(400).json({ success: false, message: "invalid id", data: null })
     return res.status(200).json({ success: true, message: "public profile", data: profile, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const CommunityProfiles = errorWrapper(async (req, res, next) => {
     const { limit } = req.query
-    const profiles = await studentModel.aggregate([{ $sample: { size: +limit || 10 } }, { $project: { _id: 1, displayPicSrc: 1, name: 1, activity: 1 } }]);
+    const profiles = await studentModel.aggregate([{ $sample: { size: +limit || 10 } }, { $project: { _id: 1, displayPicSrc: 1, firstName: 1, lastName: 1, activity: 1 } }]);
     return res.status(200).json({ success: true, message: "public profiles", data: profiles, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const counsellors = errorWrapper(async (req, res, next) => {
-    const counsellors = await teamModel.find({ role: "counsellor" }, { name: 1, numberOfStudentsAssisted: 1, displayPicSrc: 1 })
+    const counsellors = await teamModel.find({ role: "counsellor" }, { firstName: 1, lastName: 1, numberOfStudentsAssisted: 1, displayPicSrc: 1 })
     return res.status(200).json({ success: true, message: `all counsellors`, data: counsellors })
 })
 export const uniNameRegex = errorWrapper(async (req, res, next) => {
