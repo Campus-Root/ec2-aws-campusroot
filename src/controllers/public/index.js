@@ -225,3 +225,9 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     const uniSearchResults = await universityModel.find(uniKeyword, "name courses community logoSrc").limit(5).populate("courses", "name")
     return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
 })
+
+
+export const requestCallBack = errorWrapper(async (req, res, next) => {
+    const { name, email, phone, studentID } = req.body
+    
+})
