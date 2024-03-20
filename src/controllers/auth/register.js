@@ -17,11 +17,11 @@ const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 
 export const StudentRegister = errorWrapper(async (req, res, next) => {
-    const { name, email, password, displayPicSrc } = req.body;
-    if (!password || !email || !name) return next(generateAPIError(`Incomplete details`, 400));
+    const { firstName, lastName, email, password, displayPicSrc } = req.body;
+    if (!password || !email || !firstName || !lastName) return next(generateAPIError(`Incomplete details`, 400));
     const alreadyExists = await studentModel.findOne({ email: email });
     if (alreadyExists) return next(generateAPIError(`Email already registered`, 400));
-    const student = new studentModel({ name, email, password: await bcrypt.hash(password, 12), displayPicSrc });
+    const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc });
     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
     student.counsellor = Counsellors[0]._id;
     const Counsellor = await teamModel.findById(Counsellors[0]._id);
@@ -33,7 +33,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
     const source = fs.readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source)
-    const replacement = { userName: name, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` }
+    const replacement = { userName: `${firstName} ${lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` }
     const htmlToSend = template(replacement)
     await sendMail({ to: email, subject: subject, html: htmlToSend });
     student.logs.push({
@@ -65,32 +65,29 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
     const source = fs.readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source)
-    const replacement = { userName: user.name }
+    const replacement = { userName: `${user.firstName} ${user.lastName}` }
     const htmlToSend = template(replacement)
     await sendMail({ to: email, subject: subject, html: htmlToSend });
     return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=true`);
 });
 export const TeamRegister = errorWrapper(async (req, res, next) => {
-    const { email, name, password, role } = req.body;
-    if (!email || !name || !password || !role) return next(generateAPIError(`Incomplete details`, 400));
+    const { email, firstName, lastName, password, role } = req.body;
+    if (!email || !firstName || !lastName || !password || !role) return next(generateAPIError(`Incomplete details`, 400));
     const alreadyExists = await teamModel.findOne({ email: email });
     if (alreadyExists) return next(generateAPIError(`Email Already Registered`, 400));
-    const user = await teamModel.create({ email, name, password: await bcrypt.hash(password, 12), role });
-    let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" });
-    let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1y" });
+    const user = await teamModel.create({ email, firstName, lastName, password: await bcrypt.hash(password, 12), role });
     user.logs.push({
         action: `${role} Registration done`,
         details: `traditional registration done`
     })
     await user.save();
-    res.cookie("CampusRoot_Refresh", RefreshToken,).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
-    return res.status(200).json({ success: true, message: `${role} Registration successful`, data: { email, name, role }, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return res.status(200).json({ success: true, message: `${role} Registration successful`, data: { email, firstName, lastName, role }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 
 export const googleLogin = errorWrapper(async (req, res, next) => {
     if (!req.body.credential) return next("credential undefined", 400)
     try {
-        const { name, email, picture, email_verified, sub } = jwtDecode(req.body.credential)
+        const { given_name, family_name, email, picture, email_verified, sub } = jwtDecode(req.body.credential)
         const teamMember = await teamModel.findOne({ email: email })
         if (teamMember) return res.redirect(`${process.env.STUDENT_URL}/team`)
         let student = await studentModel.findOne({ email: email });
@@ -103,7 +100,8 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 res.cookie("CampusRoot_Refresh", RefreshToken, { sameSite: 'none', secure: true }).cookie("CampusRoot_Email", email, { sameSite: 'none', secure: true });
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             } else {
-                // student.name = name;
+                student.firstName = given_name || null;
+                student.lastName = family_name || null;
                 student.displayPicSrc = picture;
                 student.google = { id: sub };
                 if (email_verified) student.emailVerified = email_verified;
@@ -115,7 +113,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             }
         } else {
-            student = await studentModel.create({ name: name, email: email, displayPicSrc: picture, google: { id: sub }, emailVerified: email_verified });
+            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, google: { id: sub }, emailVerified: email_verified });
             if (!email_verified) {
                 student.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
                 let subject = "Confirm Your Email to Activate Your CampusRoot Account";
@@ -123,7 +121,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
                 const source = fs.readFileSync(filePath, "utf-8").toString();
                 const template = Handlebars.compile(source);
-                const replacement = { userName: name, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` };
+                const replacement = { userName: `${given_name} ${family_name}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` };
                 const htmlToSend = template(replacement);
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
