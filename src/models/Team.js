@@ -13,11 +13,8 @@ const Team = mongoose.Schema({
         token_type: { type: String },
         expiry_date: { type: String },
     },// for counsellors
-
-
-
-
-
+    language: [{ type: String }],
+    leads: [{ type: mongoose.Types.ObjectId, ref: "leads" }],// for remoteStudentAdvisor
     applications: [{ type: mongoose.Types.ObjectId, ref: "application" }],// for Process Coordinators
 
 

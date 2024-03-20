@@ -22,6 +22,63 @@ export const applicationStateEnum = {
     COMPLETED: "Completed",
     CANCELLED: "Cancelled",
 }
+export const leadRatingEnum = {
+    "high priority": "high priority",
+    "medium priority": "medium priority",
+    "low priority": "low priority"
+};
+export const leadSourceEnum = {
+    None: "None",
+    Advertisement: "Advertisement",
+    "Bulk Leads": "Bulk Leads",
+    "Channel Partner": "Channel Partner",
+    "Cold Call": "Cold Call",
+    "College Data": "College Data",
+    "College Visit": "College Visit",
+    "Digital Marketing": "Digital Marketing",
+    "Direct Walkin": "Direct Walkin",
+    "Edu Fair": "Edu Fair",
+    Facebook: "Facebook",
+    "Facebook Ads": "Facebook Ads",
+    "Fair Promotion - College": "Fair Promotion - College",
+    Instagram: "Instagram",
+    "Instagram & FB": "Instagram & FB",
+    JustDial: "JustDial",
+    "Library/work-drive": "Library/work-drive",
+    "Multi-Channel Campus Outreach": "Multi-Channel Campus Outreach",
+    "Other Social Media": "Other Social Media",
+    Others: "Others",
+    "OW Number": "OW Number",
+    "OW Partner College": "OW Partner College",
+    "OW Summit": "OW Summit",
+    "Partner Companies": "Partner Companies",
+    Seminars: "Seminars",
+    "Spot Evaluation Drive": "Spot Evaluation Drive",
+    "Student Referral": "Student Referral",
+    "Team Member Referral": "Team Member Referral",
+    "Trade Show": "Trade Show",
+    "Twitter (X)": "Twitter (X)",
+    "UniDel Visit": "UniDel Visit",
+    "Virtual Edu Fair": "Virtual Edu Fair",
+    Webinar: "Webinar",
+    "WebSite Visit": "WebSite Visit",
+    Whatsapp: "Whatsapp",
+    YouTube: "YouTube"
+};
+
+export const leadStatusEnum = {
+    "New Lead": "New Lead",
+    "Follow Up 1": "Follow Up 1",
+    "Follow Up 2": "Follow Up 2",
+    "Follow Up 3": "Follow Up 3",
+    "Follow Up 4": "Follow Up 4",
+    "Follow Up 5": "Follow Up 5",
+    "Continuously Not Responding": "Continuously Not Responding",
+    "Not Interested": "Not Interested",
+    "Junk Lead": "Junk Lead",
+    "Lost Lead": "Lost Lead",
+    "Invalid Lead": "Invalid Lead"
+};
 export const applicationStagesEnum = {
     WAITING_FOR_COUNSELLOR_Approval: "Waiting For Counsellor's Approval",
     COUNSELLOR_APPROVED: "Counsellor Approved",
@@ -62,7 +119,8 @@ export const TeamRoleEnum = {
     TEAM: "processCoordinator",
     DEVELOPER: "developer",
     ADMIN: "admin",
-    COUNSELLOR: "counsellor"
+    COUNSELLOR: "counsellor",
+    REMOTE_STUDENT_ADVISOR: "remoteStudentAdvisor"
 };
 export const UniversityTypeEnum = {
     PUBLIC: "public",
