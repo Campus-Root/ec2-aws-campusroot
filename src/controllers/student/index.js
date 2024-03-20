@@ -104,7 +104,7 @@ export const editPhone = errorWrapper(async (req, res, next) => {
 })
 
 export const editProfile = errorWrapper(async (req, res, next) => {
-  const { personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+  const { LeadSource,personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
   if (personalDetails) {
     req.user.personalDetails = personalDetails;
     req.user.logs.push({
