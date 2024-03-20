@@ -27,16 +27,10 @@ import { costConversion } from "../../utils/currencyConversion.js";
 import { currencySymbols } from "../../utils/enum.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 
-
-export const userNameAvailability = errorWrapper(async (req, res, next) => {
-  const { userName } = req.params;
-  const result = await userModel.findOne({ userName: userName });
-  return result ? next(generateAPIError(`user name already taken`, 400)) : res.status(200).json({ success: true, message: `user name available`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
-})
 export const profile = errorWrapper(async (req, res, next) => {
   await Promise.all([
-    await req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
-    await req.user.populate("processCoordinator", "linkedIn name email displayPicSrc"),
+    await req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink firstName lastName email displayPicSrc"),
+    await req.user.populate("processCoordinator", "linkedIn firstName lastName email displayPicSrc"),
     await Document.populate(req.user,
       [{ path: "documents.personal.resume", select: "name contentType createdAt", },
       { path: "documents.personal.passportBD", select: "name contentType createdAt", },
@@ -61,14 +55,38 @@ export const profile = errorWrapper(async (req, res, next) => {
   const profile = { ...req.user._doc, activity: {}, logs: [] }
   return res.status(200).json({ success: true, message: `complete profile`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-
+export const editEmail = errorWrapper(async (req, res, next) => {
+  const { email } = req.body
+  if (req.user.emailVerified) return next(generateAPIError(`email already verified, contact Campus Root team for support`, 400));
+  const existingEmail = await studentModel.find({ email: email }, "email")
+  if (existingEmail.length > 0) return next(generateAPIError(`email already exists, Enter a new email`, 400));
+  req.user.email = email;
+  req.user.emailVerified = false;
+  req.user.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
+  let subject = "Email verification"
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
+  const source = fs.readFileSync(filePath, "utf-8").toString();
+  const template = Handlebars.compile(source)
+  const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${req.user.emailVerificationString}` }
+  const htmlToSend = template(replacement)
+  await sendMail({ to: req.user.email, subject: subject, html: htmlToSend });
+  req.user.logs.push({
+    action: "email updated updated & mail sent for verification",
+    details: "email updated in profile"
+  })
+  await req.user.save()
+  return res.status(200).json({ success: true, message: `mail sent for verification`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+})
 export const editPhone = errorWrapper(async (req, res, next) => {
   const { phone } = req.body
   if (!phone.countryCode || !phone.number) return next(generateAPIError(`Enter a valid number`, 400));
-  const existingPhone = await studentModel.find({  $and: [
-    { "phone.countryCode": phone.countryCode },
-    { "phone.number": phone.number }
-  ]}, "phone")
+  const existingPhone = await studentModel.find({
+    $and: [
+      { "phone.countryCode": phone.countryCode },
+      { "phone.number": phone.number }
+    ]
+  }, "phone")
   if (existingPhone.length > 0) return next(generateAPIError(`phone number already exists, Enter a new number`, 400));
   req.user.phone = phone;
   req.user.phoneVerified = false;
@@ -86,7 +104,48 @@ export const editPhone = errorWrapper(async (req, res, next) => {
 })
 
 export const editProfile = errorWrapper(async (req, res, next) => {
-  const { displayPicSrc, school, plus2, underGraduation, postGraduation, DOB, GuardianName, Address, LeadSource, GuardianOccupation, Gender, GuardianContactNumber, userName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+  const { personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+  if (personalDetails) {
+    req.user.personalDetails = personalDetails;
+    req.user.logs.push({
+      action: `profile info updated`,
+      details: `personalDetails updated`
+    })
+  }
+  if (isPlanningToTakeAcademicTest) {
+    req.user.isPlanningToTakeAcademicTest = isPlanningToTakeAcademicTest;
+    req.user.logs.push({
+      action: `profile info updated`,
+      details: `isPlanningToTakeAcademicTest updated`
+    })
+  }
+  if (isPlanningToTakeLanguageTest) {
+    req.user.isPlanningToTakeLanguageTest = isPlanningToTakeLanguageTest;
+    req.user.logs.push({
+      action: `profile info updated`,
+      details: `isPlanningToTakeLanguageTest updated`
+    })
+  } if (familyDetails) {
+    req.user.familyDetails = familyDetails;
+    req.user.logs.push({
+      action: `profile info updated`,
+      details: `familyDetails updated`
+    })
+  }
+  if (firstName) {
+    req.user.firstName = firstName;
+    req.user.logs.push({
+      action: `profile info updated`,
+      details: `firstName updated`
+    })
+  }
+  if (lastName) {
+    req.user.lastName = lastName;
+    req.user.logs.push({
+      action: `profile info updated`,
+      details: `lastName updated`
+    })
+  }
   if (displayPicSrc) {
     req.user.displayPicSrc = displayPicSrc;
     req.user.logs.push({
@@ -94,61 +153,11 @@ export const editProfile = errorWrapper(async (req, res, next) => {
       details: `displayPicSrc updated`
     })
   }
-  if (DOB) {
-    req.user.DOB = DOB;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `DOB updated`
-    })
-  }
-  if (GuardianName) {
-    req.user.GuardianName = GuardianName;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `GuardianName updated`
-    })
-  }
-  if (GuardianOccupation) {
-    req.user.GuardianOccupation = GuardianOccupation;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `GuardianOccupation updated`
-    })
-  }
-  if (Gender) {
-    req.user.Gender = Gender;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `Gender updated`
-    })
-  }
-  if (GuardianContactNumber) {
-    req.user.GuardianContactNumber = GuardianContactNumber;
-    req.user.GuardianContactNumberVerified = false;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `GuardianContactNumber updated`
-    })
-  }
-  if (Address) {
-    req.user.Address = Address;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `Address updated`
-    })
-  }
   if (LeadSource) {
     req.user.LeadSource = LeadSource;
     req.user.logs.push({
       action: `profile info updated`,
       details: `LeadSource updated`
-    })
-  }
-  if (userName) {
-    req.user.userName = userName;
-    req.user.logs.push({
-      action: `profile info updated`,
-      details: `userName updated`
     })
   }
   if (tests) {
@@ -235,7 +244,7 @@ export const postReview = errorWrapper(async (req, res, next) => {
     action: `review on university posted`,
     details: `reviewId:${post._id}`
   })
-  await userModel.populate(post, { path: "user", select: "name displayPicSrc" })
+  await userModel.populate(post, { path: "user", select: "firstName lastName displayPicSrc" })
   await req.user.save()
   return res.status(200).json({ success: true, message: `review posted successfully`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
@@ -254,7 +263,7 @@ export const editReview = errorWrapper(async (req, res, next) => {
       action: `review on university updated`,
       details: `reviewId:${id}`
     })
-    await userModel.populate(post, { path: "user", select: "name displayPicSrc" })
+    await userModel.populate(post, { path: "user", select: "firstName lastName displayPicSrc" })
     await req.user.save()
     return res.status(200).json({ success: true, message: `post deleted`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
   }
@@ -665,7 +674,7 @@ export const apply = errorWrapper(async (req, res, next) => {
   })
   await req.user.save()
   await applicationModel.populate(req.user, { path: "activity.applications.processing" })
-  await userModel.populate(req.user, [{ path: "activity.applications.processing.user", select: "name email displayPicSrc" }, { path: "activity.applications.processing.processCoordinator", select: "name email displayPicSrc" }])
+  await userModel.populate(req.user, [{ path: "activity.applications.processing.user", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.processing.processCoordinator", select: "firstName lastName email displayPicSrc" }])
   await universityModel.populate(req.user, { path: "activity.applications.processing.university", select: "name logoSrc location type establishedYear " })
   await courseModel.populate(req.user, { path: "activity.applications.processing.course", select: "name tuitionFee currency studyMode discipline subDiscipline schoolName studyLevel duration", })
   if (req.user.preference.currency) {
@@ -688,8 +697,8 @@ export const requestCancellation = errorWrapper(async (req, res, next) => {
   if (!updatedApplication) return next(generateAPIError(`Invalid application ID`, 400));
   await Document.populate(updatedApplication, { path: "docChecklist.doc", select: "name contentType createdAt", })
   await userModel.populate(updatedApplication, [
-    { path: "user", select: "name email displayPicSrc" },
-    { path: "counsellor", select: "name email displayPicSrc" }
+    { path: "user", select: "firstName lastName email displayPicSrc" },
+    { path: "counsellor", select: "firstName lastName email displayPicSrc" }
   ])
   req.user.logs.push({
     action: `cancellation requested`,
@@ -777,7 +786,7 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
 })
 // ......................................................
 export const allStudents = errorWrapper(async (req, res, next) => {
-  const students = await studentModel.find({}, "name displayPicSrc activity.admitReceived").populate("activity.admitReceived", "university course");
+  const students = await studentModel.find({}, "firstName lastName displayPicSrc activity.admitReceived").populate("activity.admitReceived", "university course");
   await Promise.all([
     await universityModel.populate(students, { path: "activity.admitReceived.university", select: "name logoSrc location type ", }),
     await courseModel.populate(students, { path: "activity.admitReceived.course", select: "name schoolDetails", })
@@ -786,7 +795,7 @@ export const allStudents = errorWrapper(async (req, res, next) => {
 })
 export const singleStudent = errorWrapper(async (req, res, next) => {
   const { studentId } = req.params
-  const student = await studentModel.findById(studentId, "name displayPicSrc tests workExperience researchPapers education activity.applications skills communities")
+  const student = await studentModel.findById(studentId, "firstName lastName displayPicSrc tests workExperience researchPapers education activity.applications skills communities")
   await communityModel.populate(student, { path: "communities", select: "participants university posts", })
   await applicationModel.populate(student, [
     { path: "activity.applications.processing", select: "university course intake status stage" },
@@ -817,7 +826,7 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
   const source = fs.readFileSync(filePath, "utf-8").toString();
   const template = Handlebars.compile(source)
   req.user.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
-  const replacement = { userName: req.user.name, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${req.user.email}/${req.user.emailVerificationString}` }
+  const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${req.user.email}/${req.user.emailVerificationString}` }
   const htmlToSend = template(replacement)
   await sendMail({ to: req.user.email, subject: subject, html: htmlToSend });
   req.user.logs.push({
@@ -828,26 +837,12 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
   return res.status(200).json({ success: true, message: `email send for verification`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const sendUserOTP = errorWrapper(async (req, res, next) => {
-  const { type } = req.body
   const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
-  switch (type) {
-    case "phone":
-      if (req.user.phone.number && req.user.phoneVerified) return next(generateAPIError("already verified", 400))
-      req.user.phoneOtp = otp
-      req.user.phoneVerificationExpiry = expiry
-      var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
-      if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
-      break;
-    case "GuardianContactNumber":
-      if (req.user.GuardianContactNumber.number && req.user.GuardianContactNumberVerified) return next(generateAPIError("already verified", 400))
-      req.user.GuardianContactNumberOtp = otp
-      req.user.GuardianContactNumberVerificationExpiry = expiry
-      var smsResponse = (req.user.GuardianContactNumber.countryCode === "+91") ? await sendOTP({ to: req.user.GuardianContactNumber.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.GuardianContactNumber.countryCode + req.user.GuardianContactNumber.number, otp: otp, region: "International" });
-      if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
-      break;
-    default: next(generateAPIError("invalid type", 400))
-      break;
-  }
+  if (req.user.phone.number && req.user.phoneVerified) return next(generateAPIError("already verified", 400))
+  req.user.phoneOtp = otp
+  req.user.phoneVerificationExpiry = expiry
+  var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
+  if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
   req.user.logs.push({
     action: `otp sent for verification`,
     details: ``
@@ -856,22 +851,11 @@ export const sendUserOTP = errorWrapper(async (req, res, next) => {
   return res.status(200).json({ success: true, message: `otp sent for verification, verify before ${expiry}`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const verifyUserOTP = errorWrapper(async (req, res, next) => {
-  const { otp, type } = req.body
+  const { otp } = req.body
   const user = await studentModel.findById(req.user._id, "GuardianContactNumberOtp phoneOtp logs phoneVerificationExpiry GuardianContactNumberVerificationExpiry")
-  switch (type) {
-    case "phone":
-      if (user.phoneOtp !== otp) return next(generateAPIError("invalid otp", 400))
-      if (new Date() > new Date(user.phoneVerificationExpiry)) return next(generateAPIError("otp expired, generate again", 400))
-      user.phoneVerified = true
-      break;
-    case "GuardianContactNumber":
-      if (user.GuardianContactNumberOtp != otp) return next(generateAPIError("invalid otp", 400))
-      if (new Date() > new Date(user.GuardianContactNumberVerificationExpiry)) return next(generateAPIError("otp expired, generate again", 400))
-      user.GuardianContactNumberVerified = true
-      break;
-    default: next(generateAPIError("invalid type", 400))
-      break;
-  }
+  if (user.phoneOtp !== otp) return next(generateAPIError("invalid otp", 400))
+  if (new Date() > new Date(user.phoneVerificationExpiry)) return next(generateAPIError("otp expired, generate again", 400))
+  user.phoneVerified = true
   user.logs.push({
     action: `otp verification successful`,
     details: ``
@@ -880,8 +864,19 @@ export const verifyUserOTP = errorWrapper(async (req, res, next) => {
   return res.status(200).json({ success: true, message: `${type} verification successful`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const getEvents = errorWrapper(async (req, res, next) => {
+  // add meeting for processCordinator
   await req.user.populate("counsellor", "googleTokens")
-  oauth2Client.setCredentials(req.user.counsellor.googleTokens);
+  await req.user.populate("processCoordinator", "googleTokens")
+  const { team } = req.params
+  switch (team) {
+    case "counsellor":
+      oauth2Client.setCredentials(req.user.counsellor.googleTokens);
+      break;
+    case "processCoordinator":
+      oauth2Client.setCredentials(req.user.processCoordinator.googleTokens);
+      break;
+    default: return next(generateAPIError(`invalid team parameter`, 400));
+  }
   const { data } = await google.calendar({ version: 'v3', auth: oauth2Client }).events.list({
     calendarId: 'primary',
     timeMin: new Date().toISOString(),
@@ -936,15 +931,25 @@ export const getEvents = errorWrapper(async (req, res, next) => {
 })
 export const bookSlot = errorWrapper(async (req, res, next) => {
   const { startTime, endTime, attendees, timeZone, notes } = req.body
+  const { team } = req.params
   if (!req.user.emailVerified) return next(generateAPIError(`do verify your email to book a slot`, 400));
   if (!req.user.phoneVerified) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
   if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
   if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
   if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
   await req.user.populate("counsellor", "googleTokens")
-  oauth2Client.setCredentials(req.user.counsellor.googleTokens);
+  await req.user.populate("processCoordinator", "googleTokens")
+  switch (team) {
+    case "counsellor":
+      oauth2Client.setCredentials(req.user.counsellor.googleTokens);
+      break;
+    case "processCoordinator":
+      oauth2Client.setCredentials(req.user.processCoordinator.googleTokens);
+      break;
+    default: return next(generateAPIError(`invalid team parameter`, 400));
+  }
   const event = {
-    summary: `Counselling Session - ${req.user.name}`,
+    summary: `Counselling Session - ${req.user.firstName} ${req.user.lastName}`,
     description: notes,
     start: { dateTime: new Date(startTime), timeZone: timeZone, },
     end: { dateTime: new Date(endTime), timeZone: timeZone, },
