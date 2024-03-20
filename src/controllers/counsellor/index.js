@@ -58,10 +58,11 @@ export const calendarEvents = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const profile = errorWrapper(async (req, res, next) => {
-    await userModel.populate(req.user, [{ path: "students.profile", select: "name email displayPicSrc" }])
+    await userModel.populate(req.user, [{ path: "students.profile", select: "firstName lastName email displayPicSrc" }])
     const profile = {
         _id: req.user._id,
-        name: req.user.name,
+        firstName:req.user.firstName,
+        lastName:req.user.lastName,
         displayPicSrc: req.user.displayPicSrc,
         email: req.user.email,
         linkedIn: req.user.linkedIn,
@@ -72,8 +73,8 @@ export const profile = errorWrapper(async (req, res, next) => {
 })
 export const applications = errorWrapper(async (req, res, next) => {
     const applications = await applicationModel.find({ counsellor: req.user._id }, "university course intake user processCoordinator cancellationRequest status approval log")
-        .populate({ path: "user", select: "name email displayPicSrc" })
-        .populate({ path: "processCoordinator", select: "name email displayPicSrc" })
+        .populate({ path: "user", select: "firstName lastName email displayPicSrc" })
+        .populate({ path: "processCoordinator", select: "firstName lastName email displayPicSrc" })
         .populate({ path: "university", select: "name logoSrc location type establishedYear " })
         .populate({ path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails tuitionFee" })
         .lean();
@@ -123,7 +124,7 @@ export const switchStage = errorWrapper(async (req, res, next) => {
         details: `studentId:${studentId}&stage:${stage}&note:${note}`
     })
     await req.user.save()
-    await studentModel.populate(student, { path: "profile", select: "name email displayPicSrc" },)
+    await studentModel.populate(student, { path: "profile", select: "firstName lastName email displayPicSrc" },)
     return res.status(200).json({ success: true, message: `activity success`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const singleStudentProfile = errorWrapper(async (req, res, next) => {

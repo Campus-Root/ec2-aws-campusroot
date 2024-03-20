@@ -8,13 +8,66 @@ import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { applicationStagesEnum } from "../../utils/enum.js";
 import userModel from "../../models/User.js";
-
+import { teamModel } from "../../models/Team.js";
+import { oauth2Client } from "../../utils/oAuthClient.js";
+import { google } from "googleapis";
+import 'dotenv/config';
+export const generatingAuthUrl = errorWrapper(async (req, res, next) => {
+    const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/userinfo.email"] });
+    res.status(200).json({ success: true, message: `auth url`, data: url });
+})
+export const googleAuthentication = errorWrapper(async (req, res, next) => {
+    const { tokens } = await oauth2Client.getToken(req.query.code)
+    oauth2Client.setCredentials(tokens);
+    const oauth2 = google.oauth2({
+        version: 'v2',
+        auth: oauth2Client,
+    });
+    const { data } = await oauth2.userinfo.get();
+    const user = await teamModel.findOne({ email: data.email })
+    if (!user) return next(generateAPIError(`user email mismatch`, 400));
+    user.googleTokens = {
+        access_token: tokens.access_token,
+        token_type: tokens.token_type,
+        expiry_date: tokens.expiry_date,
+    }
+    if (tokens.refresh_token) user.googleTokens.refresh_token = tokens.refresh_token
+    await user.save()
+    oauth2Client.setCredentials(user.googleTokens);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const filter = {
+        calendarId: 'primary',
+        timeMin: new Date().toISOString(),
+        maxResults: 2499,    // cannot be larger than 2500 by default 250
+        singleEvents: true,
+        orderBy: 'updated',
+    }
+    const list = await calendar.events.list(filter);
+    return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: list.data.items.length, items: list.data.items } })
+})
+export const calendarEvents = errorWrapper(async (req, res, next) => {
+    if (!req.user.googleTokens.access_token) return next(generateAPIError(`invalid google tokens`, 400));
+    oauth2Client.setCredentials(req.user.googleTokens);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const filter = {
+        calendarId: 'primary',
+        timeMin: new Date().toISOString(),
+        maxResults: 2499,    // cannot be larger than 2500 by default 250
+        singleEvents: true,
+        orderBy: 'updated',
+    }
+    const { data } = await calendar.events.list(filter);
+    return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
+})
 export const profile = errorWrapper(async (req, res, next) => {
     const profile = {
         _id: req.user._id,
-        name: req.user.name,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
         displayPicSrc: req.user.displayPicSrc,
         email: req.user.email,
+        linkedIn: req.user.linkedIn,
+        appointmentLink: req.user.appointmentLink,
     }
     return res.status(200).json({ success: true, message: `all Details of Process Coordinator`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
@@ -70,8 +123,8 @@ export const singleApplications = errorWrapper(async (req, res, next) => {
     const application = await applicationModel.findById(applicationId)
     if (!application) return next(generateAPIError(`invalid applicationId`, 400));
     await userModel.populate(application, [
-        { path: "user", select: "name email displayPicSrc" },
-        { path: "counsellor", select: "name email displayPicSrc" }
+        { path: "user", select: "firstName lastName email displayPicSrc" },
+        { path: "counsellor", select: "firstName lastName email displayPicSrc" }
     ])
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
@@ -94,7 +147,7 @@ export const switchStage = errorWrapper(async (req, res, next) => {
         details: `applicationId:${applicationId}&status:${status}&stage:${stage}`
     })
     await req.user.save()
-    await studentModel.populate(application, { path: "user", select: "name email displayPicSrc" })
+    await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
     return res.status(200).json({ success: true, message: `stage shift success`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
@@ -126,8 +179,8 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
     await userModel.populate(application, [
-        { path: "user", select: "name email displayPicSrc" },
-        { path: "counsellor", select: "name email displayPicSrc" }
+        { path: "user", select: "firstName lastName email displayPicSrc" },
+        { path: "counsellor", select: "firstName lastName email displayPicSrc" }
     ])
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
@@ -155,8 +208,8 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
     }
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
     await userModel.populate(application, [
-        { path: "user", select: "name email displayPicSrc" },
-        { path: "counsellor", select: "name email displayPicSrc" }
+        { path: "user", select: "firstName lastName email displayPicSrc" },
+        { path: "counsellor", select: "firstName lastName email displayPicSrc" }
     ])
     req.user.logs.push({
         action: `checklist updated`,
@@ -185,7 +238,7 @@ export const cancellation = errorWrapper(async (req, res, next) => {
         details: `applicationId:${applicationId}`
     })
     await req.user.save()
-    await studentModel.populate(application, { path: "user", select: "name email displayPicSrc" })
+    await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
     return res.status(200).json({ success: true, message: "cancellation request attended", data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
@@ -229,7 +282,7 @@ export const result = errorWrapper(async (req, res, next) => {
         details: `applicationId:${applicationId}`
     })
     await req.user.save()
-    await studentModel.populate(application, { path: "user", select: "name email displayPicSrc" })
+    await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
     return res.status(200).json({ success: true, message: `shift successful`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
@@ -257,7 +310,7 @@ export const revertResult = errorWrapper(async (req, res, next) => {
         details: `applicationId:${applicationId}`
     })
     await req.user.save()
-    await studentModel.populate(application, { path: "user", select: "name email displayPicSrc" })
+    await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
     return res.status(200).json({ success: true, message: `revert done`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
