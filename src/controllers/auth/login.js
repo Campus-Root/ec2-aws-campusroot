@@ -17,7 +17,7 @@ export const Login = errorWrapper(async (req, res, next) => {
     const { email, password } = req.body
     if (!email || !password) return next(generateAPIError(`Incomplete details`, 400));
     const user = await userModel.findOne({ email: email })
-    if (!user) return next(generateAPIError("Invalid email", 401));
+    if (!user) return next(generateAPIError("Invalid credentials. Please try again", 401));
     if (!user.password) return next(generateAPIError("Login with Google", 401));
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) return next(generateAPIError("Invalid credentials. Please try again", 401));
