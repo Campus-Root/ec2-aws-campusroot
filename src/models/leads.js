@@ -5,6 +5,7 @@ const leadsSchema = mongoose.Schema({
     name: { type: String },
     email: { type: String },
     phone: { countryCode: { type: String }, number: { type: String } },
+    queryDescription: { type: String },
     ifPhoneIsSameAsWhatsapp: { type: Boolean },
     whatsappNumber: { countryCode: { type: String }, number: { type: String } },
     student: { type: mongoose.Types.ObjectId, ref: "user" },

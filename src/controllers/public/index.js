@@ -9,6 +9,7 @@ import { currencySymbols } from "../../utils/enum.js";
 import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
 import { disciplineRegexMatch, searchSimilarWords, subDisciplineRegexMatch } from "../../utils/regex.js";
+import leadsModel from "../../models/leads.js";
 
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
@@ -228,6 +229,33 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
 
 
 export const requestCallBack = errorWrapper(async (req, res, next) => {
-    const { name, email, phone, studentID } = req.body
-    
+    const { name, email, phone, studentID, queryDescription } = req.body
+    let existingLead = await leadsModel.find({ student: studentID })
+    if (existingLead) return res.status(200).json({ success: true, message: 'We have already received your request, we will reach out to you shortly', data: null });
+    let student, leadData
+    if (studentID) {
+        student = await studentModel.findById(studentID)
+        if (!student) return next(generateAPIError('invalid studentId', 400));
+        if (!student.emailVerified || !email) return next(generateAPIError('please do verify your email before requesting a call', 400));
+        if (!student.phoneVerified || !phone) return next(generateAPIError('please do verify your phone number before requesting a call', 400));
+        leadData = {
+            student: studentID,
+            queryDescription,
+            name: `${student.firstName} ${student.lastName}`,
+            email: student.emailVerified ? student.email : email,
+            phone: student.phoneVerified ? student.phone : phone
+        }
+    }
+    if (!email || !phone || !name || !queryDescription) return next(generateAPIError('Incomplete details', 400));
+    if (!leadData.student) leadData = { queryDescription, name, email, phone }
+    let newLead = await leadsModel.create(leadData);
+    const rsa = await teamModel.aggregate([{ $match: { role: "remoteStudentAdvisor" } }, { $project: { _id: 1, leads: 1, leads: { $size: "$leads" } } }, { $sort: { leads: 1 } }, { $limit: 1 }]);
+    await teamModel.findOneAndUpdate(
+        { _id: rsa[0]._id },
+        { $push: { leads: someVariable } },
+        { new: true }
+    );
+    newLead.remoteStudentAdvisor = rsa[0]._id;
+    await newLead.save()
+    return res.status(200).json({ success: true, message: 'We have received your request, we will reach out to you shortly', data: null });
 })
