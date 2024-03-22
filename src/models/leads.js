@@ -2,6 +2,7 @@ import mongoose from "mongoose"
 import { leadStatusEnum, leadSourceEnum, leadRatingEnum } from "../utils/enum.js";
 
 const leadsSchema = mongoose.Schema({
+    crmId: { type: String },
     name: { type: String },
     email: { type: String },
     phone: { countryCode: { type: String }, number: { type: String } },

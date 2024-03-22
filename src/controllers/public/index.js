@@ -10,6 +10,7 @@ import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
 import { disciplineRegexMatch, searchSimilarWords, subDisciplineRegexMatch } from "../../utils/regex.js";
 import leadsModel from "../../models/leads.js";
+import { refreshToken } from "../../utils/CRMintegrations.js";
 
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
@@ -249,6 +250,8 @@ export const requestCallBack = errorWrapper(async (req, res, next) => {
         const rsa = await teamModel.aggregate([{ $match: { role: "remoteStudentAdvisor" } }, { $project: { _id: 1, leads: 1, leads: { $size: "$leads" } } }, { $sort: { leads: 1 } }, { $limit: 1 }]);
         await teamModel.findOneAndUpdate({ _id: rsa[0]._id }, { $push: { leads: newLead._id } }, { new: true });
         newLead.remoteStudentAdvisor = rsa[0]._id;
+        const accessToken = await refreshToken()
+        newLead.crmId = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
         await newLead.save()
         return res.status(200).json({ success: true, message: 'We have received your request, we will reach out to you shortly', data: null });
     }
@@ -260,6 +263,8 @@ export const requestCallBack = errorWrapper(async (req, res, next) => {
     const rsa = await teamModel.aggregate([{ $match: { role: "remoteStudentAdvisor" } }, { $project: { _id: 1, leads: 1, leads: { $size: "$leads" } } }, { $sort: { leads: 1 } }, { $limit: 1 }]);
     await teamModel.findOneAndUpdate({ _id: rsa[0]._id }, { $push: { leads: newLead._id } }, { new: true });
     newLead.remoteStudentAdvisor = rsa[0]._id;
+    const accessToken = await refreshToken()
+    newLead.crmId = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
     await newLead.save()
     return res.status(200).json({ success: true, message: 'We have received your request, we will reach out to you shortly', data: null });
 })
