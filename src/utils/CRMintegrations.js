@@ -29,21 +29,21 @@ export const refreshToken = async () => {
     }
 }
 
-export const leadCreation = async (accessToken, data) => {
+export const leadCreation = async (accessToken, crmData) => {
     try {
         const response = await fetch("https://www.zohoapis.in/crm/v6/Leads", {
             method: "POST",
             headers: {
-                "Authorization": accessToken,
+                "Authorization": `Zoho-oauthtoken ${accessToken}`,  
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "data": [{ ...data }]
+                "data": [{...crmData}]
             })
         });
         const { data } = await response.json();
-        if (data[0].code != "SUCCESS") return new Error(data[0].code)
-        return data[0].details.id
+        console.log(data);
+        return data
     } catch (error) {
         console.log(error);
         return new Error(`error at crm lead creation`)
