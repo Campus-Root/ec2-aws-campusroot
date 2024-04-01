@@ -80,7 +80,8 @@ app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);
-app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
+app.get('/*', (req, res) => res.send("server is up and running"));
+// app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 const io = new Server(server, { cors: { origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error("Not allowed by CORS")), credentials: true, }, }); // Initialize Socket.IO
 io.use((socket, next) => next());
 // Socket.IO event handlers
