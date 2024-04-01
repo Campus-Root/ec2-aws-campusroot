@@ -135,7 +135,7 @@ export const listings = errorWrapper(async (req, res, next) => {
     }
 })
 export const oneUniversity = errorWrapper(async (req, res, next) => {
-    let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 }).populate("courses", "name studyLevel tuitionFee duration courseType studyMode currency")
+    let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 }).populate("courses", "name studyLevel tuitionFee duration courseType studyMode currency startDate")
     if (!university) return res.status(400).json({ success: true, message: `university ID invalid`, data: null })
     university = await university.populate("userReviews", "rating user comment")
     university = await university.populate("userReviews.user", "firstName lastName displayPicSrc")
