@@ -36,7 +36,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 startCronJob();
 dbConnect();
 
-const whitelist = ["https://campusroot.com","http://127.0.0.1:3000", "localhost","http://localhost:3000"]; //test
+const whitelist = ["https://campusroot.com", "http://127.0.0.1:3000", "localhost", "http://localhost:3000"]; //test
 app.set("trust proxy", 1); // trust first proxy
 app.use(
 	session({
@@ -64,10 +64,10 @@ app.use(cookieParser())
 app.use(express.json({ type: ["application/json", "text/plain"], }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
-	  defaultSrc: ["'self'"],
-	  imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/","https://flagcdn.com/", "blob:"],
-	  connectSrc: ["'self'", "https://ipapi.co"],
-	  scriptSrc: ["'self'", "https://accounts.google.com"]
+		defaultSrc: ["'self'"],
+		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/", "blob:"],
+		connectSrc: ["'self'", "https://ipapi.co"],
+		scriptSrc: ["'self'", "https://accounts.google.com"]
 	},
 }));
 
@@ -80,8 +80,8 @@ app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);
-app.get('/*', (req, res) => res.send("server is up and running"));
-// app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
+// app.get('/*', (req, res) => res.send("server is up and running"));
+app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 const io = new Server(server, { cors: { origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error("Not allowed by CORS")), credentials: true, }, }); // Initialize Socket.IO
 io.use((socket, next) => next());
 // Socket.IO event handlers
