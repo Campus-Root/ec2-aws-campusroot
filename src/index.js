@@ -36,7 +36,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 startCronJob();
 dbConnect();
 
-const whitelist = ["https://campusroot.com", "http://127.0.0.1:3000", "localhost", "http://localhost:3000"]; //test
+const whitelist = ["https://campusroot.com"];
 app.set("trust proxy", 1); // trust first proxy
 app.use(
 	session({
