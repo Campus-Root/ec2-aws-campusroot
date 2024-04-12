@@ -298,6 +298,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   //   sub_discipline: ["Artificial Intelligence", "Machine Learning"] //req.user.preference.courses.toString() // ["Artificial Intelligence", "Machine Learning"]
   // })
   const result = await response.json();
+  console.log(result ,"\n ****************");
   let recommendations = []
   for (const item of result) {
     let course = await courseModel.findById(item.CID, "university")
@@ -309,6 +310,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   }
   req.user.recommendation = req.user.recommendation.filter(ele => ele.counsellorRecommended)
   req.user.recommendation = [...req.user.recommendation, ...recommendations]
+  console.log(req.user.recommendation ,"\n ****************");
   req.user.logs.push({
     action: `recommendations Generated`,
     details: `recommendations${req.user.recommendation}`
