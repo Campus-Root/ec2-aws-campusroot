@@ -104,7 +104,7 @@ export const editPhone = errorWrapper(async (req, res, next) => {
 })
 
 export const editProfile = errorWrapper(async (req, res, next) => {
-  const { LeadSource,personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+  const { LeadSource, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
   if (personalDetails) {
     req.user.personalDetails = personalDetails;
     req.user.logs.push({
@@ -283,13 +283,13 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   if (!ug) return next(generateAPIError("add ug gpa", 400))
   let ug_gpa = (req.user.education.underGraduation.pattern != "gpa") ? gradeConversions(ug.pattern, "gpa", ug.totalScore) : ug.totalScore
   if (!req.user.preference.courses) return next(generateAPIError("add course preferences", 400))
-  const response = await fetch("https://skktw9qgqd.us-east-1.awsapprunner.com/predict", {
+  const response = await fetch("http://localhost:4321/predict/", {
     method: "POST",
     headers: { "Content-Type": "application/json", },
     body: JSON.stringify({
-      ug_gpa: ug_gpa,
-      gre: gre,
-      sub_discipline: req.user.preference.courses.toString()
+      ug_gpa: 3.8,// ug_gpa // 3.8
+      gre: 328,//gre
+      sub_discipline: ["Artificial Intelligence", "Machine Learning"] //req.user.preference.courses.toString() // ["Artificial Intelligence", "Machine Learning"]
     })
   });
   const result = await response.json();
