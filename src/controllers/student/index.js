@@ -283,13 +283,18 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   if (!ug) return next(generateAPIError("add ug gpa", 400))
   let ug_gpa = (req.user.education.underGraduation.pattern != "gpa") ? gradeConversions(ug.pattern, "gpa", ug.totalScore) : ug.totalScore
   if (!req.user.preference.courses) return next(generateAPIError("add course preferences", 400))
+  console.log("verification:", {
+    ug_gpa: ug_gpa,
+    gre: gre,
+    sub_discipline: req.user.preference.courses.toString()
+  });
   const response = await fetch("http://localhost:4321/predict/", {
     method: "POST",
     headers: { "Content-Type": "application/json", },
     body: JSON.stringify({
       ug_gpa: 3.8,
       gre: 328,
-      sub_discipline: ["Artificial Intelligence", "Machine Learning"] 
+      sub_discipline: ["Artificial Intelligence", "Machine Learning"]
     })
   });
   // body: JSON.stringify({
@@ -298,7 +303,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   //   sub_discipline: ["Artificial Intelligence", "Machine Learning"] //req.user.preference.courses.toString() // ["Artificial Intelligence", "Machine Learning"]
   // })
   const result = await response.json();
-  console.log(result ,"\n ****************");
+  console.log(result, "\n ****************");
   let recommendations = []
   for (const item of result) {
     let course = await courseModel.findById(item.CID, "university")
@@ -310,7 +315,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   }
   req.user.recommendation = req.user.recommendation.filter(ele => ele.counsellorRecommended)
   req.user.recommendation = [...req.user.recommendation, ...recommendations]
-  console.log(req.user.recommendation ,"\n ****************");
+  console.log(req.user.recommendation, "\n ****************");
   req.user.logs.push({
     action: `recommendations Generated`,
     details: `recommendations${req.user.recommendation}`
