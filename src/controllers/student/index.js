@@ -831,7 +831,7 @@ export const verifyUserOTP = errorWrapper(async (req, res, next) => {
     details: ``
   })
   await user.save()
-  return res.status(200).json({ success: true, message: `${type} verification successful`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: `verification successful`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const getEvents = errorWrapper(async (req, res, next) => {
   // add meeting for processCordinator
