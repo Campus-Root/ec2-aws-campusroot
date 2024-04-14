@@ -292,9 +292,9 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     method: "POST",
     headers: { "Content-Type": "application/json", },
     body: JSON.stringify({
-      ug_gpa: 3.8,
-      gre: 328,
-      sub_discipline: ["Artificial Intelligence", "Machine Learning"]
+      ug_gpa: ug_gpa,
+      gre: gre,
+      sub_discipline: req.user.preference.courses
     })
   });
   // body: JSON.stringify({
