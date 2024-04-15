@@ -1,7 +1,7 @@
 // studentRouter
 
 import express from "express";
-import { editReview, editProfile, postReview, profile, activity, addShortListed, allStudents, verifyEmail, generateRecommendations, apply, uploadInProfile, uploadInApplication, deleteUploadedInProfile, deleteUploadedFromApplication, requestCancellation, removeShortListed, downloadDocument, getEvents, bookSlot, singleStudent, sendUserOTP, verifyUserOTP, forceForwardApply, removeForceApply, editPhone, editEmail } from "../controllers/student/index.js";
+import { editReview, editProfile, postReview, profile, activity, addShortListed, allStudents, verifyEmail, generateRecommendations, apply, uploadInProfile, uploadInApplication, deleteUploadedInProfile, deleteUploadedFromApplication, requestCancellation, removeShortListed, downloadDocument, getEvents, bookSlot, singleStudent, sendUserOTP, verifyUserOTP, forceForwardApply, removeForceApply, editPhone, editEmail, modifySlot } from "../controllers/student/index.js";
 import { handleFile } from "../middleware/handleFile.js";
 import { authMiddleware, isStudent } from "../middleware/auth.js";
 import { checkDisposableEmail } from "../middleware/validations.js";
@@ -25,6 +25,7 @@ router.put("/phone", authMiddleware, isStudent, editPhone);
 router.put("/email", authMiddleware, isStudent, checkDisposableEmail, editEmail);
 router.get("/events/:team", authMiddleware, isStudent, getEvents)
 router.post("/book-slot/:team", authMiddleware, isStudent, bookSlot)
+router.post("/modify-slot", authMiddleware, isStudent, modifySlot)
 router.put("/generate-recommendations", authMiddleware, isStudent, generateRecommendations);
 router.post("/add-to-short-list", authMiddleware, isStudent, addShortListed);
 router.patch("/edit-short-list/:id", authMiddleware, isStudent, removeShortListed);

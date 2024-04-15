@@ -329,7 +329,6 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   }
   return res.status(200).json({ success: true, message: "Recommendations Generated", data: req.user.recommendation, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-
 export const activity = errorWrapper(async (req, res, next) => {
   await Promise.all([
     await applicationModel.populate(req.user, [
@@ -569,7 +568,7 @@ export const addShortListed = errorWrapper(async (req, res, next) => {
   await Promise.all([
     await req.user.save(),
     await universityModel.populate(req.user, { path: "activity.shortListed.university", select: "name logoSrc location type establishedYear ", }),
-    await courseModel.populate(req.user, { path: "activity.shortListed.course", select: "name discipline tuitionFee studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails", },)
+    await courseModel.populate(req.user, { path: "activity.shortListed.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails", },)
   ])
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -957,8 +956,58 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
   await userModel.populate(meeting, { path: "user member", select: "name email role" })
   return res.status(200).json({ success: true, message: `slot booking successful`, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
+export const modifySlot = errorWrapper(async (req, res, next) => {
+  const { meetingId, option, startTime, endTime, timeZone } = req.body
+  const meeting = await meetingModel.findById(meetingId)
+  if (!meeting || !meeting.data.id) return next(generateAPIError("invalid meetingId", 400))
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+  let msg
+  switch (option) {
+    case "cancelEvent":
+      await calendar.events.patch({
+        calendarId: 'primary',
+        eventId: meeting.data.id,
+        requestBody: {
+          status: 'cancelled'
+        },
+        sendUpdates: 'all'
+      });
+      meeting.status = "cancelled"
+      msg = 'Event cancelled successfully'
+      req.user.logs.push({
+        action: `Event cancelled`,
+        details: `meetingId:${meetingId}`
+      })
+      break;
+    case "rescheduleEvent":
+      if (!startTime && !endTime) return next(generateAPIError("invalid start and end time", 400))
+      if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
+      const updatedEvent = {
+        start: { dateTime: new Date(startTime), timeZone: timeZone, },
+        end: { dateTime: new Date(endTime), timeZone: timeZone, },
+      };
+      await calendar.events.update({
+        calendarId: 'primary',
+        eventId: eventId,
+        requestBody: updatedEvent,
+        sendUpdates: 'all'
+      });
+      meeting.status = "rescheduled"
+      msg = 'Event rescheduled successfully'
+      req.user.logs.push({
+        action: `Event rescheduled ${startTime}`,
+        details: `meetingId:${meetingId}`
+      })
+      // await rescheduleEvent(calendar, eventId, updatedEvent);
+      break;
+    default: return next(generateAPIError("invalid option", 400))
+  }
 
-
+  await req.user.save()
+  await meeting.save()
+  await userModel.populate(meeting, { path: "user member", select: "name email role" })
+  return res.status(200).json({ success: true, message: msg, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
+})
 // const { Secret_key } = config.get("STRIPE_PAYMENTS")
 // const stripe = new Stripe(`${Secret_key}`);
 // const URL = config.get("URL")
