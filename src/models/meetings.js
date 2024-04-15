@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 const meetingSchema = mongoose.Schema({
     user: { type: mongoose.Types.ObjectId, ref: "user" },
-    counsellor: { type: mongoose.Types.ObjectId, ref: "user" },
-    data: { type: Object }
+    member: { type: mongoose.Types.ObjectId, ref: "user" },
+    data: { type: Object },
+    status: { type: String } // cancelled successful userDidNotShowup upcoming report
 },
     { timestamps: true }
 );

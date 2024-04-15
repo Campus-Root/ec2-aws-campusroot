@@ -135,7 +135,7 @@ export const listings = errorWrapper(async (req, res, next) => {
     }
 })
 export const oneUniversity = errorWrapper(async (req, res, next) => {
-    let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 }).populate("courses", "name studyLevel tuitionFee duration courseType studyMode currency startDate")
+    let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 }).populate("courses", "name about subDiscipline discipline studyLevel tuitionFee duration courseType studyMode currency startDate")
     if (!university) return res.status(400).json({ success: true, message: `university ID invalid`, data: null })
     university = await university.populate("userReviews", "rating user comment")
     university = await university.populate("userReviews.user", "firstName lastName displayPicSrc")
@@ -227,31 +227,28 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     const uniSearchResults = await universityModel.find(uniKeyword, "name courses community logoSrc").limit(5).populate("courses", "name")
     return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
 })
-
-
 export const requestCallBack = errorWrapper(async (req, res, next) => {
     const { name, email, phone, studentID, queryDescription } = req.body
-    let existingLead = await leadsModel.find({ student: studentID })
-    if (existingLead.length > 0) return res.status(200).json({ success: true, message: 'We have already received your request, we will reach out to you shortly', data: null });
-    let student, leadData
+    let student, leadData, existingLead
     if (studentID) {
+        existingLead = await leadsModel.find({ student: studentID })
+        if (existingLead && existingLead.length > 0) return res.status(200).json({ success: true, message: 'We have already received your request, we will reach out to you shortly', data: null });
         student = await studentModel.findById(studentID)
         if (!student) return next(generateAPIError('invalid studentId', 400));
-        if (!student.emailVerified && !email) return next(generateAPIError('please do verify your email before requesting a call', 400));
-        if (!student.phoneVerified && !phone) return next(generateAPIError('please do verify your phone number before requesting a call', 400));
+        if (!student.verification[0].status && !email) return next(generateAPIError('please do verify your email before requesting a call', 400));
+        if (!student.verification[1].status && !phone) return next(generateAPIError('please do verify your phone number before requesting a call', 400));
         leadData = {
             student: studentID,
             queryDescription,
             name: `${student.firstName} ${student.lastName}`,
-            email: student.emailVerified ? student.email : email,
-            phone: student.phoneVerified ? student.phone : phone
+            email: student.verification[0].status ? student.email : email,
+            phone: student.verification[1].status ? student.phone : phone
         }
         let newLead = await leadsModel.create(leadData);
         const rsa = await teamModel.aggregate([{ $match: { role: "remoteStudentAdvisor" } }, { $project: { _id: 1, leads: 1, leads: { $size: "$leads" } } }, { $sort: { leads: 1 } }, { $limit: 1 }]);
         await teamModel.findOneAndUpdate({ _id: rsa[0]._id }, { $push: { leads: newLead._id } }, { new: true });
         newLead.remoteStudentAdvisor = rsa[0]._id;
         const accessToken = await refreshToken()
-
         let crmData = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
         if (crmData[0].code != "SUCCESS") return next(generateAPIError(crmData[0].code, 400));
         newLead.crmId = crmData[0].details.id

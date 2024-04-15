@@ -4,13 +4,15 @@ import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, De
 
 const Student = mongoose.Schema(
     {
-        emailVerified: { type: Boolean, default: false },
-        emailVerificationString: { type: String },
-        emailVerificationExpiry: { type: Date },
-        phoneOtp: { type: String },
+        verification: [{
+            type: { type: String }, // "email"  // "phone"
+            status: { type: Boolean, default: false },
+            token: {
+                data: { type: String },
+                expiry: { type: Date }, // expiry date
+            }
+        }],
         phone: { countryCode: { type: String }, number: { type: String } },
-        phoneVerified: { type: Boolean, default: false },
-        phoneVerificationExpiry: { type: Date },
         LeadSource: { type: String },
         personalDetails: {
             DOB: { type: Date },
@@ -40,6 +42,14 @@ const Student = mongoose.Schema(
             validPermit: { type: String },// enum yes no and processing,
             visaRejectedDetails: { type: String },
         },
+        extraCurriculumActivities: [{
+            activity: { type: String },
+            designation: { type: String },
+            status: { type: String },
+            description: { type: String },
+            startDate: { type: Date },
+            endDate: { type: Date }
+        }],
         familyDetails: [{
             GuardianFirstName: { type: String },
             GuardianLastName: { type: String },
@@ -117,11 +127,12 @@ const Student = mongoose.Schema(
                 count: { type: Number, },
             }],
             testDate: { type: Date },
+            docId: { type: mongoose.Types.ObjectId, ref: "document" },
         }],
-        counsellor: { type: mongoose.Types.ObjectId, ref: "user" },
-        processCoordinator: { type: mongoose.Types.ObjectId, ref: "user" },
-        visaExpert: { type: mongoose.Types.ObjectId, ref: "user" },
-        loanExpert: { type: mongoose.Types.ObjectId, ref: "user" },
+        advisors: [{
+            info: { type: mongoose.Types.ObjectId, ref: "user" },
+            role: { type: String },   // counsellor processCoordinator visaExpert loanExpert
+        },],
         workExperience: [{
             companyName: { type: String, },
             sector: {
@@ -139,7 +150,8 @@ const Student = mongoose.Schema(
             designation: { type: String },
             startDate: { type: Date, },
             endDate: { type: Date, },
-            Ongoing: { type: Boolean }
+            Ongoing: { type: Boolean },
+            docId: { type: mongoose.Types.ObjectId, ref: "document" },
         }],
         researchPapers: [{
             title: { type: String, },
@@ -207,7 +219,8 @@ const Student = mongoose.Schema(
                 rejected: [{ type: mongoose.Types.ObjectId, ref: "application" }],
                 completed: [{ type: mongoose.Types.ObjectId, ref: "application" }],
                 cancelled: [{ type: mongoose.Types.ObjectId, ref: "application" }],
-            }
+            },
+            meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }]
         },
         skills: [{ type: String, }],
         preference: {
@@ -224,7 +237,6 @@ const Student = mongoose.Schema(
             currency: { type: String },
             language: { type: String },// enum eng, tel, hindi
         },
-        meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }]
     }
 );
 

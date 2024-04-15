@@ -23,17 +23,35 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     if (alreadyExists) return next(generateAPIError(`Email already registered`, 400));
     const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc });
     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-    student.counsellor = Counsellors[0]._id;
     const Counsellor = await teamModel.findById(Counsellors[0]._id);
+    student.advisors.push({
+        info: Counsellors[0]._id,
+        role: "counsellor"
+    })
     await student.save()
     Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
-    student.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
+    const verification = [{
+        type: "email",
+        status: false,
+        token: {
+            data: (Math.random() + 1).toString(16).substring(2),
+            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
+    }, {
+        type: "phone",
+        status: false,
+        token: {
+            data: null,
+            expiry: new Date()
+        }
+    }]
+    student.verification = verification
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
     const source = fs.readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source)
-    const replacement = { userName: `${firstName} ${lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` }
+    const replacement = { userName: `${firstName} ${lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${verification[0].token.data}` }
     const htmlToSend = template(replacement)
     await sendMail({ to: email, subject: subject, html: htmlToSend });
     student.logs.push({
@@ -52,9 +70,10 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
     const { email, emailVerificationString } = req.params;
     const user = await studentModel.findOne({ email: email });
     if (!user) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false`);
-    if (user.emailVerificationString !== emailVerificationString) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false`);
-    if (user.emailVerified) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false&info=alreadyVerified`);
-    user.emailVerified = true;
+    if (new Date() > user.verification[0].token.expiry) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false&info=expired`);
+    if (user.verification[0].token.data !== emailVerificationString) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false&info=invalid`);
+    if (user.verification[0].status === true) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false&info=alreadyVerified`);
+    user.verification[0].status = true;
     user.logs.push({
         action: "Email verified",
         details: "Email Verification Successful"
@@ -83,7 +102,6 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
     await user.save();
     return res.status(200).json({ success: true, message: `${role} Registration successful`, data: { email, firstName, lastName, role }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
-
 export const googleLogin = errorWrapper(async (req, res, next) => {
     if (!req.body.credential) return next("credential undefined", 400)
     try {
@@ -91,6 +109,21 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         const teamMember = await teamModel.findOne({ email: email })
         if (teamMember) return res.redirect(`${process.env.STUDENT_URL}/team`)
         let student = await studentModel.findOne({ email: email });
+        const verification = [{
+            type: "email",
+            status: false,
+            token: {
+                data: (Math.random() + 1).toString(16).substring(2),
+                expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            }
+        }, {
+            type: "phone",
+            status: false,
+            token: {
+                data: null,
+                expiry: new Date()
+            }
+        }]
         if (student) {
             if (student.google && student.google.id) {
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
@@ -104,7 +137,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 student.lastName = family_name || null;
                 student.displayPicSrc = picture;
                 student.google = { id: sub };
-                if (email_verified) student.emailVerified = email_verified;
+                if (email_verified) student.verification[0].status = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 await student.save();
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
@@ -113,20 +146,21 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             }
         } else {
-            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, google: { id: sub }, emailVerified: email_verified });
+            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, google: { id: sub } });
+            student.verification = verification
+            student.verification[0].status = email_verified;
             if (!email_verified) {
-                student.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
                 let subject = "Confirm Your Email to Activate Your CampusRoot Account";
                 const __dirname = path.dirname(fileURLToPath(import.meta.url));
                 const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
                 const source = fs.readFileSync(filePath, "utf-8").toString();
                 const template = Handlebars.compile(source);
-                const replacement = { userName: `${given_name} ${family_name}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${student.emailVerificationString}` };
+                const replacement = { userName: `${firstName} ${lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${verification[0].token.data}` }
                 const htmlToSend = template(replacement);
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
             const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-            student.counsellor = Counsellors[0]._id;
+            student.advisors.push({ id: Counsellors[0]._id, type: "counsellor" })
             const Counsellor = await teamModel.findById(Counsellors[0]._id);
             Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
             await Counsellor.save();

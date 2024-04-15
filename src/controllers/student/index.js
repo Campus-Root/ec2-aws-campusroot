@@ -26,11 +26,9 @@ import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
 import { currencySymbols } from "../../utils/enum.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
-
 export const profile = errorWrapper(async (req, res, next) => {
   await Promise.all([
-    await req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink firstName lastName email displayPicSrc"),
-    await req.user.populate("processCoordinator", "linkedIn firstName lastName email displayPicSrc"),
+    await userModel.populate(req.user, { path: "advisors.info", select: "-applications -leads -students -googleTokens -logs -updates -password -communities -phoneVerified -otp" }),
     await Document.populate(req.user,
       [{ path: "documents.personal.resume", select: "name contentType createdAt", },
       { path: "documents.personal.passportBD", select: "name contentType createdAt", },
@@ -52,23 +50,26 @@ export const profile = errorWrapper(async (req, res, next) => {
       { path: "documents.test.languageProf", select: "name contentType createdAt", },
       { path: "documents.workExperiences", select: "name contentType createdAt", },])
   ])
-  const profile = { ...req.user._doc, activity: {}, logs: [] }
+  const profile = { ...req.user._doc }
   return res.status(200).json({ success: true, message: `complete profile`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const editEmail = errorWrapper(async (req, res, next) => {
   const { email } = req.body
-  if (req.user.emailVerified) return next(generateAPIError(`email already verified, contact Campus Root team for support`, 400));
-  const existingEmail = await studentModel.find({ email: email }, "email")
+  if (req.user.verification[0].status) return next(generateAPIError(`email already verified, contact Campus Root team for support`, 400));
+  const existingEmail = await userModel.find({ email: email }, "email")
   if (existingEmail.length > 0) return next(generateAPIError(`email already exists, Enter a new email`, 400));
   req.user.email = email;
-  req.user.emailVerified = false;
-  req.user.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
+  req.user.verification[0].token = {
+    data: (Math.random() + 1).toString(16).substring(2),
+    expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  }
+  req.user.verification[0].status = false
   let subject = "Email verification"
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
   const source = fs.readFileSync(filePath, "utf-8").toString();
   const template = Handlebars.compile(source)
-  const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${req.user.emailVerificationString}` }
+  const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${req.user.verification[0].token.data}` }
   const htmlToSend = template(replacement)
   await sendMail({ to: req.user.email, subject: subject, html: htmlToSend });
   req.user.logs.push({
@@ -81,30 +82,21 @@ export const editEmail = errorWrapper(async (req, res, next) => {
 export const editPhone = errorWrapper(async (req, res, next) => {
   const { phone } = req.body
   if (!phone.countryCode || !phone.number) return next(generateAPIError(`Enter a valid number`, 400));
-  const existingPhone = await studentModel.find({
-    $and: [
-      { "phone.countryCode": phone.countryCode },
-      { "phone.number": phone.number }
-    ]
-  }, "phone")
+  const existingPhone = await studentModel.find({ $and: [{ "phone.countryCode": phone.countryCode }, { "phone.number": phone.number }] }, "phone")
   if (existingPhone.length > 0) return next(generateAPIError(`phone number already exists, Enter a new number`, 400));
-  req.user.phone = phone;
-  req.user.phoneVerified = false;
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  req.user.phoneOtp = otp;
-  req.user.phoneVerificationExpiry = new Date(new Date().getTime() + 5 * 60000)
-  var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
+  req.user.phone = phone
+  req.user.verification[1].token = { data: Math.floor(100000 + Math.random() * 900000), expiry: new Date(new Date().getTime() + 5 * 60000) }
+  var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: req.user.verification[1].token.data, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
   if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
   req.user.logs.push({
     action: `profile info updated & otp sent for verification`,
     details: `phone updated in profile`
   })
   await req.user.save()
-  return res.status(200).json({ success: true, message: `otp sent for verification, verify it before ${req.user.phoneVerificationExpiry}`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: `otp sent for verification, verify it before it expires`, data: { expiry: req.user.verification[1].token.expiry }, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-
 export const editProfile = errorWrapper(async (req, res, next) => {
-  const { LeadSource, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+  const { LeadSource, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, extraCurriculumActivities, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
   if (personalDetails) {
     req.user.personalDetails = personalDetails;
     req.user.logs.push({
@@ -130,6 +122,13 @@ export const editProfile = errorWrapper(async (req, res, next) => {
     req.user.logs.push({
       action: `profile info updated`,
       details: `familyDetails updated`
+    })
+  }
+  if (extraCurriculumActivities) {
+    req.user.extraCurriculumActivities = extraCurriculumActivities;
+    req.user.logs.push({
+      action: `profile info updated`,
+      details: `extraCurriculumActivities updated`
     })
   }
   if (firstName) {
@@ -230,7 +229,6 @@ export const editProfile = errorWrapper(async (req, res, next) => {
       details: `education updated`
     })
   }
-
   await req.user.save()
   const profile = { ...req.user._doc, activity: {}, logs: [] }
   return res.status(200).json({ success: true, message: `profile edited successfully`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null });
@@ -249,7 +247,7 @@ export const postReview = errorWrapper(async (req, res, next) => {
   return res.status(200).json({ success: true, message: `review posted successfully`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const editReview = errorWrapper(async (req, res, next) => {
-  const { comment, rating, universityId, action, id } = req.body
+  const { comment, rating, universityId, action, id } = req.body;
   const post = await reviewsModel.findById(id);
   if (post.user !== req.user._id) return next(generateAPIError(`invalid edit permissions`, 400));
   if (action == "delete") {
@@ -274,8 +272,8 @@ export const editReview = errorWrapper(async (req, res, next) => {
   return res.status(200).json({ success: true, message: `review updated`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
-  if (!req.user.emailVerified) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
-  if (!req.user.phoneVerified) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
+  if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
+  if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
   const GRE = req.user.tests.filter(ele => ele.name == "Graduate Record Examination")
   if (!GRE[0].scores) return next(generateAPIError("add GRE test details", 400))
   const gre = GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
@@ -297,13 +295,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
       sub_discipline: req.user.preference.courses
     })
   });
-  // body: JSON.stringify({
-  //   ug_gpa: 3.8,// ug_gpa // 3.8
-  //   gre: 328,//gre
-  //   sub_discipline: ["Artificial Intelligence", "Machine Learning"] //req.user.preference.courses.toString() // ["Artificial Intelligence", "Machine Learning"]
-  // })
   const result = await response.json();
-  console.log(result, "\n ****************");
   let recommendations = []
   for (const item of result) {
     let course = await courseModel.findById(item.CID, "university")
@@ -315,7 +307,6 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   }
   req.user.recommendation = req.user.recommendation.filter(ele => ele.counsellorRecommended)
   req.user.recommendation = [...req.user.recommendation, ...recommendations]
-  console.log(req.user.recommendation, "\n ****************");
   req.user.logs.push({
     action: `recommendations Generated`,
     details: `recommendations${req.user.recommendation}`
@@ -341,8 +332,6 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
 
 export const activity = errorWrapper(async (req, res, next) => {
   await Promise.all([
-    await req.user.populate("counsellor", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
-    await req.user.populate("processCoordinator", "numberOfStudentsAssisted linkedIn appointmentLink name email displayPicSrc"),
     await applicationModel.populate(req.user, [
       { path: "activity.applications.processing" },
       { path: "activity.applications.accepted" },
@@ -358,7 +347,9 @@ export const activity = errorWrapper(async (req, res, next) => {
     ]),
     await Document.populate(req.user, [
       { path: "activity.applications.processing.docChecklist.doc activity.applications.accepted.docChecklist.doc activity.applications.rejected.docChecklist.doc activity.applications.completed.docChecklist.doc activity.applications.cancelled.docChecklist.doc", select: "name contentType createdAt" },
-    ])
+    ]),
+    await meetingModel.populate(req.user, { path: "activity.meetings" }),
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member", select: "name email role" })
   ]);
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -470,12 +461,10 @@ export const uploadInProfile = errorWrapper(async (req, res, next) => {
       break;
     default: return next(generateAPIError(`Invalid fieldPath`, 400));
   }
-
   req.user.logs.push({
     action: `document uploaded`,
     details: `path:${fieldPath}&documentId:${newDoc._id}`
   })
-
   await Promise.all([
     await req.user.save(),
     await Document.populate(req.user,
@@ -608,15 +597,15 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
 })
 export const apply = errorWrapper(async (req, res, next) => {
   let { universityId, courseId, intake } = req.body
-  if (!req.user.emailVerified) return next(generateAPIError(`do verify your email to process the application`, 400));
-  if (!req.user.phoneVerified) return next(generateAPIError(`do verify your phone number to process the application`, 400));
+  if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to process the application`, 400));
+  if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to process the application`, 400));
   if (! await universityModel.findById(universityId)) return next(generateAPIError(`invalid university Id`, 400));
   const course = await courseModel.findById(courseId, "startDate")
   if (!course) return next(generateAPIError(`invalid course Id`, 400));
   if (!intake || new Date(intake) <= new Date()) return next(generateAPIError(`invalid intake`, 400));
   const Exists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(intake).getUTCMonth())
   if (Exists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400));
-  if (!req.user.processCoordinator) {
+  if (!req.user.advisors.find(ele => ele.role === "processCoordinator")) {
     const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator" } },
     {
       $project: {
@@ -630,7 +619,10 @@ export const apply = errorWrapper(async (req, res, next) => {
         }
       }
     }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
-    req.user.processCoordinator = processCoordinators[0]._id
+    req.user.advisors.push({
+      info: processCoordinators[0]._id,
+      role: "processCoordinator"
+    })
     await teamModel.findOneAndUpdate({ _id: processCoordinators[0]._id }, { $push: { students: { profile: req.user._id } }, });
     await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
     await Document.updateMany({ user: req.user._id, type: "General" }, { $push: { viewers: processCoordinators[0]._id } })
@@ -807,22 +799,19 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
   const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
   const source = fs.readFileSync(filePath, "utf-8").toString();
   const template = Handlebars.compile(source)
-  req.user.emailVerificationString = (Math.random() + 1).toString(16).substring(2);
-  const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${req.user.email}/${req.user.emailVerificationString}` }
+  req.user.verification[0].status = false
+  req.user.verification[0].token = { data: (Math.random() + 1).toString(16).substring(2), expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+  const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${req.user.email}/${req.user.verification[0].token.data}` }
   const htmlToSend = template(replacement)
   await sendMail({ to: req.user.email, subject: subject, html: htmlToSend });
-  req.user.logs.push({
-    action: `Email sent for verification`,
-    details: ``
-  })
+  req.user.logs.push({ action: `Email sent for verification`, details: `` });
   await req.user.save()
-  return res.status(200).json({ success: true, message: `email send for verification`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: `email sent for verification`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const sendUserOTP = errorWrapper(async (req, res, next) => {
   const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
-  if (req.user.phone.number && req.user.phoneVerified) return next(generateAPIError("already verified", 400))
-  req.user.phoneOtp = otp
-  req.user.phoneVerificationExpiry = expiry
+  if (req.user.phone.number && req.user.verification[1].status) return next(generateAPIError("already verified", 400));
+  req.user.verification[1].token = { data: otp, expiry: expiry, }
   var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
   if (!smsResponse.return) { console.log(smsResponse); return next(generateAPIError("Otp not sent", 500)) }
   req.user.logs.push({
@@ -830,20 +819,20 @@ export const sendUserOTP = errorWrapper(async (req, res, next) => {
     details: ``
   })
   await req.user.save()
-  return res.status(200).json({ success: true, message: `otp sent for verification, verify before ${expiry}`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: `otp sent for verification, verify before expiry`, data: { expiry: expiry }, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const verifyUserOTP = errorWrapper(async (req, res, next) => {
   const { otp } = req.body
-  const user = await studentModel.findById(req.user._id, "GuardianContactNumberOtp phoneOtp logs phoneVerificationExpiry GuardianContactNumberVerificationExpiry")
-  if (user.phoneOtp !== otp) return next(generateAPIError("invalid otp", 400))
-  if (new Date() > new Date(user.phoneVerificationExpiry)) return next(generateAPIError("otp expired, generate again", 400))
-  user.phoneVerified = true
-  user.logs.push({
+  const user = await studentModel.findById(req.user._id, "verifications logs")
+  if (req.user.verification[1].token.data !== otp) return next(generateAPIError("invalid otp", 400))
+  if (new Date() > new Date(req.user.verification[1].token.expiry)) return next(generateAPIError("otp expired, generate again", 400))
+  req.user.verification[1].status = true
+  req.user.logs.push({
     action: `otp verification successful`,
     details: ``
   })
-  await user.save()
-  return res.status(200).json({ success: true, message: `verification successful`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+  await req.user.save()
+  return res.status(200).json({ success: true, message: `phone verification successful`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const getEvents = errorWrapper(async (req, res, next) => {
   // add meeting for processCordinator
@@ -914,48 +903,61 @@ export const getEvents = errorWrapper(async (req, res, next) => {
 export const bookSlot = errorWrapper(async (req, res, next) => {
   const { startTime, endTime, attendees, timeZone, notes } = req.body
   const { team } = req.params
-  if (!req.user.emailVerified) return next(generateAPIError(`do verify your email to book a slot`, 400));
-  if (!req.user.phoneVerified) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
+  const emailVerificationObject = req.user.verification.filter(ele => ele.type === "email")
+  if (!emailVerificationObject.status) return next(generateAPIError(`do verify your email to book a slot`, 400));
+  const phoneVerificationObject = req.user.verification.filter(ele => ele.type === "phone")
+  if (!phoneVerificationObject.status) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
   if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
   if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
   if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
   await req.user.populate("counsellor", "googleTokens")
   await req.user.populate("processCoordinator", "googleTokens")
+  let event, meet
   switch (team) {
     case "counsellor":
       oauth2Client.setCredentials(req.user.counsellor.googleTokens);
+      event = {
+        summary: `Counselling Session - ${req.user.firstName} ${req.user.lastName}`,
+        description: notes,
+        start: { dateTime: new Date(startTime), timeZone: timeZone, },
+        end: { dateTime: new Date(endTime), timeZone: timeZone, },
+        attendees: [{ email: req.user.email }],
+        conferenceData: { createRequest: { requestId: Math.random().toString(16).slice(2), }, },
+        reminders: { useDefault: false, overrides: [{ method: "email", minutes: 24 * 60 }, { method: "popup", minutes: 10 },], },
+      };
+      meet = { user: req.user._id, member: req.user.counsellor }
       break;
     case "processCoordinator":
       oauth2Client.setCredentials(req.user.processCoordinator.googleTokens);
+      event = {
+        summary: `Application Processing Session - ${req.user.firstName} ${req.user.lastName}`,
+        description: notes,
+        start: { dateTime: new Date(startTime), timeZone: timeZone, },
+        end: { dateTime: new Date(endTime), timeZone: timeZone, },
+        attendees: [{ email: req.user.email }],
+        conferenceData: { createRequest: { requestId: Math.random().toString(16).slice(2), }, },
+        reminders: { useDefault: false, overrides: [{ method: "email", minutes: 24 * 60 }, { method: "popup", minutes: 10 },], },
+      };
+      meet = { user: req.user._id, member: req.user.processCoordinator }
       break;
     default: return next(generateAPIError(`invalid team parameter`, 400));
   }
-  const event = {
-    summary: `Counselling Session - ${req.user.firstName} ${req.user.lastName}`,
-    description: notes,
-    start: { dateTime: new Date(startTime), timeZone: timeZone, },
-    end: { dateTime: new Date(endTime), timeZone: timeZone, },
-    attendees: [{ email: req.user.email }],
-    conferenceData: { createRequest: { requestId: Math.random().toString(16).slice(2), }, },
-    reminders: { useDefault: false, overrides: [{ method: "email", minutes: 24 * 60 }, { method: "popup", minutes: 10 },], },
-  };
-  if (attendees) attendees.forEach(ele => event.attendees.push({ email: ele }))
+  if (attendees) attendees.forEach(ele => event.attendees.push({ email: ele }));
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
   const { data } = await calendar.events.insert({ calendarId: 'primary', requestBody: event, conferenceDataVersion: 1, sendUpdates: "all", });
-  const meeting = await meetingModel.create({ user: req.user._id, counsellor: req.user.counsellor, data })
-  req.user.meetings.push(meeting._id)
+  meet.data = data;
+  meet.status = "upcoming"
+  const meeting = await meetingModel.create(meet)
+  req.user.activity.meetings.push(meeting._id)
   req.user.logs.push({
     action: `slot booked at ${startTime}`,
     details: `meetingId:${meeting._id}`
   })
   await req.user.save()
-  const { htmlLink, hangoutLink, start, end, organizer, description, summary } = data
-  return res.status(200).json({ success: true, message: `slot booking successful`, data: { htmlLink, hangoutLink, start, end, organizer, description, summary, attendees: data.attendees }, AccessToken: req.AccessToken ? req.AccessToken : null });
+  await userModel.populate(meeting, { path: "user member", select: "name email role" })
+  return res.status(200).json({ success: true, message: `slot booking successful`, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-export const bookedSlots = errorWrapper(async (req, res, next) => {
-  const meetings = await meetingModel.find({ user: req.user._id })
-  return res.status(200).json({ success: true, message: `booked slots`, data: meetings, AccessToken: req.AccessToken ? req.AccessToken : null });
-})
+
 
 // const { Secret_key } = config.get("STRIPE_PAYMENTS")
 // const stripe = new Stripe(`${Secret_key}`);

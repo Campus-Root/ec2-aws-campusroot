@@ -1,6 +1,6 @@
 import express from "express";
 
-import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack } from "../controllers/public/index.js";
+import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex } from "../controllers/public/index.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 
@@ -27,6 +27,6 @@ router.get("/counsellors", counsellors);
 
 
 router.get("/university", uniNameRegex);
-router.post("/callback", requestCallBack)
+
 
 export default router

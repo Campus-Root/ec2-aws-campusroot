@@ -4,7 +4,8 @@ export const TestNamesEnum = {
     TOEFL: "Test of English as a Foreign Language",
     IELTS: "International English Language Testing System",
     DET: "Duolingo English Test",
-    PTE: "Pearson Test of English"
+    PTE: "Pearson Test of English",
+    ACT: "American College Testing"
 };
 export const studentCounsellingStagesEnum = {
     FRESH_LEAD: "Fresh Lead",
@@ -97,7 +98,7 @@ export const applicationStagesEnum = {
     I20_RECEIVED: "I20 Received",
 };
 export const TestDescriptionEnum = {
-    TOTAL:"Total",
+    TOTAL: "Total",
     VERBAL_REASONING: "Verbal Reasoning",
     QUANTITATIVE_REASONING: "Quantitative Reasoning",
     ANALYTICAL_WRITING_ASSESSMENT: "Analytical Writing Assessment",
@@ -113,7 +114,10 @@ export const TestDescriptionEnum = {
     LITERACY: "Literacy",
     CONVERSATION: "Conversation",
     COMPREHENSION: "Comprehension",
-    PRODUCTION: "production"
+    PRODUCTION: "Production",
+    ENGLISH: "English", 
+    MATH: "Math", 
+    SCIENCE: "Science"
 };
 export const TeamRoleEnum = {
     TEAM: "processCoordinator",

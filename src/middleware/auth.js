@@ -42,7 +42,7 @@ export const isAdmin = async (req, res, next) => {
 }
 export const isStudent = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.decoded.id).select("-password -google -emailVerificationString -phoneOtp -GuardianContactNumberOtp");
+        const user = await userModel.findById(req.decoded.id).select("-password -google -emailVerificationString -phoneOtp -GuardianContactNumberOtp"); // redundant exists
         if (user.userType === "student") { req.user = user; next(); }
         else throw (500)
     } catch (error) {
