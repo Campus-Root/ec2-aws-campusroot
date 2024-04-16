@@ -32,6 +32,7 @@ const courseSchema = mongoose.Schema(
             link: { type: String }, // not to user hide
         }],
         schoolName: { type: String }, // university name or school name  
+        unisName: { type: String },
         STEM: { type: Boolean }, // hc  hide 
         duration: { type: String },
         pathway: { type: Boolean }, // hc hide
