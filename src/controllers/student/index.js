@@ -626,7 +626,7 @@ export const apply = errorWrapper(async (req, res, next) => {
     await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
     await Document.updateMany({ user: req.user._id, type: "General" }, { $push: { viewers: processCoordinators[0]._id } })
   }
-  const alreadyExists = await applicationModel.find({ user: req.user._id, intake: intake, course: courseId }) 
+  const alreadyExists = await applicationModel.find({ user: req.user._id, intake: intake, course: courseId })
   if (alreadyExists.length > 0) return next(generateAPIError(`Already applied for this intake`, 400));
   const newApplication = await applicationModel.create({
     counsellor: req.user.counsellor,
@@ -902,10 +902,8 @@ export const getEvents = errorWrapper(async (req, res, next) => {
 export const bookSlot = errorWrapper(async (req, res, next) => {
   const { startTime, endTime, attendees, timeZone, notes } = req.body
   const { team } = req.params
-  const emailVerificationObject = req.user.verification.filter(ele => ele.type === "email")
-  if (!emailVerificationObject.status) return next(generateAPIError(`do verify your email to book a slot`, 400));
-  const phoneVerificationObject = req.user.verification.filter(ele => ele.type === "phone")
-  if (!phoneVerificationObject.status) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
+  if (req.user.verification[0].status === false) return next(generateAPIError(`do verify your email to book a slot`, 400));
+  if (req.user.verification[1].status === false) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
   if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
   if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
   if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
