@@ -835,15 +835,15 @@ export const verifyUserOTP = errorWrapper(async (req, res, next) => {
 })
 export const getEvents = errorWrapper(async (req, res, next) => {
   // add meeting for processCordinator
-  await req.user.populate("counsellor", "googleTokens")
-  await req.user.populate("processCoordinator", "googleTokens")
+  await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens" })
+  let counsellor = req.user.advisors.find(ele => ele.role === 'counsellor'), processCoordinator = req.user.advisors.find(ele => ele.role === 'processCoordinator')
   const { team } = req.params
   switch (team) {
     case "counsellor":
-      oauth2Client.setCredentials(req.user.counsellor.googleTokens);
+      oauth2Client.setCredentials(counsellor.info.googleTokens);
       break;
     case "processCoordinator":
-      oauth2Client.setCredentials(req.user.processCoordinator.googleTokens);
+      oauth2Client.setCredentials(processCoordinator.info.googleTokens);
       break;
     default: return next(generateAPIError(`invalid team parameter`, 400));
   }
@@ -907,12 +907,12 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
   if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
   if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
   if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
-  await req.user.populate("counsellor", "googleTokens")
-  await req.user.populate("processCoordinator", "googleTokens")
+  await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens" })
+  let counsellor = req.user.advisors.find(ele => ele.role === 'counsellor'), processCoordinator = req.user.advisors.find(ele => ele.role === 'processCoordinator')
   let event, meet
   switch (team) {
     case "counsellor":
-      oauth2Client.setCredentials(req.user.counsellor.googleTokens);
+      oauth2Client.setCredentials(counsellor.info.googleTokens);
       event = {
         summary: `Counselling Session - ${req.user.firstName} ${req.user.lastName}`,
         description: notes,
@@ -922,10 +922,10 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
         conferenceData: { createRequest: { requestId: Math.random().toString(16).slice(2), }, },
         reminders: { useDefault: false, overrides: [{ method: "email", minutes: 24 * 60 }, { method: "popup", minutes: 10 },], },
       };
-      meet = { user: req.user._id, member: req.user.counsellor }
+      meet = { user: req.user._id, member: counsellor.info._id }
       break;
     case "processCoordinator":
-      oauth2Client.setCredentials(req.user.processCoordinator.googleTokens);
+      oauth2Client.setCredentials(processCoordinator.info.googleTokens);
       event = {
         summary: `Application Processing Session - ${req.user.firstName} ${req.user.lastName}`,
         description: notes,
@@ -935,7 +935,7 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
         conferenceData: { createRequest: { requestId: Math.random().toString(16).slice(2), }, },
         reminders: { useDefault: false, overrides: [{ method: "email", minutes: 24 * 60 }, { method: "popup", minutes: 10 },], },
       };
-      meet = { user: req.user._id, member: req.user.processCoordinator }
+      meet = { user: req.user._id, member: processCoordinator.info._id }
       break;
     default: return next(generateAPIError(`invalid team parameter`, 400));
   }
@@ -944,6 +944,7 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
   const { data } = await calendar.events.insert({ calendarId: 'primary', requestBody: event, conferenceDataVersion: 1, sendUpdates: "all", });
   meet.data = data;
   meet.status = "upcoming"
+  console.log(event,meet);
   const meeting = await meetingModel.create(meet)
   req.user.activity.meetings.push(meeting._id)
   req.user.logs.push({
