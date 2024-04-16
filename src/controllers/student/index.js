@@ -348,7 +348,7 @@ export const activity = errorWrapper(async (req, res, next) => {
       { path: "activity.applications.processing.docChecklist.doc activity.applications.accepted.docChecklist.doc activity.applications.rejected.docChecklist.doc activity.applications.completed.docChecklist.doc activity.applications.cancelled.docChecklist.doc", select: "name contentType createdAt" },
     ]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
-    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member", select: "name email role" })
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member", select: "firstName lastName email role" })
   ]);
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -789,7 +789,7 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
     { path: "activity.applications.rejected.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
     { path: "activity.applications.completed.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
   ])
-  await userModel.populate(student, { path: "communities.participants", select: "name displayPicSrc", },)
+  await userModel.populate(student, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
   return res.status(200).json({ success: true, message: `student details`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const verifyEmail = errorWrapper(async (req, res, next) => {
@@ -953,7 +953,7 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
     details: `meetingId:${meeting._id}`
   })
   await req.user.save()
-  await userModel.populate(meeting, { path: "user member", select: "name email role" })
+  await userModel.populate(meeting, { path: "user member", select: "firstName lastName email role" })
   return res.status(200).json({ success: true, message: `slot booking successful`, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const modifySlot = errorWrapper(async (req, res, next) => {
@@ -1005,7 +1005,7 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
 
   await req.user.save()
   await meeting.save()
-  await userModel.populate(meeting, { path: "user member", select: "name email role" })
+  await userModel.populate(meeting, { path: "user member", select: "firstName lastName email role" })
   return res.status(200).json({ success: true, message: msg, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 // const { Secret_key } = config.get("STRIPE_PAYMENTS")
