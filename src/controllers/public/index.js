@@ -56,7 +56,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data;
-                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data, $options: "i" } }, { unisName: { $regex: ele.data, $options: "i" } }, { schoolName: { $regex: ele.data, $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data, $options: "i" } }, { unisName: { $regex: ele.data, $options: "i" } }, { schoolName: { $regex: ele.data, $options: "i" } }]
+                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } }]
                 else if (ele.type === "AcademicTestName") filter["AdmissionsRequirements.AcademicRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "LanguageTestName") filter["AdmissionsRequirements.LanguageRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "openNow") {
@@ -85,8 +85,10 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "budget") {
                     let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
                     filter["$or"] = currencyFilter.map(element => {
-                        let lowerLimit = costConversion(ele.data.lowerLimit, req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-                        let upperLimit = costConversion(ele.data.upperLimit, req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
+                        ele.data[0] = ele.data[0] ? ele.data[0] : 0
+                        ele.data[1] = ele.data[1] ? ele.data[1] : Math.min()
+                        let lowerLimit = costConversion(ele.data[0], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
+                        let upperLimit = costConversion(ele.data[1], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
                         return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
                     });
                 }
