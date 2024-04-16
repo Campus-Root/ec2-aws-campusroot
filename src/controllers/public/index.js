@@ -24,9 +24,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
                 else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data;
-                // else if (ele.graduationRate === "graduationRate") filter.graduationRate = { $gte: ele.data };
-                // else if (ele.acceptanceRate === "acceptanceRate") filter.acceptanceRate = { $gte: ele.data };
-                // else if (ele.type === "avgTuitionFee") filter.avgTuitionFee = { $lte: ele.data };
+                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data, $options: "i" } }, { code: { $regex: ele.data, $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data, $options: "i" } }, { code: { $regex: ele.data, $options: "i" } }]
             });
             const listOfUniversities = await universityModel.find(filter, { name: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).populate("courses", "name").skip(skip).limit(perPage);
             for (const university of listOfUniversities) {
@@ -48,10 +46,6 @@ export const listings = errorWrapper(async (req, res, next) => {
             totalPages = Math.ceil(totalDocs / perPage);
             return res.status(200).json({ success: true, message: `list of all universities`, data: { list: listOfUniversities.sort(() => Math.random() - 0.5), currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
-            // let searchFilterData = req.body.filterData.find(ele => ele.type === "name")
-            // let searchedDocs = await courseModel.countDocuments({ $or: [{ name: { $regex: searchFilterData.data, $options: "i" } }, { schoolName: { $regex: searchFilterData.data, $options: "i" } }] })
-            // let similarWords, message
-            // if (searchedDocs < 1) similarWords = searchSimilarWords(searchFilterData.data); 
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
@@ -62,7 +56,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data;
-                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data, $options: "i" } }, { schoolName: { $regex: ele.data, $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data, $options: "i" } }, { schoolName: { $regex: ele.data, $options: "i" } }]
+                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data, $options: "i" } }, { unisName: { $regex: ele.data, $options: "i" } }, { schoolName: { $regex: ele.data, $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data, $options: "i" } }, { unisName: { $regex: ele.data, $options: "i" } }, { schoolName: { $regex: ele.data, $options: "i" } }]
                 else if (ele.type === "AcademicTestName") filter["AdmissionsRequirements.AcademicRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "LanguageTestName") filter["AdmissionsRequirements.LanguageRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "openNow") {
@@ -120,18 +114,6 @@ export const listings = errorWrapper(async (req, res, next) => {
         case "destinations":
             const destinations = await destinationModel.find({}, "destinationPicSrc destinationName")
             return res.status(200).json({ success: true, message: `all destinations`, data: { list: destinations } })
-        // case "search":
-        //     const [lists, universities] = await Promise.all([
-        //         courseModel.find({ name: { $regex: req.body.search, $options: "i" } }, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1 }).populate("university", "name location logoSrc type"),
-        //         universityModel.find({ $or: [{ name: { $regex: req.body.search, $options: "i" } }, { code: { $regex: req.body.search, $options: "i" } }], courses: { $exists: true, $not: { $size: 0 } } }, "courses").populate("courses", { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1 })
-        //     ]);
-        //     await universityModel.populate(universities, { path: "courses.university", select: "name location logoSrc type" });
-        //     const combinedList = universities.reduce((acc, ele) => {
-        //         acc.push(...ele.courses);
-        //         return acc;
-        //     }, []);
-        //     const slicedLists = [...lists, ...combinedList].slice(skip, skip + perPage);
-        //     return res.status(200).json({ success: true, message: `all destinations`, data: { list: slicedLists, currentPage: page, totalPages: Math.ceil(lists.length + combinedList.length / perPage), totalItems: lists.length + combinedList.length } });
     }
 })
 export const oneUniversity = errorWrapper(async (req, res, next) => {
