@@ -232,8 +232,35 @@ export const editProfile = errorWrapper(async (req, res, next) => {
       details: `education updated`
     })
   }
-  await req.user.save()
-  const profile = { ...req.user._doc, activity: {}, logs: [] }
+  await Promise.all([
+    await req.user.save(),
+    await userModel.populate(req.user, { path: "advisors.info", select: "-applications -leads -students -googleTokens -logs -updates -password -communities -phoneVerified -otp" }),
+    await Document.populate(req.user,
+      [ { path: "tests.docId", select: "name contentType createdAt", },
+        { path: "workExperience.docId", select: "name contentType createdAt", },
+        { path: "documents.personal.resume", select: "name contentType createdAt", },
+        { path: "documents.personal.passportBD", select: "name contentType createdAt", },
+        { path: "documents.personal.passportADD", select: "name contentType createdAt", },
+        { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
+        { path: "documents.academic.plus2", select: "name contentType createdAt", },
+        { path: "documents.academic.degree", select: "name contentType createdAt", },
+        { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
+        { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
+        { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
+        { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
+        { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
+        { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
+        { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
+        { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
+        { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
+        { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
+        { path: "documents.test.general", select: "name contentType createdAt", },
+        { path: "documents.test.languageProf", select: "name contentType createdAt", },
+        { path: "documents.workExperiences", select: "name contentType createdAt", },])
+  ])
+  const profile = { ...req.user._doc}
+  delete profile.logs
+  delete profile.activity;
   return res.status(200).json({ success: true, message: `profile edited successfully`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const postReview = errorWrapper(async (req, res, next) => {
