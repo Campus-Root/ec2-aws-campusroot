@@ -26,7 +26,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "type") filter.type = ele.data;
                 else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0], $options: "i" } }, { code: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0], $options: "i" } }, { code: { $regex: ele.data[0], $options: "i" } }]
             });
-            const listOfUniversities = await universityModel.find(filter, { name: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).populate("courses", "name").skip(skip).limit(perPage);
+            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).populate("courses", "name").skip(skip).limit(perPage);
             for (const university of listOfUniversities) {
                 if (req.body.currency && university.currency.code !== req.body.currency) {
                     if (!rates[university.currency.code] || !rates[req.body.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
