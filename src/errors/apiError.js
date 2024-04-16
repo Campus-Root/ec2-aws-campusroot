@@ -8,6 +8,7 @@ class APIError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.success = false;
+    this.data = null
   }
 }
 
