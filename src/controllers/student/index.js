@@ -856,16 +856,16 @@ export const sendUserOTP = errorWrapper(async (req, res, next) => {
 })
 export const verifyUserOTP = errorWrapper(async (req, res, next) => {
   const { otp } = req.body
-  const user = await studentModel.findById(req.user._id, "verifications logs")
-  if (req.user.verification[1].token.data !== otp) return next(generateAPIError("invalid otp", 400))
-  if (new Date() > new Date(req.user.verification[1].token.expiry)) return next(generateAPIError("otp expired, generate again", 400))
-  req.user.verification[1].status = true
-  req.user.logs.push({
+  const user = await studentModel.findById(req.user._id, "verification logs")
+  if (user.verification[1].token.data !== otp) return next(generateAPIError("invalid otp", 400))
+  if (new Date() > new Date(user.verification[1].token.expiry)) return next(generateAPIError("otp expired, generate again", 400))
+  user.verification[1].status = true
+  user.logs.push({
     action: `otp verification successful`,
     details: ``
   })
-  await req.user.save()
-  return res.status(200).json({ success: true, message: `phone verification successful`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+  await user.save()
+  return res.status(200).json({ success: true, message: `phone verification successful`, data: user.verification, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const getEvents = errorWrapper(async (req, res, next) => {
   // add meeting for processCordinator
