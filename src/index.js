@@ -36,7 +36,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 startCronJob();
 dbConnect();
 
-const whitelist = ["https://campusroot.com","http://localhost:3000"];
+const whitelist = ["https://campusroot.com", "http://localhost:3000"];
 app.set("trust proxy", 1); // trust first proxy
 app.use(
 	session({
@@ -59,15 +59,17 @@ const corsOptions = {
 app.use(compression({ level: 6, threshold: 10 * 100 }))
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser())
-app.use(express.json({ type: ["application/json", "text/plain"], }));
+app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
 		defaultSrc: ["'self'"],
 		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/", "blob:"],
 		connectSrc: ["'self'", "https://ipapi.co"],
-		scriptSrc: ["'self'", "https://accounts.google.com"]
+		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"]
 	},
 }));
 
