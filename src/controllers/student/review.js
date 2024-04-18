@@ -39,6 +39,7 @@ export const editReview = errorWrapper(async (req, res, next) => {
     if (!post) return next(generateAPIError(`invalid review ID`, 400));
     if (comment) post.comment = comment;
     if (rating) post.rating = rating;
+    await userModel.populate(post, { path: "user", select: "firstName lastName displayPicSrc" })
     await post.save();
     return res.status(200).json({ success: true, message: `review updated`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
