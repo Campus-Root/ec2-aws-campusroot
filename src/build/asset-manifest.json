@@ -1,10 +1,11 @@
 {
   "files": {
-    "main.css": "/static/css/main.83863975.css",
-    "main.js": "/static/js/main.b6e8c8fc.js",
+    "main.css": "/static/css/main.3350ade6.css",
+    "main.js": "/static/js/main.7f345f43.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
     "static/media/linkedin-icon.gif": "/static/media/linkedin-icon.773e4f10b9647ff75239.gif",
+    "static/media/calendar.gif": "/static/media/calendar.15b8535a4830419c950f.gif",
     "static/media/instagram-icon.gif": "/static/media/instagram-icon.0d0ede19c0d1daa8f291.gif",
     "static/media/check_list.gif": "/static/media/check_list.9f1e8d67e35dd010962d.gif",
     "static/media/standardLoader.gif": "/static/media/standardLoader.b2a8fa3d8baba9fc720f.gif",
@@ -14,12 +15,12 @@
     "static/media/deleteIcon.svg": "/static/media/deleteIcon.f76ee8b0b4595d9cbff39214e8b65f07.svg",
     "static/media/education.svg": "/static/media/education.7267861b37d4d9a84684cc580b0d71ef.svg",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
-    "main.83863975.css.map": "/static/css/main.83863975.css.map",
-    "main.b6e8c8fc.js.map": "/static/js/main.b6e8c8fc.js.map",
+    "main.3350ade6.css.map": "/static/css/main.3350ade6.css.map",
+    "main.7f345f43.js.map": "/static/js/main.7f345f43.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.83863975.css",
-    "static/js/main.b6e8c8fc.js"
+    "static/css/main.3350ade6.css",
+    "static/js/main.7f345f43.js"
   ]
 }
