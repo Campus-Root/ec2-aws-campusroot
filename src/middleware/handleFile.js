@@ -10,7 +10,7 @@ export const handleFile = (req, res, next) => {
 			if (validFiles.includes(file.mimetype)) return cb(null, true);
 			return cb(new Error("File should be jpeg, png, mp4, mpeg, or pdf"), false);
 		},
-		limits: { fileSize: 6 * 1000 * 1000 },
+		limits: { fileSize: 16 * 1000 * 1000 },
 	}).single("uploaded_file");
 
 	upload(req, res, (err) => {
