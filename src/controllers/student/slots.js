@@ -50,7 +50,6 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
     const { data } = await calendar.events.insert({ calendarId: 'primary', requestBody: event, conferenceDataVersion: 1, sendUpdates: "all", });
     meet.data = data;
     meet.status = "upcoming"
-    console.log(event, meet);
     const meeting = await meetingModel.create(meet)
     req.user.activity.meetings.push(meeting._id)
     req.user.logs.push({
@@ -80,6 +79,7 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
             if (!startTime && !endTime) return next(generateAPIError("invalid start and end time", 400))
             if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
             const updatedEvent = {
+                ...meeting.data,
                 start: { dateTime: new Date(startTime), timeZone: timeZone, },
                 end: { dateTime: new Date(endTime), timeZone: timeZone, },
             };
