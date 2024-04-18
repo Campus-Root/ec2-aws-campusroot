@@ -1,13 +1,13 @@
 // studentRouter
-
 import express from "express";
-import { editReview, editProfile, postReview, profile, activity, addShortListed, allStudents, verifyEmail, generateRecommendations, apply, uploadInProfile, uploadInApplication, deleteUploadedInProfile, deleteUploadedFromApplication, requestCancellation, removeShortListed, downloadDocument, getEvents, bookSlot, singleStudent, sendUserOTP, verifyUserOTP, forceForwardApply, removeForceApply, editPhone, editEmail, modifySlot } from "../controllers/student/index.js";
 import { handleFile } from "../middleware/handleFile.js";
 import { authMiddleware, isStudent } from "../middleware/auth.js";
 import { checkDisposableEmail } from "../middleware/validations.js";
-
-
-
+import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
+import { editReview, postReview } from "../controllers/student/review.js";
+import { activity, allStudents, downloadDocument, generateRecommendations, singleStudent } from "../controllers/student/index.js";
+import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
+import { addShortListed, apply, deleteUploadedFromApplication, forceForwardApply, removeForceApply, removeShortListed, requestCancellation, uploadInApplication } from "../controllers/student/application.js";
 const router = express.Router();
 //        {{base}}/api/v1/student
 
