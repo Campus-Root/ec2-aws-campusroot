@@ -30,27 +30,27 @@ export const profile = errorWrapper(async (req, res, next) => {
   await Promise.all([
     await userModel.populate(req.user, { path: "advisors.info", select: "-applications -leads -students -googleTokens -logs -updates -password -communities -phoneVerified -otp" }),
     await Document.populate(req.user,
-      [ { path: "tests.docId", select: "name contentType createdAt", },
-        { path: "workExperience.docId", select: "name contentType createdAt", },
-        { path: "documents.personal.resume", select: "name contentType createdAt", },
-        { path: "documents.personal.passportBD", select: "name contentType createdAt", },
-        { path: "documents.personal.passportADD", select: "name contentType createdAt", },
-        { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
-        { path: "documents.academic.plus2", select: "name contentType createdAt", },
-        { path: "documents.academic.degree", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
-        { path: "documents.test.general", select: "name contentType createdAt", },
-        { path: "documents.test.languageProf", select: "name contentType createdAt", },
-        { path: "documents.workExperiences", select: "name contentType createdAt", },])
+      [{ path: "tests.docId", select: "name contentType createdAt", },
+      { path: "workExperience.docId", select: "name contentType createdAt", },
+      { path: "documents.personal.resume", select: "name contentType createdAt", },
+      { path: "documents.personal.passportBD", select: "name contentType createdAt", },
+      { path: "documents.personal.passportADD", select: "name contentType createdAt", },
+      { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
+      { path: "documents.academic.plus2", select: "name contentType createdAt", },
+      { path: "documents.academic.degree", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
+      { path: "documents.test.general", select: "name contentType createdAt", },
+      { path: "documents.test.languageProf", select: "name contentType createdAt", },
+      { path: "documents.workExperiences", select: "name contentType createdAt", },])
   ])
   const profile = { ...req.user._doc }
   delete profile.logs;
@@ -236,29 +236,29 @@ export const editProfile = errorWrapper(async (req, res, next) => {
     await req.user.save(),
     await userModel.populate(req.user, { path: "advisors.info", select: "-applications -leads -students -googleTokens -logs -updates -password -communities -phoneVerified -otp" }),
     await Document.populate(req.user,
-      [ { path: "tests.docId", select: "name contentType createdAt", },
-        { path: "workExperience.docId", select: "name contentType createdAt", },
-        { path: "documents.personal.resume", select: "name contentType createdAt", },
-        { path: "documents.personal.passportBD", select: "name contentType createdAt", },
-        { path: "documents.personal.passportADD", select: "name contentType createdAt", },
-        { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
-        { path: "documents.academic.plus2", select: "name contentType createdAt", },
-        { path: "documents.academic.degree", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
-        { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
-        { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
-        { path: "documents.test.general", select: "name contentType createdAt", },
-        { path: "documents.test.languageProf", select: "name contentType createdAt", },
-        { path: "documents.workExperiences", select: "name contentType createdAt", },])
+      [{ path: "tests.docId", select: "name contentType createdAt", },
+      { path: "workExperience.docId", select: "name contentType createdAt", },
+      { path: "documents.personal.resume", select: "name contentType createdAt", },
+      { path: "documents.personal.passportBD", select: "name contentType createdAt", },
+      { path: "documents.personal.passportADD", select: "name contentType createdAt", },
+      { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
+      { path: "documents.academic.plus2", select: "name contentType createdAt", },
+      { path: "documents.academic.degree", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
+      { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
+      { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
+      { path: "documents.test.general", select: "name contentType createdAt", },
+      { path: "documents.test.languageProf", select: "name contentType createdAt", },
+      { path: "documents.workExperiences", select: "name contentType createdAt", },])
   ])
-  const profile = { ...req.user._doc}
+  const profile = { ...req.user._doc }
   delete profile.logs
   delete profile.activity;
   return res.status(200).json({ success: true, message: `profile edited successfully`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null });
@@ -994,10 +994,10 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
   const meeting = await meetingModel.findById(meetingId)
   if (!meeting || !meeting.data.id) return next(generateAPIError("invalid meetingId", 400))
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-  let msg
+  let msg, response
   switch (option) {
     case "cancelEvent":
-      await calendar.events.patch({
+      response = await calendar.events.patch({
         calendarId: 'primary',
         eventId: meeting.data.id,
         requestBody: {
@@ -1011,6 +1011,7 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
         action: `Event cancelled`,
         details: `meetingId:${meetingId}`
       })
+      console.log(response);
       break;
     case "rescheduleEvent":
       if (!startTime && !endTime) return next(generateAPIError("invalid start and end time", 400))
@@ -1019,12 +1020,13 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
         start: { dateTime: new Date(startTime), timeZone: timeZone, },
         end: { dateTime: new Date(endTime), timeZone: timeZone, },
       };
-      await calendar.events.update({
+      response = await calendar.events.update({
         calendarId: 'primary',
-        eventId: eventId,
+        eventId: meeting.data.id,
         requestBody: updatedEvent,
         sendUpdates: 'all'
       });
+      console.log(response);
       meeting.status = "rescheduled"
       msg = 'Event rescheduled successfully'
       req.user.logs.push({
