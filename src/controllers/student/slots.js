@@ -8,8 +8,8 @@ import 'dotenv/config';
 export const bookSlot = errorWrapper(async (req, res, next) => {
     const { startTime, endTime, attendees, timeZone, notes } = req.body
     const { team } = req.params
-    if (req.user.verification[0].status === false) return next(generateAPIError(`do verify your email to book a slot`, 400));
-    if (req.user.verification[1].status === false) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
+    // if (req.user.verification[0].status === false) return next(generateAPIError(`do verify your email to book a slot`, 400));
+    // if (req.user.verification[1].status === false) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
     if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
     if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
     if (!timeZone) return next(generateAPIError("invalid timeZone", 400))

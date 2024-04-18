@@ -15,8 +15,8 @@ import { costConversion } from "../../utils/currencyConversion.js";
 import { currencySymbols } from "../../utils/enum.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
-  if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
-  if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
+  // if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
+  // if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
   const GRE = req.user.tests.filter(ele => ele.name == "Graduate Record Examination")
   if (!GRE[0].scores) return next(generateAPIError("add GRE test details", 400))
   const gre = GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);

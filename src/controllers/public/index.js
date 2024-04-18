@@ -217,8 +217,8 @@ export const requestCallBack = errorWrapper(async (req, res, next) => {
         if (existingLead && existingLead.length > 0) return res.status(200).json({ success: true, message: 'We have already received your request, we will reach out to you shortly', data: null });
         student = await studentModel.findById(studentID)
         if (!student) return next(generateAPIError('invalid studentId', 400));
-        if (!student.verification[0].status && !email) return next(generateAPIError('please do verify your email before requesting a call', 400));
-        if (!student.verification[1].status && !phone) return next(generateAPIError('please do verify your phone number before requesting a call', 400));
+        // if (!student.verification[0].status && !email) return next(generateAPIError('please do verify your email before requesting a call', 400));
+        // if (!student.verification[1].status && !phone) return next(generateAPIError('please do verify your phone number before requesting a call', 400));
         leadData = {
             student: studentID,
             queryDescription,

@@ -57,8 +57,8 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
 })
 export const apply = errorWrapper(async (req, res, next) => {
     let { universityId, courseId, intake } = req.body
-    if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to process the application`, 400));
-    if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to process the application`, 400));
+    // if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to process the application`, 400));
+    // if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to process the application`, 400));
     if (! await universityModel.findById(universityId)) return next(generateAPIError(`invalid university Id`, 400));
     const course = await courseModel.findById(courseId, "startDate")
     if (!course) return next(generateAPIError(`invalid course Id`, 400));
