@@ -66,13 +66,13 @@ app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
-		defaultSrc: ["'self'"],
-		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/", "blob:"],
-		connectSrc: ["'self'", "https://ipapi.co"],
-		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"]
+	  defaultSrc: ["'self'"],
+	  imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/"],
+	  connectSrc: ["'self'", "https://ipapi.co", "blob:"], // Allow blob URLs for workers
+	  scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
+	  workerSrc: ["'self'", "blob:"], // Add worker-src directive
 	},
-}));
-
+  }));
 // Adding missing security headers
 app.use(helmet.frameguard({ action: 'sameorigin' }));
 app.use(helmet.noSniff());
