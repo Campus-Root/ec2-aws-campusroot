@@ -19,7 +19,8 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   // if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
   const GRE = req.user.tests.filter(ele => ele.name == "Graduate Record Examination")
   if (!GRE[0].scores) return next(generateAPIError("add GRE test details", 400))
-  const gre = GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
+  const totalScore = GRE[0].scores.find(ele => ele.description === "totalScore")
+  const gre = totalScore ? totalScore.count : GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
   const ug = req.user.education.underGraduation
   if (!ug) return next(generateAPIError("add ug gpa", 400))
   let ug_gpa = (req.user.education.underGraduation.pattern != "gpa") ? gradeConversions(ug.pattern, "gpa", ug.totalScore) : ug.totalScore
