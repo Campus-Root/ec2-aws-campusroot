@@ -97,6 +97,11 @@ const conversionTable = [
 
 
 export const gradeConversions = (from, to, value) => {
+    value = Math.round(value * 10) / 10
+    if (from === "percentage") {
+        value = Math.round(value / 9.5 * 10) / 10
+        from = "cgpa"
+    }
     const conversionEntry = conversionTable.find(entry => entry[`${from}`] === value);
     if (conversionEntry) return conversionEntry[`${to}`];
 }
