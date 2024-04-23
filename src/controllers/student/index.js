@@ -23,7 +23,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   const gre = totalScore ? totalScore.count : GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
   const ug = req.user.education.underGraduation
   if (!ug) return next(generateAPIError("add ug gpa", 400))
-  let ug_gpa = (req.user.education.underGraduation.pattern != "gpa") ? gradeConversions(ug.pattern, "gpa", ug.totalScore) : ug.totalScore
+  let ug_gpa = (req.user.education.underGraduation.gradingSystem != "gpa") ? gradeConversions(ug.gradingSystem, "gpa", ug.totalScore) : ug.totalScore
   if (!req.user.preference.courses) return next(generateAPIError("add course preferences", 400))
   console.log("verification:", {
     ug_gpa: ug_gpa,
