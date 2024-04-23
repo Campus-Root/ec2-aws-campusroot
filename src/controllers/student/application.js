@@ -89,18 +89,20 @@ export const apply = errorWrapper(async (req, res, next) => {
     }
     const alreadyExists = await applicationModel.find({ user: req.user._id, intake: intake, course: courseId })
     if (alreadyExists.length > 0) return next(generateAPIError(`Already applied for this intake`, 400));
+    let counsellor = req.user.advisors.filter(ele=>ele.role=="counsellor")
+    let processCoordinator = req.user.advisors.filter(ele=>ele.role=="processCoordinator")
     const newApplication = await applicationModel.create({
-        counsellor: req.user.counsellor,
+        counsellor: counsellor.info,
         university: universityId,
         course: courseId,
         intake: intake,
         user: req.user._id,
-        processCoordinator: req.user.processCoordinator,
+        processCoordinator: processCoordinator.info,
         log: [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }],
         status: "Processing",
         stage: "Waiting For Counsellor's Approval"
     });
-    await teamModel.findOneAndUpdate({ _id: req.user.processCoordinator }, { $push: { applications: newApplication._id } })
+    await teamModel.findOneAndUpdate({ _id: processCoordinator.info }, { $push: { applications: newApplication._id } })
     req.user.activity.applications.processing.push(newApplication._id)
     req.user.logs.push({
         action: `application process Initiated`,
