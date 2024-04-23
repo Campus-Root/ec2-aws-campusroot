@@ -5,7 +5,7 @@ import { authMiddleware, isStudent } from "../middleware/auth.js";
 import { checkDisposableEmail } from "../middleware/validations.js";
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
-import { activity, allStudents, downloadDocument, generateRecommendations, singleStudent } from "../controllers/student/index.js";
+import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent } from "../controllers/student/index.js";
 import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
 import { addShortListed, apply, deleteUploadedFromApplication, forceForwardApply, removeForceApply, removeShortListed, requestCancellation, uploadInApplication } from "../controllers/student/application.js";
 const router = express.Router();
@@ -14,7 +14,7 @@ const router = express.Router();
 router.post("/post-review", authMiddleware, isStudent, postReview);
 router.put("/edit-review", authMiddleware, isStudent, editReview);
 
-router.get("/dashboard", authMiddleware, isStudent, activity);
+router.get("/dashboard", authMiddleware, isStudent, dashboard);
 router.post("/verify-email", authMiddleware, isStudent, verifyEmail);
 router.post("/send-sms-otp", authMiddleware, isStudent, sendUserOTP)
 router.post("/verify-sms-otp", authMiddleware, isStudent, verifyUserOTP)

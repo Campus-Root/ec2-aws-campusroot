@@ -73,7 +73,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   }
   return res.status(200).json({ success: true, message: "Recommendations Generated", data: req.user.recommendation, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-export const activity = errorWrapper(async (req, res, next) => {
+export const dashboard = errorWrapper(async (req, res, next) => {
   await Promise.all([
     await applicationModel.populate(req.user, [
       { path: "activity.applications.processing" },
@@ -120,11 +120,7 @@ export const activity = errorWrapper(async (req, res, next) => {
       isChecked: item.isChecked,
       doc: item.doc,
       desc: item.desc,
-      university: application.university,
-      course: application.course,
-      intake: application.intake,
-      status: application.status,
-      stage: application.stage
+      applicationId: application._id
     })));
   return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendation: req.user.recommendation, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
