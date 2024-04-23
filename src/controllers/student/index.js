@@ -113,7 +113,20 @@ export const activity = errorWrapper(async (req, res, next) => {
     req.user.activity.applications.completed.forEach(applyCurrencyConversion);
     req.user.activity.applications.cancelled.forEach(applyCurrencyConversion);
   }
-  return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendation: req.user.recommendation }, AccessToken: req.AccessToken ? req.AccessToken : null });
+  const applications = [...req.user.activity.applications.accepted, ...req.user.activity.applications.processing];
+  let checklist = applications.flatMap(application =>
+    application.docChecklist.filter(item => !item.isChecked).map(item => ({
+      name: item.name,
+      isChecked: item.isChecked,
+      doc: item.doc,
+      desc: item.desc,
+      university: application.university,
+      course: application.course,
+      intake: application.intake,
+      status: application.status,
+      stage: application.stage
+    })));
+  return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendation: req.user.recommendation, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 //................download any user related Document...........
 export const downloadDocument = errorWrapper(async (req, res, next) => {
