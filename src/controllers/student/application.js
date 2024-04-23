@@ -89,8 +89,8 @@ export const apply = errorWrapper(async (req, res, next) => {
     }
     const alreadyExists = await applicationModel.find({ user: req.user._id, intake: intake, course: courseId })
     if (alreadyExists.length > 0) return next(generateAPIError(`Already applied for this intake`, 400));
-    let counsellor = req.user.advisors.filter(ele=>ele.role=="counsellor")
-    let processCoordinator = req.user.advisors.filter(ele=>ele.role=="processCoordinator")
+    let counsellor = req.user.advisors.find(ele => ele.role == "counsellor")
+    let processCoordinator = req.user.advisors.find(ele => ele.role == "processCoordinator")
     const newApplication = await applicationModel.create({
         counsellor: counsellor.info,
         university: universityId,
@@ -110,7 +110,7 @@ export const apply = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await applicationModel.populate(req.user, { path: "activity.applications.processing" })
-    await userModel.populate(req.user, [{ path: "activity.applications.processing.user", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.processing.processCoordinator", select: "firstName lastName email displayPicSrc" }])
+    await userModel.populate(req.user, [{ path: "activity.applications.processing.user", select: "firstName lastName email displayPicSrc" },{ path: "activity.applications.processing.counsellor", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.processing.processCoordinator", select: "firstName lastName email displayPicSrc" }])
     await universityModel.populate(req.user, { path: "activity.applications.processing.university", select: "name logoSrc location type establishedYear " })
     await courseModel.populate(req.user, { path: "activity.applications.processing.course", select: "name tuitionFee currency studyMode discipline subDiscipline schoolName studyLevel duration", })
     if (req.user.preference.currency) {
