@@ -66,13 +66,13 @@ app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
-	  defaultSrc: ["'self'"],
-	  imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/"],
-	  connectSrc: ["'self'", "https://ipapi.co", "blob:"], // Allow blob URLs for workers
-	  scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
-	  workerSrc: ["'self'", "blob:"], // Add worker-src directive
+		defaultSrc: ["'self'"],
+		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/"],
+		connectSrc: ["'self'", "https://ipapi.co", "blob:"], // Allow blob URLs for workers
+		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
+		workerSrc: ["'self'", "blob:"], // Add worker-src directive
 	},
-  }));
+}));
 // Adding missing security headers
 app.use(helmet.frameguard({ action: 'sameorigin' }));
 app.use(helmet.noSniff());
@@ -82,7 +82,7 @@ app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);
-app.get('/robots.txt', (req, res) => { res.type('text/plain').send('User-agent: *\nDisallow: /'); });
+// app.get('/robots.txt', (req, res) => { res.type('text/plain').send('User-agent: *\nDisallow: /\n '); });
 // app.get('/*', (req, res) => res.send("server is up and running"));
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 const io = new Server(server, { cors: { origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error("Not allowed by CORS")), credentials: true, }, }); // Initialize Socket.IO
