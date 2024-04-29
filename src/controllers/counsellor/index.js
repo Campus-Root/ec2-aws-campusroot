@@ -58,18 +58,27 @@ export const calendarEvents = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const profile = errorWrapper(async (req, res, next) => {
-    await userModel.populate(req.user, [{ path: "students.profile", select: "firstName lastName email displayPicSrc" }])
+    await applicationModel.populate(req.user, [{ path: "applications", select: "course intake deadline user approval stage status cancellationRequest" }])
+    await courseModel.populate(req.user, [{ path: "applications.course", select: "name unisName startDate" }])
+    await userModel.populate(req.user, [
+        {
+            path: "students.profile", select: "firstName lastName email displayPicSrc phone verification isPlanningToTakeAcademicTest isPlanningToTakeLanguageTest recommendation",
+            populate: { path: "recommendation", select: "_id", }
+        },
+        { path: "applications.user", select: "firstName lastName email displayPicSrc" }
+    ])
     const profile = {
         _id: req.user._id,
-        firstName:req.user.firstName,
-        lastName:req.user.lastName,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
         displayPicSrc: req.user.displayPicSrc,
         email: req.user.email,
         linkedIn: req.user.linkedIn,
         appointmentLink: req.user.appointmentLink,
     }
     const { students } = req.user
-    return res.status(200).json({ success: true, message: `all Details of Counsellor`, data: { profile, students }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    const { applications } = req.user
+    return res.status(200).json({ success: true, message: `all Details of Counsellor`, data: { profile, students, applications }, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const applications = errorWrapper(async (req, res, next) => {
     const applications = await applicationModel.find({ counsellor: req.user._id }, "university course intake user processCoordinator cancellationRequest status approval log")
