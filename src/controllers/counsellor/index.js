@@ -165,6 +165,22 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
     ]);
     return res.status(200).json({ success: true, message: `All details of Student`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
+export const singleApplications = errorWrapper(async (req, res, next) => {
+    const { id } = req.params;
+    const application = await applicationModel.findById(id);
+    if (!application) return next(generateAPIError(`Invalid Application Id`, 400));
+    await Promise.all([
+        universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear" }),
+        courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" }),
+        userModel.populate(application, [
+            { path: "user", select: "firstName lastName email displayPicSrc" },
+            { path: "processCoordinator", select: "firstName lastName email displayPicSrc" },
+            { path: "counsellor", select: "firstName lastName email displayPicSrc" }]),
+        Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt" }),
+    ])
+    return res.status(200).json({ success: true, message: `All details of Application`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
+
+})
 export const recommend = errorWrapper(async (req, res, next) => {
     const { studentId, universityId, courseId, possibilityOfAdmit } = req.body
     const university = await universityModel.findById(universityId)
