@@ -71,7 +71,6 @@ export const profile = errorWrapper(async (req, res, next) => {
         displayPicSrc: req.user.displayPicSrc,
         email: req.user.email,
         linkedIn: req.user.linkedIn,
-        appointmentLink: req.user.appointmentLink,
     }
     const { students } = req.user
     const applications = await applicationModel.find({ counsellor: req.user._id }, "course intake deadline user approval stage status cancellationRequest")
