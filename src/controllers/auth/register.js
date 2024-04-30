@@ -160,7 +160,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
             const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-            student.advisors.push({ id: Counsellors[0]._id, type: "counsellor" })
+            student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
             const Counsellor = await teamModel.findById(Counsellors[0]._id);
             Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
             await Counsellor.save();
