@@ -58,15 +58,12 @@ export const calendarEvents = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const profile = errorWrapper(async (req, res, next) => {
-    await applicationModel.populate(req.user, [{ path: "applications", select: "course intake deadline user approval stage status cancellationRequest" }])
     await courseModel.populate(req.user, [{ path: "applications.course", select: "name unisName startDate" }])
-    await userModel.populate(req.user, [
+    await userModel.populate(req.user,
         {
             path: "students.profile", select: "firstName lastName email displayPicSrc phone verification isPlanningToTakeAcademicTest isPlanningToTakeLanguageTest recommendation",
             populate: { path: "recommendation", select: "_id", }
-        },
-        { path: "applications.user", select: "firstName lastName email displayPicSrc" }
-    ])
+        })
     const profile = {
         _id: req.user._id,
         firstName: req.user.firstName,
@@ -77,19 +74,13 @@ export const profile = errorWrapper(async (req, res, next) => {
         appointmentLink: req.user.appointmentLink,
     }
     const { students } = req.user
-    const { applications } = req.user
-    return res.status(200).json({ success: true, message: `all Details of Counsellor`, data: { profile, students, applications }, AccessToken: req.AccessToken ? req.AccessToken : null })
-})
-export const applications = errorWrapper(async (req, res, next) => {
-    const applications = await applicationModel.find({ counsellor: req.user._id }, "university course intake user processCoordinator cancellationRequest status approval log")
+    const applications = await applicationModel.find({ counsellor: req.user._id }, "course intake deadline user approval stage status cancellationRequest")
         .populate({ path: "user", select: "firstName lastName email displayPicSrc" })
         .populate({ path: "processCoordinator", select: "firstName lastName email displayPicSrc" })
-        .populate({ path: "university", select: "name logoSrc location type establishedYear " })
-        .populate({ path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails tuitionFee" })
+        .populate({ path: "course", select: "name unisName startDate" })
         .lean();
-
-    return res.status(200).json({ success: true, message: `Applications for Counsellor`, data: applications, AccessToken: req.AccessToken ? req.AccessToken : null });
-});
+    return res.status(200).json({ success: true, message: `all Details of Counsellor`, data: { profile, students, applications }, AccessToken: req.AccessToken ? req.AccessToken : null })
+})
 export const approval = errorWrapper(async (req, res, next) => {
     const { applicationId, action, justification } = req.body
     const application = await applicationModel.findById(applicationId);
@@ -166,6 +157,12 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
                 select: "name logoSrc location type establishedYear ",
             },
         ]),
+        userModel.populate(student, [
+            {
+                path: "advisors.info",
+                select: "firstName lastName email displayPicSrc",
+            }
+        ])
     ]);
     return res.status(200).json({ success: true, message: `All details of Student`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
 });

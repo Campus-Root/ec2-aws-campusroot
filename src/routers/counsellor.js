@@ -1,5 +1,5 @@
 import express from "express";
-import { approval, generatingAuthUrl, profile, profileEdit, recommend, googleAuthentication, singleStudentProfile, calendarEvents, switchStage, applications, deleteRecommend } from "../controllers/counsellor/index.js";
+import { approval, generatingAuthUrl, profile, profileEdit, recommend, googleAuthentication, singleStudentProfile, calendarEvents, switchStage, deleteRecommend } from "../controllers/counsellor/index.js";
 import { authMiddleware, isCounsellor } from "../middleware/auth.js";
 
 
@@ -10,8 +10,7 @@ router.get("/", authMiddleware, isCounsellor, profile);
 router.get("/single-student/:id", authMiddleware, isCounsellor, singleStudentProfile);
 router.post("/stage", authMiddleware, isCounsellor, switchStage);
 router.post("/", authMiddleware, isCounsellor, profileEdit);
-router.post("/recommend", authMiddleware, isCounsellor, recommend);
-router.get("/applications", authMiddleware, isCounsellor, applications);
+router.post("/recommend", authMiddleware, isCounsellor, recommend); 
 router.post("/approval", authMiddleware, isCounsellor, approval)
 router.get("/google", generatingAuthUrl)
 router.get("/google/login", googleAuthentication)
