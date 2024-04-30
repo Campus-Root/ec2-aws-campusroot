@@ -73,7 +73,7 @@ export const profile = errorWrapper(async (req, res, next) => {
         linkedIn: req.user.linkedIn,
     }
     const { students } = req.user
-    const applications = await applicationModel.find({ counsellor: req.user._id }, "course intake deadline user approval stage status cancellationRequest")
+    const applications = await applicationModel.find({ counsellor: req.user._id }, "course intake deadline user approval stage status cancellationRequest createdAt updatedAt")
         .populate({ path: "user", select: "firstName lastName email displayPicSrc" })
         .populate({ path: "processCoordinator", select: "firstName lastName email displayPicSrc" })
         .populate({ path: "course", select: "name unisName startDate" })
