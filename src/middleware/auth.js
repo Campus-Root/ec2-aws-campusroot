@@ -37,17 +37,17 @@ export const isAdmin = async (req, res, next) => {
         else throw (500)
     } catch (error) {
         console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ message: 'Unauthorised entry' });
+        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
     }
 }
 export const isStudent = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.decoded.id).select("-password -google -emailVerificationString -phoneOtp -GuardianContactNumberOtp"); // redundant exists
+        const user = await userModel.findById(req.decoded.id).select("-password -google "); // redundant exists
         if (user.userType === "student") { req.user = user; next(); }
         else throw (500)
     } catch (error) {
         console.log("error at authorizeStudent insufficient rights ");
-        return res.status(401).json({ message: 'Unauthorised entry' });
+        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
     }
 }
 export const isProcessCoordinator = async (req, res, next) => {
@@ -57,7 +57,7 @@ export const isProcessCoordinator = async (req, res, next) => {
         else throw (500)
     } catch (error) {
         console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ message: 'Unauthorised entry' });
+        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
     }
 }
 export const isDeveloper = async (req, res, next) => {
@@ -67,7 +67,7 @@ export const isDeveloper = async (req, res, next) => {
         else throw (500)
     } catch (error) {
         console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ message: 'Unauthorised entry' });
+        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
     }
 }
 export const isCounsellor = async (req, res, next) => {
@@ -77,6 +77,6 @@ export const isCounsellor = async (req, res, next) => {
         else throw (500)
     } catch (error) {
         console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ message: 'Unauthorised entry' });
+        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
     }
 }
