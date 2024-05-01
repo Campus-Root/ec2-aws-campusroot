@@ -49,6 +49,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
                 else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
                 else if (ele.type === "universityId") filter.university = { $in: ele.data };
+                else if (ele.type === "courseId") filter._id = { $in: ele.data };
                 else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
                 else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
