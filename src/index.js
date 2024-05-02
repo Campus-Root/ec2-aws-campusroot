@@ -18,7 +18,6 @@ import 'dotenv/config';
 import { startCronJob } from "./utils/cron.js";
 import indexRouter from "./routers/index.js";
 import { sendNotification } from "./utils/sendNotification.js";
-import rateLimit from "express-rate-limit";
 
 
 const app = express();
@@ -39,11 +38,6 @@ startCronJob();
 dbConnect();
 
 const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com"];
-export const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 100, // limit each IP to 100 requests per windowMs
-	message: "Too many requests from this IP, please try again later"
-  });
 app.set("trust proxy", 1); // trust first proxy
 app.use(
 	session({

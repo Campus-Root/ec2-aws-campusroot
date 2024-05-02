@@ -2,7 +2,8 @@ import express from "express";
 
 import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack } from "../controllers/public/index.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { limiter } from "../index.js";
+import { limiter } from "../middleware/ratelimiter.js";
+
 
 
 
