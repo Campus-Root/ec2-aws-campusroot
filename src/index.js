@@ -18,6 +18,8 @@ import 'dotenv/config';
 import { startCronJob } from "./utils/cron.js";
 import indexRouter from "./routers/index.js";
 import { sendNotification } from "./utils/sendNotification.js";
+import rateLimit from "express-rate-limit";
+
 
 const app = express();
 const server = createServer(app);
@@ -37,6 +39,11 @@ startCronJob();
 dbConnect();
 
 const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com"];
+export const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // limit each IP to 100 requests per windowMs
+	message: "Too many requests from this IP, please try again later"
+  });
 app.set("trust proxy", 1); // trust first proxy
 app.use(
 	session({
@@ -82,8 +89,6 @@ app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);
-// app.get('/robots.txt', (req, res) => { res.type('text/plain').send('User-agent: *\nDisallow: /\n '); });
-// app.get('/*', (req, res) => res.send("server is up and running"));
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 const io = new Server(server, { cors: { origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error("Not allowed by CORS")), credentials: true, }, }); // Initialize Socket.IO
 io.use((socket, next) => next());
