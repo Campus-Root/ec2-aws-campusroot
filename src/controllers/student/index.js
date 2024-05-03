@@ -116,6 +116,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
   const applications = [...req.user.activity.applications.accepted, ...req.user.activity.applications.processing];
   let checklist = applications.flatMap(application =>
     application.docChecklist.filter(item => !item.isChecked).map(item => ({
+      checklistId:item._id,
       name: item.name,
       isChecked: item.isChecked,
       doc: item.doc,
