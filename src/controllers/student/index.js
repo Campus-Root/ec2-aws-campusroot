@@ -17,9 +17,9 @@ const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
   // if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
   // if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
-  const GRE = req.user.tests.filter(ele => ele.name == "Graduate Record Examination")
-  if (!GRE[0].scores) return next(generateAPIError("add GRE test details", 400))
-  const totalScore = GRE[0].scores.find(ele => ele.description === "totalScore")
+  const GRE = req.user.tests.find(ele => ele.name == "Graduate Record Examination")
+  if (!GRE && !(GRE.scores.length > 0)) return next(generateAPIError("add GRE test details", 400))
+  const totalScore = GRE.scores.find(ele => ele.description === "totalScore")
   const gre = totalScore ? totalScore.count : GRE[0].scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
   const ug = req.user.education.underGraduation
   if (!ug) return next(generateAPIError("add ug gpa", 400))
@@ -116,7 +116,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
   const applications = [...req.user.activity.applications.accepted, ...req.user.activity.applications.processing];
   let checklist = applications.flatMap(application =>
     application.docChecklist.filter(item => !item.isChecked).map(item => ({
-      checklistId:item._id,
+      checklistId: item._id,
       name: item.name,
       isChecked: item.isChecked,
       doc: item.doc,
