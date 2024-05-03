@@ -188,7 +188,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next) => {
             application.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
         }
     }
-    res.status(200).json({ success: true, message: 'New Application Registered', data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
+    res.status(200).json({ success: true, message: 'Application checklist updated', data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const deleteUploadedFromApplication = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId, documentId } = req.body;
