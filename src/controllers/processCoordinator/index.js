@@ -99,7 +99,7 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
         }),
         courseModel.populate(student, [
             {
-                path: "recommendation.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course",
+                path: "recommendations.data.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course",
                 select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails",
             },
         ]),
@@ -111,7 +111,7 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
         ]),
         universityModel.populate(student, [
             {
-                path: "recommendation.university activity.shortListed.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university",
+                path: "recommendations.data.university activity.shortListed.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university",
                 select: "name logoSrc location type establishedYear ",
             },
         ]),

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import userModel from "./User.js";
 import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, DestinationTypeEnum, TestNamesEnum, TestDescriptionEnum, possibilityOfAdmitEnum } from "../utils/enum.js";
 
@@ -164,17 +164,37 @@ const Student = mongoose.Schema(
             },
             publishedDate: { type: Date, },
         }],
-        recommendation: [{
-            university: { type: mongoose.Types.ObjectId, ref: "university" },
-            course: { type: mongoose.Types.ObjectId, ref: "course" },
-            possibilityOfAdmit: {
-                type: String, enum: {
-                    values: Object.values(possibilityOfAdmitEnum),
-                    message: "Invalid Type of possibilityOfAdmit"
-                }
+        // recommendation: [{
+        //     university: { type: mongoose.Types.ObjectId, ref: "university" },
+        //     course: { type: mongoose.Types.ObjectId, ref: "course" },
+        //     possibilityOfAdmit: {
+        //         type: String, enum: {
+        //             values: Object.values(possibilityOfAdmitEnum),
+        //             message: "Invalid Type of possibilityOfAdmit"
+        //         }
+        //     },
+        //     counsellorRecommended: { type: Boolean }
+        // }],
+
+        recommendations: {
+            criteria: {
+                ug_gpa: { type: Number, },
+                gre: { type: Number, },
+                sub_discipline: { type: Array }
             },
-            counsellorRecommended: { type: Boolean }
-        }],
+            data: [{
+                university: { type: mongoose.Types.ObjectId, ref: "university" },
+                course: { type: mongoose.Types.ObjectId, ref: "course" },
+                possibilityOfAdmit: {
+                    type: String, enum: {
+                        values: Object.values(possibilityOfAdmitEnum),
+                        message: "Invalid Type of possibilityOfAdmit"
+                    }
+                },
+                counsellorRecommended: { type: Boolean }
+            }]
+        },
+
         documents: {
             personal: {
                 resume: { type: mongoose.Types.ObjectId, ref: "document" },

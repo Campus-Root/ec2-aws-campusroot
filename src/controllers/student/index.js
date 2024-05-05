@@ -25,19 +25,15 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   if (!ug) return next(generateAPIError("add ug gpa", 400))
   let ug_gpa = (req.user.education.underGraduation.gradingSystem != "gpa") ? gradeConversions(ug.gradingSystem, "gpa", ug.totalScore) : ug.totalScore
   if (!req.user.preference.courses) return next(generateAPIError("add course preferences", 400))
-  console.log("verification:", {
+  let input = {
     ug_gpa: ug_gpa,
     gre: gre,
     sub_discipline: req.user.preference.courses.toString()
-  });
+  }
   const response = await fetch("http://localhost:4321/predict/", {
     method: "POST",
     headers: { "Content-Type": "application/json", },
-    body: JSON.stringify({
-      ug_gpa: ug_gpa,
-      gre: gre,
-      sub_discipline: req.user.preference.courses
-    })
+    body: JSON.stringify(input)
   });
   const result = await response.json();
   let recommendations = []
@@ -49,15 +45,17 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
       possibilityOfAdmit: item.Category
     })
   }
-  req.user.recommendation = req.user.recommendation.filter(ele => ele.counsellorRecommended)
-  req.user.recommendation = [...req.user.recommendation, ...recommendations]
+  input.sub_discipline = input.sub_discipline.split(",")
+  req.user.recommendations.input = input
+  req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
+  req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
   req.user.logs.push({
     action: `recommendations Generated`,
-    details: `recommendations${req.user.recommendation}`
+    details: `recommendations${req.user.recommendations.data.length}`
   })
   await req.user.save();
-  await universityModel.populate(req.user, { path: "recommendation.university", select: "name logoSrc location type establishedYear " })
-  await courseModel.populate(req.user, { path: "recommendation.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration" })
+  await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration" })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
     const applyCurrencyConversion = (element) => {
@@ -69,9 +67,9 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
         element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
       }
     };
-    req.user.recommendation.forEach(applyCurrencyConversion);
+    req.user.recommendations.data.forEach(applyCurrencyConversion);
   }
-  return res.status(200).json({ success: true, message: "Recommendations Generated", data: req.user.recommendation, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: "Recommendations Generated", data: req.user.recommendations, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const dashboard = errorWrapper(async (req, res, next) => {
   await Promise.all([
@@ -83,10 +81,10 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       { path: "activity.applications.cancelled" },
     ]),
     await universityModel.populate(req.user, [
-      { path: "activity.shortListed.university recommendation.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university", select: "name logoSrc location type establishedYear " },
+      { path: "activity.shortListed.university recommendations.data.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university", select: "name logoSrc location type establishedYear " },
     ]),
     await courseModel.populate(req.user, [
-      { path: "recommendation.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency" },
+      { path: "recommendations.data.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency" },
     ]),
     await Document.populate(req.user, [
       { path: "activity.applications.processing.docChecklist.doc activity.applications.accepted.docChecklist.doc activity.applications.rejected.docChecklist.doc activity.applications.completed.docChecklist.doc activity.applications.cancelled.docChecklist.doc", select: "name contentType createdAt" },
@@ -105,7 +103,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
         element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
       }
     };
-    req.user.recommendation.forEach(applyCurrencyConversion);
+    req.user.recommendations.data.forEach(applyCurrencyConversion);
     req.user.activity.shortListed.forEach(applyCurrencyConversion);
     req.user.activity.applications.processing.forEach(applyCurrencyConversion);
     req.user.activity.applications.accepted.forEach(applyCurrencyConversion);
@@ -123,7 +121,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       desc: item.desc,
       applicationId: application._id
     })));
-  return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendation: req.user.recommendation, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendation: req.user.recommendations.data, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 //................download any user related Document...........
 export const downloadDocument = errorWrapper(async (req, res, next) => {

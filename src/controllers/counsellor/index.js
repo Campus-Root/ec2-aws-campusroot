@@ -15,8 +15,8 @@ export const profile = errorWrapper(async (req, res, next) => {
     await courseModel.populate(req.user, [{ path: "applications.course", select: "name unisName startDate" }])
     await userModel.populate(req.user,
         {
-            path: "students.profile", select: "firstName lastName email displayPicSrc phone verification isPlanningToTakeAcademicTest isPlanningToTakeLanguageTest recommendation",
-            populate: { path: "recommendation", select: "_id", }
+            path: "students.profile", select: "firstName lastName email displayPicSrc phone verification isPlanningToTakeAcademicTest isPlanningToTakeLanguageTest recommendations",
+            populate: { path: "recommendations.data", select: "_id", }
         })
     const profile = {
         _id: req.user._id,

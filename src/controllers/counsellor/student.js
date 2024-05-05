@@ -40,7 +40,7 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
         }),
         courseModel.populate(student, [
             {
-                path: "recommendation.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course",
+                path: "recommendations.data.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course",
                 select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails",
             },
         ]),
@@ -52,7 +52,7 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
         ]),
         universityModel.populate(student, [
             {
-                path: "recommendation.university activity.shortListed.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university",
+                path: "recommendations.data.university activity.shortListed.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university",
                 select: "name logoSrc location type establishedYear ",
             },
         ]),
@@ -74,16 +74,16 @@ export const recommend = errorWrapper(async (req, res, next) => {
     if (!course) return next(generateAPIError(`Invalid courseId`, 400));
     const student = await studentModel.findById(studentId)
     if (!student) return next(generateAPIError(`invalid StudentId`, 400));
-    if (student.recommendation.find(ele => ele.course == courseId)) return next(generateAPIError(`course Already recommended`, 400));
-    student.recommendation.push({ university: universityId, course: courseId, possibilityOfAdmit: possibilityOfAdmit, counsellorRecommended: true });
-    student.recommendation = student.recommendation.sort((a, b) => a.possibilityOfAdmit - b.possibilityOfAdmit)
+    if (student.recommendations.data.find(ele => ele.course == courseId)) return next(generateAPIError(`course Already recommended`, 400));
+    student.recommendations.data.push({ university: universityId, course: courseId, possibilityOfAdmit: possibilityOfAdmit, counsellorRecommended: true });
+    student.recommendations.data = student.recommendations.data.sort((a, b) => a.possibilityOfAdmit - b.possibilityOfAdmit)
     await student.save();
     req.user.logs.push({
         action: "course recommended to student",
         details: `studentId:${studentId}&courseId:${courseId}`
     })
     await req.user.save()
-    const newRecommend = student.recommendation.find(ele => ele.course == courseId)
+    const newRecommend = student.recommendations.data.find(ele => ele.course == courseId)
     await universityModel.populate(newRecommend, { path: "university", select: "name logoSrc location type establishedYear " },)
     await courseModel.populate(newRecommend, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails", },)
     return res.status(200).json({ success: true, message: "Recommendations Generated", data: newRecommend, AccessToken: req.AccessToken ? req.AccessToken : null });
@@ -92,9 +92,9 @@ export const deleteRecommend = errorWrapper(async (req, res, next) => {
     const { studentId, recommendId } = req.body
     const student = await studentModel.findById(studentId)
     if (!student) return next(generateAPIError(`invalid StudentId`, 400));
-    const recommendationToBeDeleted = student.recommendation.find(ele => ele._id.toString() == recommendId)
+    const recommendationToBeDeleted = student.recommendations.data.find(ele => ele._id.toString() == recommendId)
     if (!recommendationToBeDeleted) return next(generateAPIError(`invalid recommendId`, 400));
-    await studentModel.findByIdAndUpdate(studentId, { $pull: { recommendation: { _id: recommendId } } })
+    await studentModel.findByIdAndUpdate(studentId, { $pull: { "recommendations.data": { _id: recommendId } } })
     req.user.logs.push({
         action: "course recommended to student",
         details: `UniversityId:${recommendationToBeDeleted.university}&CourseId:${recommendationToBeDeleted.course}&studentId=${studentId}`
