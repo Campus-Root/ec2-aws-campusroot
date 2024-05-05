@@ -121,7 +121,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       desc: item.desc,
       applicationId: application._id
     })));
-  return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendation: req.user.recommendations.data, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendation: req.user.recommendations, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 //................download any user related Document...........
 export const downloadDocument = errorWrapper(async (req, res, next) => {
