@@ -37,16 +37,8 @@ app.use(express.static(path.join(__dirname, 'build')));
 startCronJob();
 dbConnect();
 
-const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com"];
+const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
 app.set("trust proxy", 1); // trust first proxy
-app.use(
-	session({
-		secret: 'sessionSecret', // Replace with a secret key for session encryption
-		resave: false,
-		saveUninitialized: false,
-	})
-);
-
 const corsOptions = {
 	origin(origin, callback) {
 		if (!origin) return callback(null, true);      // for mobile app and postman client
@@ -60,9 +52,20 @@ const corsOptions = {
 app.use(compression({ level: 6, threshold: 10 * 100 }))
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser())
+app.use(cookieParser());
+app.use(
+	session({
+		secret: 'sessionSecret', // Replace with a secret key for session encryption
+		resave: false,
+		saveUninitialized: false,
+		cookie: {
+			secure: true, // Ensure cookies are sent only over HTTPS
+			httpOnly: true, // Prevent client-side JavaScript from accessing the cookie
+			sameSite: 'none' // Set sameSite to 'none' for cross-origin requests
+		}
+	})
+);
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
@@ -84,8 +87,21 @@ app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
-const io = new Server(server, { cors: { origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error("Not allowed by CORS")), credentials: true, }, }); // Initialize Socket.IO
-io.use((socket, next) => next());
+const io = new Server(server, {
+	cors: {
+		origin: function (origin, callback) {
+			if (!origin || whitelist.indexOf(origin) !== -1) {
+				callback(null, true);
+			} else {
+				callback(new Error("Not allowed by CORS"));
+			}
+		},
+		credentials: true,
+	},
+}); // Initialize Socket.IO
+io.use((socket, next) => {
+	next();
+});
 // Socket.IO event handlers
 io.on('connection', function (socket) {
 	console.log("new user connected");

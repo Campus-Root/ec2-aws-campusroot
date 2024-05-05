@@ -11,7 +11,9 @@ const userSchema = mongoose.Schema({
   socialAuth: { type: Object },
   communities: [{ type: mongoose.Types.ObjectId, ref: "community", }],
   otp: { type: String },
-  logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }]
+  logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
+  failedLoginAttempts: { type: Number },
+  nextLoginTime: { type: Date }
 },
   { discriminatorKey: 'userType' },
   { timestamps: true }

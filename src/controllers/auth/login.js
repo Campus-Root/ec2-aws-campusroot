@@ -20,9 +20,23 @@ export const Login = errorWrapper(async (req, res, next) => {
     if (!user) return next(generateAPIError("Invalid credentials. Please try again", 401));
     if (!user.password) return next(generateAPIError("Login with Google", 401));
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return next(generateAPIError("Invalid credentials. Please try again", 401));
+    if (!isPasswordValid) {
+        if (user.failedLoginAttempts > 2) {
+            if (user.nextLoginTime > new Date()) return next(generateAPIError(`Account locked. Please try after ${Math.ceil((user.nextLoginTime - new Date()) / (1000 * 60))} min.`, 401));
+            user.nextLoginTime = new Date();
+            user.nextLoginTime.setTime(user.nextLoginTime.getTime() + (20 * 60 * 1000)); // Adding 20 minutes
+            await user.save();
+            return next(generateAPIError('Account locked. Please try after 20 min.', 401));
+        }
+        user.failedLoginAttempts++;
+        user.nextLoginTime = new Date();
+        user.nextLoginTime.setTime(user.nextLoginTime.getTime() + (20 * 60 * 1000)); // Adding 20 minutes
+        await user.save();
+        return next(generateAPIError("Invalid credentials. Please try again", 401));
+    }
     let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" })
     let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1y" })
+    user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
     await user.save()
     return res.cookie("CampusRoot_Refresh", RefreshToken,).cookie("CampusRoot_Email", email).status(200).json({
@@ -32,8 +46,6 @@ export const Login = errorWrapper(async (req, res, next) => {
         }
     });
 });
-
-
 
 export const forgotPassword = errorWrapper(async (req, res, next) => {
     const { email } = req.body

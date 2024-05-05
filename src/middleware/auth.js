@@ -32,7 +32,7 @@ export const authMiddleware = async (req, res, next) => {
 }
 export const isAdmin = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.decoded.id).select("-password");
+        const user = await userModel.findById(req.decoded.id).select("-password -failedLoginAttempts -nextLoginTime");
         if (user.role === TeamRoleEnum.ADMIN) { req.user = user; next(); }
         else throw (500)
     } catch (error) {
@@ -42,7 +42,7 @@ export const isAdmin = async (req, res, next) => {
 }
 export const isStudent = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.decoded.id).select("-password -google "); // redundant exists
+        const user = await userModel.findById(req.decoded.id).select("-password -google -failedLoginAttempts -nextLoginTime"); // redundant exists
         if (user.userType === "student") { req.user = user; next(); }
         else throw (500)
     } catch (error) {
@@ -52,7 +52,7 @@ export const isStudent = async (req, res, next) => {
 }
 export const isProcessCoordinator = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.decoded.id).select("-password");
+        const user = await userModel.findById(req.decoded.id).select("-password -google -failedLoginAttempts -nextLoginTime");
         if (user.role === TeamRoleEnum.TEAM) { req.user = user; next(); }
         else throw (500)
     } catch (error) {
@@ -62,7 +62,7 @@ export const isProcessCoordinator = async (req, res, next) => {
 }
 export const isDeveloper = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.decoded.id).select("-password");
+        const user = await userModel.findById(req.decoded.id).select("-password -failedLoginAttempts -nextLoginTime");
         if (user.role === TeamRoleEnum.DEVELOPER) { req.user = user; next(); }
         else throw (500)
     } catch (error) {
@@ -72,7 +72,7 @@ export const isDeveloper = async (req, res, next) => {
 }
 export const isCounsellor = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.decoded.id).select("-password");
+        const user = await userModel.findById(req.decoded.id).select("-password -google -failedLoginAttempts -nextLoginTime");
         if (user.role === TeamRoleEnum.COUNSELLOR) { req.user = user; next(); }
         else throw (500)
     } catch (error) {
