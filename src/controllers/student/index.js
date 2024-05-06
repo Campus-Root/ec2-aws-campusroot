@@ -25,15 +25,14 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   if (!ug || !ug.totalScore) return next(generateAPIError("add ug gpa", 400))
   let ug_gpa = (req.user.education.underGraduation.gradingSystem != "gpa") ? gradeConversions(ug.gradingSystem, "gpa", ug.totalScore) : ug.totalScore
   if (!req.user.preference.courses) return next(generateAPIError("add course preferences", 400))
-  let input = {
-    ug_gpa: ug_gpa,
-    gre: gre,
-    sub_discipline: req.user.preference.courses.toString()
-  }
   const response = await fetch("http://localhost:4321/predict/", {
     method: "POST",
     headers: { "Content-Type": "application/json", },
-    body: JSON.stringify(input)
+    body: JSON.stringify({
+      ug_gpa: ug_gpa,
+      gre: gre,
+      sub_discipline: req.user.preference.courses.toString()
+    })
   });
   const result = await response.json();
   let recommendations = []
@@ -45,8 +44,11 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
       possibilityOfAdmit: item.Category
     })
   }
-  input.sub_discipline = req.user.preference.courses
-  req.user.recommendations.input = input
+  req.user.recommendations.criteria = {
+    ug_gpa: ug_gpa,
+    gre: gre,
+    sub_discipline: req.user.preference.courses
+  }
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
   req.user.logs.push({
