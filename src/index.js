@@ -94,8 +94,9 @@ io.use((socket, next) => {
 });
 // Socket.IO event handlers
 io.on('connection', function (socket) {
-	console.log("new user connected");
+	console.log("new user connected",socket);
 	socket.on('connected', () => {
+
 	})
 
 	socket.on('disconnected', ({ personalroomid, friends }) => {
