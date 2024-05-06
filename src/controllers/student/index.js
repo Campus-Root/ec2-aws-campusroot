@@ -25,50 +25,50 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   if (!ug || !ug.totalScore) return next(generateAPIError("add ug gpa", 400))
   let ug_gpa = (req.user.education.underGraduation.gradingSystem != "gpa") ? gradeConversions(ug.gradingSystem, "gpa", ug.totalScore) : ug.totalScore
   if (!req.user.preference.courses) return next(generateAPIError("add course preferences", 400))
-  // let input = {
-  //   ug_gpa: ug_gpa,
-  //   gre: gre,
-  //   sub_discipline: req.user.preference.courses.toString()
-  // }
-  // const response = await fetch("http://localhost:4321/predict/", {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json", },
-  //   body: JSON.stringify(input)
-  // });
-  // const result = await response.json();
-  // let recommendations = []
-  // for (const item of result) {
-  //   let course = await courseModel.findById(item.CID, "university")
-  //   recommendations.push({
-  //     university: course.university,
-  //     course: item.CID,
-  //     possibilityOfAdmit: item.Category
-  //   })
-  // }
-  // input.sub_discipline = req.user.preference.courses
-  // req.user.recommendations.input = input
-  // req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
-  // req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
-  // req.user.logs.push({
-  //   action: `recommendations Generated`,
-  //   details: `recommendations${req.user.recommendations.data.length}`
-  // })
-  // await req.user.save();
-  // await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
-  // await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration" })
-  // if (req.user.preference.currency) {
-  //   const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-  //   const applyCurrencyConversion = (element) => {
-  //     if (element.course.currency.code !== req.user.preference.currency) {
-  //       if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-  //         next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
-  //       }
-  //       element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
-  //       element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
-  //     }
-  //   };
-  //   req.user.recommendations.data.forEach(applyCurrencyConversion);
-  // }
+  let input = {
+    ug_gpa: ug_gpa,
+    gre: gre,
+    sub_discipline: req.user.preference.courses.toString()
+  }
+  const response = await fetch("http://localhost:4321/predict/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", },
+    body: JSON.stringify(input)
+  });
+  const result = await response.json();
+  let recommendations = []
+  for (const item of result) {
+    let course = await courseModel.findById(item.CID, "university")
+    recommendations.push({
+      university: course.university,
+      course: item.CID,
+      possibilityOfAdmit: item.Category
+    })
+  }
+  input.sub_discipline = req.user.preference.courses
+  req.user.recommendations.input = input
+  req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
+  req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
+  req.user.logs.push({
+    action: `recommendations Generated`,
+    details: `recommendations${req.user.recommendations.data.length}`
+  })
+  await req.user.save();
+  await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration" })
+  if (req.user.preference.currency) {
+    const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
+    const applyCurrencyConversion = (element) => {
+      if (element.course.currency.code !== req.user.preference.currency) {
+        if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
+          next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+        }
+        element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
+        element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
+      }
+    };
+    req.user.recommendations.data.forEach(applyCurrencyConversion);
+  }
   return res.status(200).json({ success: true, message: "Recommendations Generated", data: req.user.recommendations, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const dashboard = errorWrapper(async (req, res, next) => {
