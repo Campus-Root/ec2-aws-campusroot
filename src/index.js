@@ -58,7 +58,7 @@ app.use(
 	session({
 		secret: 'sessionSecret', // Replace with a secret key for session encryption
 		resave: false,
-		saveUninitialized: false,
+		saveUninitialized: true,
 		cookie: {
 			secure: true, // Ensure cookies are sent only over HTTPS
 			httpOnly: true, // Prevent client-side JavaScript from accessing the cookie
