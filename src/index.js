@@ -24,6 +24,7 @@ const server = createServer(app);
 
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from "express-session";
 
 const __filename = fileURLToPath(import.meta.url);
 
