@@ -45,7 +45,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
       possibilityOfAdmit: item.Category
     })
   }
-  input.sub_discipline = input.sub_discipline.split(",")
+  input.sub_discipline = req.user.preference.courses
   req.user.recommendations.input = input
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
