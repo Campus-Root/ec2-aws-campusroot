@@ -24,7 +24,6 @@ const server = createServer(app);
 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import session from "express-session";
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -43,11 +42,6 @@ export const cookieOptions = {
 }
 const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
 app.set('trust proxy', 1) // trust first proxy
-app.use(session({
-	secret: 'keyboard cat',
-	resave: false,
-	saveUninitialized: true
-}))
 const corsOptions = {
 	origin(origin, callback) {
 		if (!origin) return callback(null, true);      // for mobile app and postman client
