@@ -41,7 +41,12 @@ export const cookieOptions = {
 	sameSite: 'none'
 }
 const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
-app.set("trust proxy", 1); // trust first proxy
+app.set('trust proxy', 1) // trust first proxy
+app.use(session({
+	secret: 'keyboard cat',
+	resave: false,
+	saveUninitialized: true
+}))
 const corsOptions = {
 	origin(origin, callback) {
 		if (!origin) return callback(null, true);      // for mobile app and postman client
@@ -94,7 +99,7 @@ io.use((socket, next) => {
 });
 // Socket.IO event handlers
 io.on('connection', function (socket) {
-	console.log("new user connected",socket);
+	console.log("new user connected", socket);
 	socket.on('connected', () => {
 
 	})
