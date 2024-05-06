@@ -115,11 +115,11 @@ io.on('connection', function (socket) {
 		console.log(profile.firstName + " joined");
 	})
 	socket.on('trigger', (triggerObject) => {
-		console.log(triggerObject.action, triggerObject.sender.name);
+		console.log(triggerObject.action, triggerObject.sender.firstName);
 		var activityList = [];
 		triggerObject.recievers.forEach(reciever => {
 			var online = io.sockets.adapter.rooms.get(reciever._id);
-			console.log("reciever", reciever.name, online ? "online" : "offline");
+			console.log("reciever", reciever.firstName, online ? "online" : "offline");
 			if (online) {
 				if (triggerObject.action == "ping") {
 					activityList.push({ ...reciever, activity: 'online' });
