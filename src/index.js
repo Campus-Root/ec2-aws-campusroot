@@ -3,7 +3,6 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import bodyParser from 'body-parser';
 import cookieParser from "cookie-parser";
-import session from 'express-session'
 import cors from "cors";
 import { connect as dbConnect } from "./utils/dbConnection.js";
 import morgan from "morgan";
@@ -36,7 +35,11 @@ app.use(express.static(path.join(__dirname, 'build')));
 
 startCronJob();
 dbConnect();
-
+export const cookieOptions = {
+	secure: true,
+	httpOnly: true,
+	sameSite: 'none'
+}
 const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
 app.set("trust proxy", 1); // trust first proxy
 const corsOptions = {
@@ -54,18 +57,6 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(
-	session({
-		secret: 'sessionSecret', // Replace with a secret key for session encryption
-		resave: false,
-		saveUninitialized: true,
-		cookie: {
-			secure: true, // Ensure cookies are sent only over HTTPS
-			httpOnly: true, // Prevent client-side JavaScript from accessing the cookie
-			sameSite: 'none' // Set sameSite to 'none' for cross-origin requests
-		}
-	})
-);
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
@@ -82,7 +73,6 @@ app.use(helmet.frameguard({ action: 'sameorigin' }));
 app.use(helmet.noSniff());
 app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
 app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
-
 app.use(mongoSanitize());
 app.use(morgan("tiny"));
 app.use("/api/v1", indexRouter);

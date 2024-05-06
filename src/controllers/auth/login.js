@@ -9,6 +9,7 @@ import userModel from "../../models/User.js";
 import sendMail from "../../utils/sendEMAIL.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { cookieOptions } from "../../index.js";
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 
@@ -39,7 +40,7 @@ export const Login = errorWrapper(async (req, res, next) => {
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
     await user.save()
-    return res.cookie("CampusRoot_Refresh", RefreshToken,).cookie("CampusRoot_Email", email).status(200).json({
+    return res.cookie("CampusRoot_Refresh", RefreshToken,cookieOptions).cookie("CampusRoot_Email", email,cookieOptions).status(200).json({
         success: true, message: "Login Successful", data: {
             AccessToken,
             role: user.role || user.userType

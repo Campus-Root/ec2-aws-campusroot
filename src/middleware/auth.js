@@ -18,10 +18,7 @@ export const authMiddleware = async (req, res, next) => {
             let decodedNew = jwt.verify(req.cookies.CampusRoot_Refresh, REFRESH_SECRET);
             let AccessToken = jwt.sign({ id: decodedNew.id }, ACCESS_SECRET, { expiresIn: "1h" })
             let RefreshToken = jwt.sign({ id: decodedNew.id }, REFRESH_SECRET, { expiresIn: "1y" })
-            res.cookie("CampusRoot_Refresh", RefreshToken, {
-                sameSite: 'none',
-                secure: true, // For HTTPS only
-            })
+            res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions)
             req.AccessToken = AccessToken
             req.decoded = decodedNew
             return next();
