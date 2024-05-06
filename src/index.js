@@ -112,7 +112,7 @@ io.on('connection', function (socket) {
 	})
 	socket.on('join', (profile) => {
 		socket.join(profile._id);
-		console.log(profile.name + " joined");
+		console.log(profile.firstName + " joined");
 	})
 	socket.on('trigger', (triggerObject) => {
 		console.log(triggerObject.action, triggerObject.sender.name);
