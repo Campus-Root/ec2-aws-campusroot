@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import 'dotenv/config';
 import userModel from "../models/User.js";
 import { TeamRoleEnum } from "../utils/enum.js";
+import { cookieOptions } from "../index.js";
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 
