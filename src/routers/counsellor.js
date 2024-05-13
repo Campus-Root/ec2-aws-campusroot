@@ -11,6 +11,15 @@ import { calendarEvents, generatingAuthUrl, googleAuthentication } from "../cont
 const router = express.Router();
 //        http://localhost:8080/api/v1/counsellor/
 router.get("/", authMiddleware, isCounsellor, profile);
+router.post("/", authMiddleware, isCounsellor, profileEdit);
+
+
+router.get("/google", generatingAuthUrl)
+router.get("/google/login", googleAuthentication)
+router.get("/events", authMiddleware, isCounsellor, calendarEvents)
+
+
+
 router.get("/single-student/:id", authMiddleware, isCounsellor, singleStudentProfile);
 router.get("/application/:id", authMiddleware, isCounsellor, singleApplications);
 
@@ -24,10 +33,8 @@ router.post("/approval", authMiddleware, isCounsellor, approval)
 
 
 
-router.get("/google", generatingAuthUrl)
-router.get("/google/login", googleAuthentication)
-router.get("/events", authMiddleware, isCounsellor, calendarEvents)
-router.post("/", authMiddleware, isCounsellor, profileEdit);
+
+
 
 
 export default router;

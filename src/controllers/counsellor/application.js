@@ -25,14 +25,12 @@ export const singleApplications = errorWrapper(async (req, res, next) => {
         Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt" }),
     ])
     return res.status(200).json({ success: true, message: `All details of Application`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
-
 })
-
-
 export const approval = errorWrapper(async (req, res, next) => {
     const { applicationId, action, justification } = req.body
     const application = await applicationModel.findById(applicationId);
     if (application.counsellor.toString() != req.user._id) return next(generateAPIError(`invalid access`, 400));
+    if (!justification) return next(generateAPIError(`justification necessary`, 400));
     const historyLog = application.log.find(ele => ele.status == "Processing")
     switch (action) {
         case "approve":
@@ -46,7 +44,6 @@ export const approval = errorWrapper(async (req, res, next) => {
             application.approval.justification = justification
             application.stage = "Counsellor Disapproved"
             historyLog.stages.push({ name: "Counsellor Disapproved", });
-            // notify user
             break;
         default: return next(generateAPIError(`invalid action`, 400));
     }
@@ -57,7 +54,7 @@ export const approval = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await teamModel.updateOne({ _id: req.user._id }, { $pull: { newApplications: applicationId } });
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
+    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear" });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
     return res.status(200).json({ success: true, message: `${action} successful`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
 })

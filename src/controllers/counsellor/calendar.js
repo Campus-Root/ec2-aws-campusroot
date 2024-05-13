@@ -1,15 +1,8 @@
-import courseModel from "../../models/Course.js";
-import universityModel from "../../models/University.js";
-import applicationModel from "../../models/application.js";
-import { studentModel } from "../../models/Student.js";
-import Document from "../../models/Uploads.js";
 import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { teamModel } from "../../models/Team.js";
 import { oauth2Client } from "../../utils/oAuthClient.js";
 import { google } from "googleapis";
-import 'dotenv/config';
-import userModel from "../../models/User.js";
 
 export const generatingAuthUrl = errorWrapper(async (req, res, next) => {
     const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/userinfo.email"] });
