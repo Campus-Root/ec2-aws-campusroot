@@ -164,18 +164,6 @@ const Student = mongoose.Schema(
             },
             publishedDate: { type: Date, },
         }],
-        // recommendation: [{
-        //     university: { type: mongoose.Types.ObjectId, ref: "university" },
-        //     course: { type: mongoose.Types.ObjectId, ref: "course" },
-        //     possibilityOfAdmit: {
-        //         type: String, enum: {
-        //             values: Object.values(possibilityOfAdmitEnum),
-        //             message: "Invalid Type of possibilityOfAdmit"
-        //         }
-        //     },
-        //     counsellorRecommended: { type: Boolean }
-        // }],
-
         recommendations: {
             criteria: {
                 ug_gpa: { type: Number, },
@@ -194,7 +182,6 @@ const Student = mongoose.Schema(
                 counsellorRecommended: { type: Boolean }
             }]
         },
-
         documents: {
             personal: {
                 resume: { type: mongoose.Types.ObjectId, ref: "document" },
