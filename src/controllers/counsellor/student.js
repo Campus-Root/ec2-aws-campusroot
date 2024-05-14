@@ -10,6 +10,16 @@ import userModel from "../../models/User.js";
 import meetingModel from "../../models/meetings.js";
 import { possibilityOfAdmitEnum, studentCounsellingStagesEnum } from "../../utils/enum.js";
 
+export const students = errorWrapper(async (req, res, next) => {
+    await courseModel.populate(req.user, [{ path: "applications.course", select: "name unisName startDate" }])
+    await userModel.populate(req.user,
+        {
+            path: "students.profile", select: "firstName lastName email displayPicSrc phone verification isPlanningToTakeAcademicTest isPlanningToTakeLanguageTest recommendations",
+            populate: { path: "recommendations.data", select: "_id", }
+        })
+        const { students } = req.user
+    return res.status(200).json({ success: true, message: `all Details of Counsellor`, data: students, AccessToken: req.AccessToken ? req.AccessToken : null })
+})
 export const singleStudentProfile = errorWrapper(async (req, res, next) => {
     const { id } = req.params;
     const student = await studentModel.findById(id);

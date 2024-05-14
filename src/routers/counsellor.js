@@ -3,8 +3,8 @@ import { authMiddleware, isCounsellor } from "../middleware/auth.js";
 
 
 import {profile, profileEdit} from '../controllers/counsellor/index.js'
-import {deleteRecommend, recommend, singleStudentProfile, switchStage} from '../controllers/counsellor/student.js'
-import { approval, singleApplications } from "../controllers/counsellor/application.js";
+import {deleteRecommend, recommend, singleStudentProfile, students, switchStage} from '../controllers/counsellor/student.js'
+import { applications, approval, singleApplications } from "../controllers/counsellor/application.js";
 import { calendarEvents, generatingAuthUrl, googleAuthentication } from "../controllers/counsellor/calendar.js";
 
 
@@ -19,8 +19,9 @@ router.get("/google/login", googleAuthentication)
 router.get("/events", authMiddleware, isCounsellor, calendarEvents)
 
 
-
+router.post("/students", authMiddleware, isCounsellor, students);
 router.get("/single-student/:id", authMiddleware, isCounsellor, singleStudentProfile);
+router.post("/applications", authMiddleware, isCounsellor, applications);
 router.get("/application/:id", authMiddleware, isCounsellor, singleApplications);
 
 router.post("/stage", authMiddleware, isCounsellor, switchStage);

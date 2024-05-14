@@ -11,6 +11,14 @@ import { google } from "googleapis";
 import 'dotenv/config';
 import userModel from "../../models/User.js";
 
+export const applications = errorWrapper(async (req, res, next) => {
+    const applications = await applicationModel.find({ counsellor: req.user._id }, "course intake deadline user approval stage status cancellationRequest createdAt updatedAt")
+        .populate({ path: "user", select: "firstName lastName email displayPicSrc" })
+        .populate({ path: "processCoordinator", select: "firstName lastName email displayPicSrc" })
+        .populate({ path: "course", select: "name unisName startDate" })
+        .lean();
+    return res.status(200).json({ success: true, message: `all Details of Counsellor`, data: applications , AccessToken: req.AccessToken ? req.AccessToken : null })
+})
 export const singleApplications = errorWrapper(async (req, res, next) => {
     const { id } = req.params;
     const application = await applicationModel.findById(id);
