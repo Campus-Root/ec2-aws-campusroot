@@ -17,7 +17,7 @@ const leadsSchema = mongoose.Schema({
         followUp_Status: { type: String },
         nextFollowUp: { type: Date, default: new Date() }
     }],
-    leadRating: { type: String, enum: { values: Object.values(leadRatingEnum), message: "Invalid leadStatus" } },
+    leadRating: { type: String, enum: { values: Object.values(leadRatingEnum), message: "Invalid leadRating" }, default: "high priority" },
     logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
     notes: [{ disc: { type: String }, nextFollowUp: { type: Date, default: new Date() } }]
     // notes[] attachments activites emails meetings events

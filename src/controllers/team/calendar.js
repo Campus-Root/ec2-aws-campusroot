@@ -35,7 +35,7 @@ export const googleAuthentication = errorWrapper(async (req, res, next) => {
         orderBy: 'updated',
     }
     const list = await calendar.events.list(filter);
-    return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: list.data.items.length, items: list.data.items } })
+    return res.status(200).json({ success: true, message: `${user.role} calendar`, data: { numberOfItems: list.data.items.length, items: list.data.items } })
 })
 export const calendarEvents = errorWrapper(async (req, res, next) => {
     if (!req.user.googleTokens.access_token) return next(generateAPIError(`invalid google tokens`, 400));
@@ -49,5 +49,5 @@ export const calendarEvents = errorWrapper(async (req, res, next) => {
         orderBy: 'updated',
     }
     const { data } = await calendar.events.list(filter);
-    return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return res.status(200).json({ success: true, message: `${user.role} calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
 })

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { disciplineEnum,DestinationTypeEnum } from "../utils/enum.js";
+import { DestinationTypeEnum } from "../utils/enum.js";
 
 const destinationSchema = mongoose.Schema({
     destinationName: {
@@ -20,10 +20,6 @@ const destinationSchema = mongoose.Schema({
     callingCode:{type:String},
     currency: { type: String, default: "United States Dollar" },
     about: { type: String },
-    popularPrograms: [{ type: String,values: Object.values(disciplineEnum),
-        message: "Invalid discipline"}],
-    topUniversities: [{ type: mongoose.Types.ObjectId, ref: "university", }]
-
 },
     { timestamps: true }
 );

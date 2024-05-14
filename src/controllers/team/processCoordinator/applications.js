@@ -8,129 +8,7 @@ import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { applicationStagesEnum } from "../../utils/enum.js";
 import userModel from "../../models/User.js";
-import { teamModel } from "../../models/Team.js";
-import { oauth2Client } from "../../utils/oAuthClient.js";
-import { google } from "googleapis";
 import 'dotenv/config';
-export const generatingAuthUrl = errorWrapper(async (req, res, next) => {
-    const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/userinfo.email"] });
-    res.status(200).json({ success: true, message: `auth url`, data: url });
-})
-export const googleAuthentication = errorWrapper(async (req, res, next) => {
-    const { tokens } = await oauth2Client.getToken(req.query.code)
-    oauth2Client.setCredentials(tokens);
-    const oauth2 = google.oauth2({
-        version: 'v2',
-        auth: oauth2Client,
-    });
-    const { data } = await oauth2.userinfo.get();
-    const user = await teamModel.findOne({ email: data.email })
-    if (!user) return next(generateAPIError(`user email mismatch`, 400));
-    user.googleTokens = {
-        access_token: tokens.access_token,
-        token_type: tokens.token_type,
-        expiry_date: tokens.expiry_date,
-    }
-    if (tokens.refresh_token) user.googleTokens.refresh_token = tokens.refresh_token
-    await user.save()
-    oauth2Client.setCredentials(user.googleTokens);
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    const filter = {
-        calendarId: 'primary',
-        timeMin: new Date().toISOString(),
-        maxResults: 2499,    // cannot be larger than 2500 by default 250
-        singleEvents: true,
-        orderBy: 'updated',
-    }
-    const list = await calendar.events.list(filter);
-    return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: list.data.items.length, items: list.data.items } })
-})
-export const calendarEvents = errorWrapper(async (req, res, next) => {
-    if (!req.user.googleTokens.access_token) return next(generateAPIError(`invalid google tokens`, 400));
-    oauth2Client.setCredentials(req.user.googleTokens);
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    const filter = {
-        calendarId: 'primary',
-        timeMin: new Date().toISOString(),
-        maxResults: 2499,    // cannot be larger than 2500 by default 250
-        singleEvents: true,
-        orderBy: 'updated',
-    }
-    const { data } = await calendar.events.list(filter);
-    return res.status(200).json({ success: true, message: `counsellor calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
-})
-export const profile = errorWrapper(async (req, res, next) => {
-    const profile = {
-        _id: req.user._id,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        displayPicSrc: req.user.displayPicSrc,
-        email: req.user.email,
-        linkedIn: req.user.linkedIn,
-        appointmentLink: req.user.appointmentLink,
-    }
-    return res.status(200).json({ success: true, message: `all Details of Process Coordinator`, data: profile, AccessToken: req.AccessToken ? req.AccessToken : null })
-})
-export const applicationListings = errorWrapper(async (req, res, next) => {
-    const { page } = req.body, filter = {}, perPage = 20, skip = (page - 1) * perPage;
-    let totalPages = 0;
-    const { stage, status, course, university } = req.body.filterData;
-    if (stage) filter.stage = { $in: stage };
-    if (status) filter.status = { $in: status };
-    if (university) filter.university = { $in: university };
-    if (course) filter.course = { $in: course };
-    filter.processCoordinator = { $eq: req.user._id };
-    filter.$or = [{ "approval.counsellorApproval": true }, { "approval.userConsent": true }];
-    const applications = await applicationModel.find(filter, "university course intake user counsellor cancellationRequest status stage approval").populate("university", "name logoSrc").populate("user counsellor", "name email").populate("course", "name subDiscipline discipline").skip(skip).limit(perPage);
-    totalPages = Math.ceil(await applicationModel.countDocuments(filter) / perPage);
-    return res.status(200).json({ success: true, message: `list of applications`, data: { list: applications, currentPage: page, totalPages: totalPages }, AccessToken: req.AccessToken ? req.AccessToken : null })
-})
-export const singleStudentProfile = errorWrapper(async (req, res, next) => {
-    const { id } = req.params;
-    const student = await studentModel.findById(id);
-    if (!student) return next(generateAPIError(`Invalid StudentId`, 400));
-    await Promise.all([
-        applicationModel.populate(student, {
-            path: "activity.applications.processing activity.applications.accepted activity.applications.rejected activity.applications.completed activity.applications.cancelled",
-            populate: {
-                path: "university course docChecklist.doc",
-                select: "name logoSrc location type establishedYear  contentType createdAt",
-            },
-        }),
-        courseModel.populate(student, [
-            {
-                path: "recommendations.data.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course",
-                select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails",
-            },
-        ]),
-        Document.populate(student, [
-            {
-                path: "documents.personal.resume documents.personal.passportBD documents.personal.passportADD documents.academic.secondarySchool documents.academic.plus2 documents.academic.degree documents.academic.bachelors.transcripts documents.academic.bachelors.bonafide documents.academic.bachelors.CMM documents.academic.bachelors.PCM documents.academic.bachelors.OD documents.academic.masters.transcripts documents.academic.masters.bonafide documents.academic.masters.CMM documents.academic.masters.PCM documents.academic.masters.OD documents.test.general documents.test.languageProf documents.workExperiences",
-                select: "name contentType createdAt",
-            },
-        ]),
-        universityModel.populate(student, [
-            {
-                path: "recommendations.data.university activity.shortListed.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university",
-                select: "name logoSrc location type establishedYear ",
-            },
-        ]),
-    ]);
-    return res.status(200).json({ success: true, message: `All details of Student`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
-});
-export const singleApplications = errorWrapper(async (req, res, next) => {
-    const { applicationId } = req.params
-    const application = await applicationModel.findById(applicationId)
-    if (!application) return next(generateAPIError(`invalid applicationId`, 400));
-    await userModel.populate(application, [
-        { path: "user", select: "firstName lastName email displayPicSrc" },
-        { path: "counsellor", select: "firstName lastName email displayPicSrc" }
-    ])
-    await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt" })
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `single applications details`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
-})
 export const switchStage = errorWrapper(async (req, res, next) => {
     const { applicationId, status, stage, note } = req.body
     const application = await applicationModel.findById(applicationId)
@@ -242,13 +120,6 @@ export const cancellation = errorWrapper(async (req, res, next) => {
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
     return res.status(200).json({ success: true, message: "cancellation request attended", data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
-})
-export const downloadDoc = errorWrapper(async (req, res, next) => {
-    const { documentId } = req.params
-    const document = await Document.findById(documentId)
-    if (!document) return next(generateAPIError(`invalid Document Id`, 401));
-    // if (!document.viewers.includes(req.user._id) && document.user.toString() != req.user._id) return next(generateAPIError(`invalid access to document`, 401));
-    return res.contentType(document.contentType).send(document.data);
 })
 export const result = errorWrapper(async (req, res, next) => {
     const { applicationId, result, note } = req.body

@@ -28,6 +28,16 @@ export const authMiddleware = async (req, res, next) => {
         }
     }
 }
+export const isTeam = async (req, res, next) => {
+    try {
+        const user = await userModel.findById(req.decoded.id).select("-password -failedLoginAttempts -nextLoginTime");
+        if (user.userType === "member") { req.user = user; next(); }
+        else throw (500)
+    } catch (error) {
+        console.log("error at authorizeAdmin insufficient rights ");
+        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
+    }
+}
 export const isAdmin = async (req, res, next) => {
     try {
         const user = await userModel.findById(req.decoded.id).select("-password -failedLoginAttempts -nextLoginTime");
