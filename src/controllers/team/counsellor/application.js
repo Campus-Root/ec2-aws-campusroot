@@ -1,10 +1,9 @@
-import courseModel from "../../models/Course.js";
-import universityModel from "../../models/University.js";
-import applicationModel from "../../models/application.js";
-import { generateAPIError } from "../../errors/apiError.js";
-import { errorWrapper } from "../../middleware/errorWrapper.js";
-import { teamModel } from "../../models/Team.js";
-import 'dotenv/config';
+import universityModel from "../../../models/University.js";
+import courseModel from "../../../models/Course.js";
+import applicationModel from "../../../models/application.js";
+import { generateAPIError } from "../../../errors/apiError.js";
+import { errorWrapper } from "../../../middleware/errorWrapper.js";
+import { teamModel } from "../../../models/Team.js";
 
 export const approval = errorWrapper(async (req, res, next) => {
     const { applicationId, action, justification } = req.body

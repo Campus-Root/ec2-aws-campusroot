@@ -1,9 +1,9 @@
-import courseModel from "../../models/Course.js";
-import universityModel from "../../models/University.js";
-import { studentModel } from "../../models/Student.js";
-import { generateAPIError } from "../../errors/apiError.js";
-import { errorWrapper } from "../../middleware/errorWrapper.js";
-import { possibilityOfAdmitEnum, studentCounsellingStagesEnum } from "../../utils/enum.js";
+import courseModel from "../../../models/Course.js";
+import universityModel from "../../../models/University.js";
+import { studentModel } from "../../../models/Student.js";
+import { generateAPIError } from "../../../errors/apiError.js";
+import { errorWrapper } from "../../../middleware/errorWrapper.js";
+import { possibilityOfAdmitEnum, studentCounsellingStagesEnum } from "../../../utils/enum.js";
 
 export const switchStage = errorWrapper(async (req, res, next) => {
     const { studentId, stage, note } = req.body

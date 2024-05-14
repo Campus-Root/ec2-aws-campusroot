@@ -1,14 +1,13 @@
-import courseModel from "../../models/Course.js";
-import universityModel from "../../models/University.js";
-import Document from "../../models/Uploads.js";
-import applicationModel from "../../models/application.js";
-import { studentModel } from "../../models/Student.js";
+import courseModel from "../../../models/Course.js";
+import universityModel from "../../../models/University.js";
+import Document from "../../../models/Uploads.js";
+import applicationModel from "../../../models/application.js";
+import { studentModel } from "../../../models/Student.js";
 import fs from "fs"
-import { generateAPIError } from "../../errors/apiError.js";
-import { errorWrapper } from "../../middleware/errorWrapper.js";
-import { applicationStagesEnum } from "../../utils/enum.js";
-import userModel from "../../models/User.js";
-import 'dotenv/config';
+import { generateAPIError } from "../../../errors/apiError.js";
+import { errorWrapper } from "../../../middleware/errorWrapper.js";
+import { applicationStagesEnum } from "../../../utils/enum.js";
+import userModel from "../../../models/User.js";
 export const switchStage = errorWrapper(async (req, res, next) => {
     const { applicationId, status, stage, note } = req.body
     const application = await applicationModel.findById(applicationId)
