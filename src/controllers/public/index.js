@@ -42,7 +42,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             }
             totalDocs = await universityModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
-            return res.status(200).json({ success: true, message: `list of all universities`, data: { list: listOfUniversities.sort(() => Math.random() - 0.5), currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
+            return res.status(200).json({ success: true, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
