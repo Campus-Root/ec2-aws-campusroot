@@ -1,8 +1,8 @@
-import { downloadDoc, profile, profileEdit, singleApplications, singleStudentProfile } from "../controllers/team/index.js";
+import { downloadDoc, listings, profile, profileEdit, singleApplications, singleStudentProfile } from "../controllers/team/index.js";
 import { calendarEvents, generatingAuthUrl, googleAuthentication } from "../controllers/team/calendar.js";
 import { authMiddleware, isTeam } from "../middleware/auth.js";
 import express from "express";
-import { listings } from "../controllers/public/index.js";
+
 
 const router = express.Router();
 //        {{base}}/api/v1/member
