@@ -72,51 +72,57 @@ export const singleApplications = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: `single applications details`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const listings = errorWrapper(async (req, res, next) => {
-    const { page } = req.body, filter = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
+    const { page, perPage = 20 } = req.body, filter = {}, skip = (page - 1) * perPage; // Number of items per page
+    console.log(perPage);
     let totalPages = 0, totalDocs
     switch (req.params.name) {
         case "students":
+            req.body.filterData.forEach(ele => { if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }] });
             filter["advisors.info"] = req.user._id
             const listOfStudents = await studentModel.find(filter, "firstName lastName email displayPicSrc phone verification isPlanningToTakeAcademicTest isPlanningToTakeLanguageTest recommendations").skip(skip).limit(perPage);
-            await courseModel.populate(listOfStudents, [{ path: "applications.course", select: "name unisName startDate" }])
+            // await courseModel.populate(listOfStudents, [{ path: "applications.course", select: "name unisName startDate" }])
             const studentsWithStages = req.user.students.reduce((acc, item) => {
                 acc[item.profile.toString()] = item.stage;
                 return acc;
             }, {});
-            const students = listOfStudents.map(element => {
+            let students = listOfStudents.map(element => {
                 return {
                     ...element._doc,
                     stage: studentsWithStages[element._id.toString()]
                 };
             });
+            let stageFilter = req.body.filterData.find(ele => ele.type === "stage")
+            if (stageFilter) students = students.filter(ele => stageFilter.data.includes(ele.stage))
             totalDocs = await studentModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
             return res.status(200).json({ success: true, message: `students list`, data: { list: students, currentPage: page, totalPages: totalPages, totalItems: totalDocs }, AccessToken: req.AccessToken ? req.AccessToken : null })
         case "applications":
-
-
-            // const { stage, status, course, university } = req.body.filterData;
-            // if (stage) filter.stage = { $in: stage };
-            // if (status) filter.status = { $in: status };
-            // if (university) filter.university = { $in: university };
-            // if (course) filter.course = { $in: course };
-            // filter.processCoordinator = { $eq: req.user._id };
-            // filter.$or = [{ "approval.counsellorApproval": true }, { "approval.userConsent": true }];
-            // const applications = await applicationModel.find(filter, "university course intake user counsellor cancellationRequest status stage approval").populate("university", "name logoSrc").populate("user counsellor", "name email").populate("course", "name subDiscipline discipline").skip(skip).limit(perPage);
-            // totalPages = Math.ceil(await applicationModel.countDocuments(filter) / perPage);
-            // return res.status(200).json({ success: true, message: `list of applications`, data: { list: applications, currentPage: page, totalPages: totalPages }, AccessToken: req.AccessToken ? req.AccessToken : null })
-
-
+            req.body.filterData.forEach(ele => {
+                if (ele.type === "courseId") filter["course"] = { $in: ele.data }
+                else if (ele.type === "universityId") filter["university"] = { $in: ele.data }
+                else if (ele.type === "processCoordinator") filter["$or"] ? filter.$or.push([{ "approval.counsellorApproval": true }, { "approval.userConsent": true }]) : filter["$or"] = [{ "approval.counsellorApproval": true }, { "approval.userConsent": true }]
+                else if (ele.type === "counsellorApproval") filter["approval.counsellorApproval"] = { $in: ele.data }
+                else if (ele.type === "userConsent") filter["approval.userConsent"] = { $in: ele.data }
+                else if (ele.type === "user") filter["user"] = { $in: ele.data }
+                else if (ele.type === "cancellationRequest") filter["cancellationRequest"] = { $in: ele.data }
+                else if (ele.type === "stage") filter["stage"] = { $in: ele.data }
+                else if (ele.type === "status") filter["status"] = { $in: ele.data }
+                else if (ele.type === "intake") filter["intake"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
+                else if (ele.type === "deadline") filter["deadline"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
+            });
             filter[req.user.role] = req.user._id
-            const applications = await applicationModel.find(filter, "course intake deadline user approval stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
+            const applications = await applicationModel.find(filter, "course university intake deadline user approval stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
+            totalDocs = await studentModel.countDocuments(filter)
+            totalPages = Math.ceil(totalDocs / perPage);
             await userModel.populate(applications, { path: "user processCoordinator", select: "firstName lastName email displayPicSrc" })
             await courseModel.populate(applications, { path: "course", select: "name unisName startDate" })
-            return res.status(200).json({ success: true, message: `applications list`, data: applications, AccessToken: req.AccessToken ? req.AccessToken : null })
+            return res.status(200).json({ success: true, message: `applications list`, data: { list: applications, currentPage: page, totalPages: totalPages, totalItems: totalDocs }, AccessToken: req.AccessToken ? req.AccessToken : null })
         case "leads":
             filter[req.user.role] = req.user._id
             const leads = await leadsModel.find(filter, "name email phone queryDescription ifPhoneIsSameAsWhatsapp whatsappNumber student leadSource leadRating").skip(skip).limit(perPage)
-            return res.status(200).json({ success: true, message: `leads list`, data: leads, AccessToken: req.AccessToken ? req.AccessToken : null })
-
+            totalDocs = await studentModel.countDocuments(filter)
+            totalPages = Math.ceil(totalDocs / perPage);
+            return res.status(200).json({ success: true, message: `leads list`, data: { list: leads, currentPage: page, totalPages: totalPages, totalItems: totalDocs }, AccessToken: req.AccessToken ? req.AccessToken : null })
         default: return next(generateAPIError(`invalid params`, 400));
     }
 })
