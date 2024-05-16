@@ -113,6 +113,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             await courseModel.populate(applications, { path: "course", select: "name unisName startDate" })
             return res.status(200).json({ success: true, message: `applications list`, data: applications, AccessToken: req.AccessToken ? req.AccessToken : null })
         case "leads":
+            filter[req.user.role] = req.user._id
             const leads = await leadsModel.find(filter, "name email phone queryDescription ifPhoneIsSameAsWhatsapp whatsappNumber student leadSource leadRating").skip(skip).limit(perPage)
             return res.status(200).json({ success: true, message: `leads list`, data: leads, AccessToken: req.AccessToken ? req.AccessToken : null })
 
