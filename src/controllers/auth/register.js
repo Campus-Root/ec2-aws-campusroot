@@ -13,37 +13,31 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { jwtDecode } from "jwt-decode";
 import { cookieOptions } from "../../index.js";
+import { DestinationTypeEnum, LanguageTypeEnum } from "../../utils/enum.js";
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 
 export const StudentRegister = errorWrapper(async (req, res, next) => {
-    const { firstName, lastName, email, password, displayPicSrc } = req.body;
+    const { firstName, lastName, email, password, displayPicSrc, country, language } = req.body;
     if (!password || !email || !firstName || !lastName) return next(generateAPIError(`Incomplete details`, 400));
     const alreadyExists = await studentModel.findOne({ email: email });
     if (alreadyExists) return next(generateAPIError(`Email already registered`, 400));
-    const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc });
+    if (!Object.values(DestinationTypeEnum).includes(country)) return next(generateAPIError(`select destination country`, 400));
+    if (!Object.values(LanguageTypeEnum).includes(language)) return next(generateAPIError(`select language communication`, 400));
+    const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: [country], language: language } });
     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
     const Counsellor = await teamModel.findById(Counsellors[0]._id);
-    student.advisors.push({
-        info: Counsellors[0]._id,
-        role: "counsellor"
-    })
+    student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
     await student.save()
     Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
     const verification = [{
         type: "email",
         status: false,
-        token: {
-            data: (Math.random() + 1).toString(16).substring(2),
-            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        }
+        token: { data: (Math.random() + 1).toString(16).substring(2), expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
     }, {
         type: "phone",
         status: false,
-        token: {
-            data: null,
-            expiry: new Date()
-        }
+        token: { data: null, expiry: new Date() }
     }]
     student.verification = verification
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
@@ -146,7 +140,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             }
         } else {
-            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, google: { id: sub } });
+            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, google: { id: sub }, preference: { country: ["United States of America"], language: "English" } });
             student.verification = verification
             student.verification[0].status = email_verified;
             if (!email_verified) {

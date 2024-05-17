@@ -115,8 +115,8 @@ export const TestDescriptionEnum = {
     CONVERSATION: "Conversation",
     COMPREHENSION: "Comprehension",
     PRODUCTION: "Production",
-    ENGLISH: "English", 
-    MATH: "Math", 
+    ENGLISH: "English",
+    MATH: "Math",
     SCIENCE: "Science"
 };
 export const TeamRoleEnum = {
@@ -143,6 +143,11 @@ export const DestinationTypeEnum = {
     IRELAND: "Ireland",
     NZ: "New Zealand"
 };
+export const LanguageTypeEnum = {
+    English: "English",
+    Hindi: "Hindi",
+    Telugu: "Telugu"
+}
 export const CurrencySymbolEnum = {
     USD: "$",
     GBP: "£",
