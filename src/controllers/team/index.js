@@ -62,10 +62,7 @@ export const singleApplications = errorWrapper(async (req, res, next) => {
     const { id } = req.params
     const application = await applicationModel.findById(id)
     if (!application) return next(generateAPIError(`invalid applicationId`, 400));
-    await userModel.populate(application, [
-        { path: "user", select: "firstName lastName email displayPicSrc" },
-        { path: "counsellor", select: "firstName lastName email displayPicSrc" }
-    ])
+    await userModel.populate(application, { path: "user processCoordinator counsellor", select: "firstName lastName email displayPicSrc" })
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
