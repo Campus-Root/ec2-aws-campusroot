@@ -233,16 +233,13 @@ const Student = mongoose.Schema(
         preference: {
             degree: { type: String },
             intake: { type: Date },
-            budget: {
-                upper: { type: Number },
-                lower: { type: Number, }
-            },
+            budget: { upper: { type: Number }, lower: { type: Number, } },
             courses: [{ type: String, }],
             country: [{ type: String, enum: { values: Object.values(DestinationTypeEnum), message: "Invalid Destination Type" } }],
             exploreButton: { type: Boolean },
             theme: { type: String },
             currency: { type: String },
-            language: { type: String },// enum eng, tel, hindi
+            language: { type: String },
         },
     }
 );
