@@ -16,7 +16,7 @@ import os from "os";
 import 'dotenv/config';
 import { startCronJob } from "./utils/cron.js";
 import indexRouter from "./routers/index.js";
-
+// misc
 
 const app = express();
 const server = createServer(app);
