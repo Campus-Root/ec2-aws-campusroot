@@ -16,7 +16,6 @@ import os from "os";
 import 'dotenv/config';
 import { startCronJob } from "./utils/cron.js";
 import indexRouter from "./routers/index.js";
-// misc
 
 const app = express();
 const server = createServer(app);
@@ -37,7 +36,7 @@ dbConnect();
 export const cookieOptions = {
 	secure: true,
 	httpOnly: true,
-	sameSite: 'none'
+	sameSite: 'strict'
 }
 const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
 app.set('trust proxy', 1) // trust first proxy
