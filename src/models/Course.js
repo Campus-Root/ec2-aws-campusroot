@@ -33,7 +33,10 @@ const courseSchema = mongoose.Schema(
         }],
         schoolName: { type: String }, // university name or school name  
         unisName: { type: String },
-        STEM: { type: Boolean }, // hc  hide 
+        stemDetails: {
+            stem: { type: Boolean }, // hc  hide 
+            stemLink: { type: String }, // hc  hide 
+        },
         duration: { type: String },
         pathway: { type: Boolean }, // hc hide
         courseType: { type: String }, //hc hide
@@ -76,7 +79,7 @@ const courseSchema = mongoose.Schema(
         },
         applicationDetails: {
             applicationProcedureLink: { type: String }, // not to user 
-            applicationFee: { type: Number },
+            applicationFee: { type: String },
             applicationFeeLink: { type: String }, // not to user 
             ScoreEvaluation: { type: Boolean },
         },      //hide
