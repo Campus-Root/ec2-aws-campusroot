@@ -73,7 +73,7 @@ app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
 app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(mongoSanitize());
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
-app.use("/api/v1", indexRouter);
+// app.use("/api/v1", indexRouter);
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 const io = new Server(server, {
 	cors: {
