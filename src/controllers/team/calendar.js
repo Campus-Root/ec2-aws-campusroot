@@ -49,5 +49,5 @@ export const calendarEvents = errorWrapper(async (req, res, next) => {
         orderBy: 'updated',
     }
     const { data } = await calendar.events.list(filter);
-    return res.status(200).json({ success: true, message: `${user.role} calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return res.status(200).json({ success: true, message: `${req.user.role} calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
