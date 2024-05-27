@@ -118,7 +118,7 @@ export const listings = errorWrapper(async (req, res, next) => {
     }
 })
 export const oneUniversity = errorWrapper(async (req, res, next) => {
-    let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 }).populate("courses", "name about subDiscipline discipline studyLevel tuitionFee duration courseType studyMode currency startDate")
+    let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 })
     if (!university) return res.status(400).json({ success: true, message: `university ID invalid`, data: null })
     university = await university.populate("userReviews", "rating user comment")
     university = await university.populate("userReviews.user", "firstName lastName displayPicSrc")
@@ -126,21 +126,21 @@ export const oneUniversity = errorWrapper(async (req, res, next) => {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
         if (!rates[university.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
         university.cost = university.cost.map(ele => {
-            return {
+            return {    
                 name: ele.name,
                 lowerLimit: costConversion(ele.lowerLimit, university.currency.code, req.query.currency, rates[university.currency.code], rates[req.query.currency]),
                 upperLimit: costConversion(ele.upperLimit, university.currency.code, req.query.currency, rates[university.currency.code], rates[req.query.currency])
             };
         });
         university.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
-        university.courses = university.courses.map(ele => {
-            if (!rates[ele.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
-            if (ele.currency.code != req.query.currency) {
-                ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.query.currency, rates[ele.currency.code], rates[req.query.currency])
-                ele.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
-            }
-            return ele;
-        });
+        // university.courses = university.courses.map(ele => {
+        //     if (!rates[ele.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+        //     if (ele.currency.code != req.query.currency) {
+        //         ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.query.currency, rates[ele.currency.code], rates[req.query.currency])
+        //         ele.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
+        //     }
+        //     return ele;
+        // });
     }
     return res.status(200).json({ success: true, message: `single university`, data: university })
 })
