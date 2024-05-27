@@ -50,6 +50,7 @@ const corsOptions = {
 	credentials: true,
 	optionsSuccessStatus: 200
 };
+app.disable('x-powered-by');
 app.use(compression({ level: 6, threshold: 10 * 100 }))
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
