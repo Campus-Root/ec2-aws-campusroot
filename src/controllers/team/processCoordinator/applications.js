@@ -65,7 +65,7 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
 })
 export const editItemInChecklist = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId, action, name, isChecked, desc, type } = req.body
-    const application = await applicationModel.findById(applicationId);
+    let application = await applicationModel.findById(applicationId);
     if (!application) return next(generateAPIError(`invalid application ID`, 400));
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
     if (!checklistItem) return next(generateAPIError(`invalid checklist ID`, 400));
@@ -79,10 +79,12 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
             await application.save()
             break;
         case "delete":
+            if(checklistItem.doc) await Document.findByIdAndDelete(checklistItem.doc)
             await application.updateOne({ $pull: { docChecklist: { _id: checklistItemId } } });
             break;
         default: return next(generateAPIError(`bad action, choose one among : delete,edit`, 400));
     }
+    application = await applicationModel.findById(applicationId);
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
     await userModel.populate(application, [
         { path: "user", select: "firstName lastName email displayPicSrc" },
@@ -95,7 +97,7 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `item added to checklist`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return res.status(200).json({ success: true, message: `checklist updated successfully`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
 })
 export const cancellation = errorWrapper(async (req, res, next) => {
     const { applicationId, cancel } = req.body
