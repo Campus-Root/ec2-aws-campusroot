@@ -56,7 +56,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data;
                 else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } }]
-                else if (ele.type === "AcademicTestName") filter["AdmissionsRequirements.AcademicRequirements.testName"] = { $in: ele.data };
+                else if (ele.type === "AcademicTestName") filter["AdmissionsRequirements.AcademicRequirements.testName"] = { $nin: ele.data };
                 else if (ele.type === "LanguageTestName") filter["AdmissionsRequirements.LanguageRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "openNow") {
                     let currentMonth = new Date().getMonth(), next3Months = (currentMonth + 3) % 12, period
@@ -97,7 +97,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                     filter.startDate = { $elemMatch: period };
                 }
             });
-            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
+            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "AdmissionsRequirements.AcademicRequirements":1,"AdmissionsRequirements.LanguageRequirements":1}).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
                     if (!rates[ele.currency.code] || !rates[req.body.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
