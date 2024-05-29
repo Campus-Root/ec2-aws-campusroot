@@ -182,6 +182,7 @@ export const oneCourse = errorWrapper(async (req, res, next) => {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
         if (!rates[course.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
         course.tuitionFee.tuitionFee = costConversion(course.tuitionFee.tuitionFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
+        course.applicationDetails.applicationFee = costConversion(course.applicationDetails.applicationFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
         course.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
         if (!rates[course.university.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
         course.university.cost = course.university.cost.map(ele => {
