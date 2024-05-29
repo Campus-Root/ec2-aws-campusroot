@@ -23,7 +23,8 @@ export const listings = errorWrapper(async (req, res, next) => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
                 else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
-                else if (ele.type === "type") filter.type = ele.data;
+                else if (ele.type === "type") filter.type = ele.data[0];
+                else if (ele.type === "rating") filter.uni_rating = { $gte: ele.data[0] };
                 else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0], $options: "i" } }, { code: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0], $options: "i" } }, { code: { $regex: ele.data[0], $options: "i" } }]
             });
             const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort({ uni_rating: -1 }).skip(skip).limit(perPage);
@@ -55,8 +56,17 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data;
-                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } }]
-                else if (ele.type === "AcademicTestName") filter["AdmissionsRequirements.AcademicRequirements.testName"] = { $nin: ele.data };
+                else if (ele.type === "name") {
+                    if (!filter["$or"]) filter["$or"] = []
+                    filter["$or"].push({ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } })
+                }
+                else if (ele.type === "AcademicTestName") {
+                    if (!filter["$and"]) filter["$and"] = []
+                    let InArray = [], OutArray = []
+                    ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
+                    if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $nin: OutArray } });
+                    if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $in: InArray } });
+                }
                 else if (ele.type === "LanguageTestName") filter["AdmissionsRequirements.LanguageRequirements.testName"] = { $in: ele.data };
                 else if (ele.type === "openNow") {
                     let currentMonth = new Date().getMonth(), next3Months = (currentMonth + 3) % 12, period
@@ -83,13 +93,14 @@ export const listings = errorWrapper(async (req, res, next) => {
                 }
                 else if (ele.type === "budget") {
                     let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
-                    filter["$or"] = currencyFilter.map(element => {
+                    if (!filter["$or"]) filter["$or"] = []
+                    filter["$or"].push(...currencyFilter.map(element => {
                         ele.data[0] = ele.data[0] ? ele.data[0] : 0
                         ele.data[1] = ele.data[1] ? ele.data[1] : Math.min()
                         let lowerLimit = costConversion(ele.data[0], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
                         let upperLimit = costConversion(ele.data[1], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
                         return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
-                    });
+                    }));
                 }
                 else if (ele.type === "intake") {
                     /* 0=>0,1,2 1=>3,4,5 2=>6,7,8 3=>9,10,11*/
@@ -97,7 +108,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                     filter.startDate = { $elemMatch: period };
                 }
             });
-            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "AdmissionsRequirements.AcademicRequirements":1,"AdmissionsRequirements.LanguageRequirements":1}).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
+            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "AdmissionsRequirements.AcademicRequirements": 1, "AdmissionsRequirements.LanguageRequirements": 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
                     if (!rates[ele.currency.code] || !rates[req.body.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
@@ -126,7 +137,7 @@ export const oneUniversity = errorWrapper(async (req, res, next) => {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
         if (!rates[university.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
         university.cost = university.cost.map(ele => {
-            return {    
+            return {
                 name: ele.name,
                 lowerLimit: costConversion(ele.lowerLimit, university.currency.code, req.query.currency, rates[university.currency.code], rates[req.query.currency]),
                 upperLimit: costConversion(ele.upperLimit, university.currency.code, req.query.currency, rates[university.currency.code], rates[req.query.currency])
