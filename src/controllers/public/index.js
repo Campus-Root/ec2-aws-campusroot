@@ -67,7 +67,13 @@ export const listings = errorWrapper(async (req, res, next) => {
                     if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $nin: OutArray } });
                     if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $in: InArray } });
                 }
-                else if (ele.type === "LanguageTestName") filter["AdmissionsRequirements.LanguageRequirements.testName"] = { $in: ele.data };
+                else if (ele.type === "LanguageTestName") {
+                    if (!filter["$and"]) filter["$and"] = []
+                    let InArray = [], OutArray = []
+                    ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
+                    if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $nin: OutArray } });
+                    if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $in: InArray } });
+                }
                 else if (ele.type === "openNow") {
                     let currentMonth = new Date().getMonth(), next3Months = (currentMonth + 3) % 12, period
                     (currentMonth > 8) ?
