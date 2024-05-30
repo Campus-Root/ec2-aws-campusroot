@@ -20,10 +20,10 @@ export const Login = errorWrapper(async (req, res, next) => {
     const user = await userModel.findOne({ email: email })
     if (!user) return next(generateAPIError("Invalid credentials. Please try again", 401));
     if (!user.password) return next(generateAPIError("Login with Google", 401));
+    if (user.nextLoginTime > new Date()) return next(generateAPIError(`Account locked. Please try after ${Math.ceil((user.nextLoginTime - new Date()) / (1000 * 60))} min.`, 401));
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
         if (user.failedLoginAttempts > 2) {
-            if (user.nextLoginTime > new Date()) return next(generateAPIError(`Account locked. Please try after ${Math.ceil((user.nextLoginTime - new Date()) / (1000 * 60))} min.`, 401));
             user.nextLoginTime = new Date();
             user.nextLoginTime.setTime(user.nextLoginTime.getTime() + (20 * 60 * 1000)); // Adding 20 minutes
             await user.save();
@@ -37,10 +37,22 @@ export const Login = errorWrapper(async (req, res, next) => {
     }
     let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" })
     let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1y" })
+    const source = req.headers['user-agent'];
+    let token = user.tokens.find(token => token.source === source);
+    if (token) {
+        token.AccessToken = AccessToken;
+        token.RefreshToken = RefreshToken;
+    } else {
+        user.tokens.push({
+            AccessToken: AccessToken,
+            RefreshToken: RefreshToken,
+            source: source
+        });
+    }
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
     await user.save()
-    return res.cookie("CampusRoot_Refresh", RefreshToken,cookieOptions).cookie("CampusRoot_Email", email,cookieOptions).status(200).json({
+    return res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions).status(200).json({
         success: true, message: "Login Successful", data: {
             AccessToken,
             role: user.role || user.userType
@@ -91,4 +103,25 @@ export const verifyOtp = errorWrapper(async (req, res, next) => {
 });
 
 
-
+export const Logout = errorWrapper(async (req, res, next) => {
+    const user = await userModel.findById(req.user._id, "logs tokens")
+    const source = req.headers['user-agent'];
+    const logoutAll = req.body.logoutAll
+    if (logoutAll) {
+        user.tokens = []; // Clear all tokens
+        user.logs.push({
+            action: "logged out",
+            details: "All devices"
+        });
+        await user.save();
+        return res.status(200).json({ success: true, message: `Logged Out from All Devices Successfully`, data: null });
+    } else {
+        user.tokens = user.tokens.filter(token => token.source !== source);
+        user.logs.push({
+            action: "logged out",
+            details: `Device: ${source}`
+        });
+        await user.save();
+        return res.status(200).json({ success: true, message: `Logged Out Successfully`, data: null })
+    }
+})

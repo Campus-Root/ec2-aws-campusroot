@@ -13,7 +13,13 @@ const userSchema = mongoose.Schema({
   otp: { type: String },
   logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
   failedLoginAttempts: { type: Number },
-  nextLoginTime: { type: Date }
+  nextLoginTime: { type: Date },
+  lastActive: { type: Date },
+  tokens: [{
+    source: { type: String },
+    AccessToken: { type: String },
+    RefreshToken: { type: String },
+  }]
 },
   { discriminatorKey: 'userType' },
   { timestamps: true }

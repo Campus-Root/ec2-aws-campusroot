@@ -5,86 +5,69 @@ import { TeamRoleEnum } from "../utils/enum.js";
 import { cookieOptions } from "../index.js";
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 const ACCESS_SECRET = process.env.ACCESS_SECRET
-
 export const authMiddleware = async (req, res, next) => {
     try {
+        if (!req.headers.authorization) return res.status(401).json({ success: false, message: 'No token provided', data: null });
         const token = req.headers.authorization.split(" ")[1];
-        let decoded = jwt.verify(token, ACCESS_SECRET);
-        req.decoded = decoded;
-        next();
-    } catch (error) {
-        if (error.message != "jwt expired") return res.status(401).json({ success: false, message: `${error.message}`, data: null });
-        if (!req.cookies.CampusRoot_Refresh) return res.status(401).json({ success: false, message: `login again`, data: null });
+        if (!token) return res.status(401).json({ success: false, message: 'Token missing', data: null });
         try {
-            let decodedNew = jwt.verify(req.cookies.CampusRoot_Refresh, REFRESH_SECRET);
+            const decoded = jwt.verify(token, ACCESS_SECRET);
+            req.decoded = decoded;
+            let user = await userModel.findOne({ _id: decoded.id, "tokens.AccessToken": token }).select("-password -failedLoginAttempts -nextLoginTime -socialAuth -tokens")
+            if (!user) return res.status(401).json({ success: false, message: `login again`, data: null });
+            req.user = user
+            return next();
+        } catch (error) {
+            if (error.message !== "jwt expired") return res.status(401).json({ success: false, message: error.message, data: null });
+        }
+        const refreshToken = req.cookies.CampusRoot_Refresh;
+        if (!refreshToken) return res.status(401).json({ success: false, message: 'login again', data: null });
+        try {
+            let decodedNew = jwt.verify(refreshToken, REFRESH_SECRET);
+            req.decoded = decodedNew
+            let user = await userModel.findOne({ _id: decodedNew.id, "tokens.RefreshToken": refreshToken }).select("tokens")
+            if (!user) return res.status(401).json({ success: false, message: `login again`, data: null });
             let AccessToken = jwt.sign({ id: decodedNew.id }, ACCESS_SECRET, { expiresIn: "1h" })
             let RefreshToken = jwt.sign({ id: decodedNew.id }, REFRESH_SECRET, { expiresIn: "1y" })
             res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions)
             req.AccessToken = AccessToken
-            req.decoded = decodedNew
+            let token = user.tokens.find(token => token.RefreshToken === refreshToken);
+            if (!token || token.source !== req.headers['user-agent']) return res.status(401).json({ success: false, message: `login again`, data: null });
+            token.AccessToken = AccessToken;
+            token.RefreshToken = RefreshToken;
+            req.user = await userModel.findOne({ _id: decoded.id, "tokens.AccessToken": token },).select("-password -failedLoginAttempts -nextLoginTime -socialAuth -tokens")
+            await user.save()
             return next();
-        } catch (err) {
+        } catch (error) {
+            console.log(error.message);
             return res.status(401).json({ success: false, message: `login again`, data: null });
         }
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Internal server error', data: null });
     }
 }
-export const isTeam = async (req, res, next) => {
-    try {
-        const user = await userModel.findById(req.decoded.id).select("-password -failedLoginAttempts -nextLoginTime");
-        if (user.userType === "member") { req.user = user; next(); }
-        else throw (500)
-    } catch (error) {
-        console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
-    }
+export const isTeam = (req, res, next) => {
+    if (req.user.userType === "member") return next();
+    return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
-export const isAdmin = async (req, res, next) => {
-    try {
-        const user = await userModel.findById(req.decoded.id).select("-password -failedLoginAttempts -nextLoginTime");
-        if (user.role === TeamRoleEnum.ADMIN) { req.user = user; next(); }
-        else throw (500)
-    } catch (error) {
-        console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
-    }
+export const isAdmin = (req, res, next) => {
+    if (req.user.role === TeamRoleEnum.ADMIN) return next();
+    return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
-export const isStudent = async (req, res, next) => {
-    try {
-        const user = await userModel.findById(req.decoded.id).select("-password -google -failedLoginAttempts -nextLoginTime"); // redundant exists
-        if (user.userType === "student") { req.user = user; next(); }
-        else throw (500)
-    } catch (error) {
-        console.log("error at authorizeStudent insufficient rights ");
-        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
-    }
+export const isStudent = (req, res, next) => {
+    console.log(req.user.userType);
+    if (req.user.userType === "student") return next();
+    return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
-export const isProcessCoordinator = async (req, res, next) => {
-    try {
-        const user = await userModel.findById(req.decoded.id).select("-password -google -failedLoginAttempts -nextLoginTime");
-        if (user.role === TeamRoleEnum.TEAM) { req.user = user; next(); }
-        else throw (500)
-    } catch (error) {
-        console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
-    }
+export const isProcessCoordinator = (req, res, next) => {
+    if (req.user.role === TeamRoleEnum.TEAM) return next();
+    return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
-export const isDeveloper = async (req, res, next) => {
-    try {
-        const user = await userModel.findById(req.decoded.id).select("-password -failedLoginAttempts -nextLoginTime");
-        if (user.role === TeamRoleEnum.DEVELOPER) { req.user = user; next(); }
-        else throw (500)
-    } catch (error) {
-        console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
-    }
+export const isDeveloper = (req, res, next) => {
+    if (req.user.role === TeamRoleEnum.DEVELOPER) return next();
+    return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
-export const isCounsellor = async (req, res, next) => {
-    try {
-        const user = await userModel.findById(req.decoded.id).select("-password -google -failedLoginAttempts -nextLoginTime");
-        if (user.role === TeamRoleEnum.COUNSELLOR) { req.user = user; next(); }
-        else throw (500)
-    } catch (error) {
-        console.log("error at authorizeAdmin insufficient rights ");
-        return res.status(401).json({ success: false, message: 'Unauthorised entry', data: null });
-    }
+export const isCounsellor = (req, res, next) => {
+    if (req.user.role === TeamRoleEnum.COUNSELLOR) return next();
+    return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
