@@ -48,7 +48,7 @@ const universitySchema = mongoose.Schema(
         scholarship: { type: Boolean, default: "true" }, //hide
         loanDetails: { type: Object },// to be modefied //hide
         userReviews: [{ type: mongoose.Types.ObjectId, ref: "reviews", }],
-        courses: [{ type: mongoose.Types.ObjectId, ref: "course", }],
+        courses: { type: Number },
         profilesAdmits: [{ type: mongoose.Types.ObjectId, ref: "user", }],
         community: { type: mongoose.Types.ObjectId, ref: "community", },
         roi: { type: Number },
