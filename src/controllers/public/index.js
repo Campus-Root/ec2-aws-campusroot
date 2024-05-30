@@ -130,7 +130,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             if (req.body.filterData.length > 0) courses = courses.sort(() => Math.random() - 0.5)
             return res.status(200).json({ success: true, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "destinations":
-            const destinations = await destinationModel.find({}, "destinationPicSrc destinationName")
+            const destinations = await destinationModel.find({})
             return res.status(200).json({ success: true, message: `all destinations`, data: { list: destinations } })
     }
 })
