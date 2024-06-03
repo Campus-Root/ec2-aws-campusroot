@@ -103,10 +103,10 @@ io.on('connection', function (socket) {
 			socket.broadcast.to(element[0]).emit('disconnected', { user: personalroomid, status: 'offline' });
 		});
 	})
-	// socket.on('join', (profile) => {
-	// 	socket.join(profile._id);
-	// 	console.log(profile.firstName + " joined");
-	// })
+	socket.on('join', (profile) => {
+		socket.join(profile._id);
+		console.log(profile.firstName + " joined");
+	})
 	socket.on('trigger', (triggerObject) => {
 		console.log(triggerObject.action, triggerObject.sender.firstName);
 		var activityList = [];
