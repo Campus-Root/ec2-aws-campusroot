@@ -19,8 +19,14 @@ const leadsSchema = mongoose.Schema({
     }],
     leadRating: { type: String, enum: { values: Object.values(leadRatingEnum), message: "Invalid leadRating" }, default: "high priority" },
     logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
-    notes: [{ disc: { type: String }, nextFollowUp: { type: Date, default: new Date() } }]
+    notes: [{ disc: { type: String }, nextFollowUp: { type: Date, default: new Date() } }],
     // notes[] attachments activites emails meetings events
+    preferences: {
+        preferredCountry: { type: String },
+        preferredCourse: { type: String },
+        intake: { type: String },
+        additionalInfo: { type: String },
+    }
 },
     { timestamps: true }
 );
