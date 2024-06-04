@@ -6,15 +6,17 @@ import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { possibilityOfAdmitEnum, studentCounsellingStagesEnum } from "../../../utils/enum.js";
 
 export const switchStage = errorWrapper(async (req, res, next) => {
-    const { studentId, stage, note } = req.body
+    const { studentId, stage, nextActionDate, note } = req.body
     if (!await studentModel.findById(studentId)) return next(generateAPIError(`invalid StudentId`, 400));
     const student = req.user.students.find(ele => ele.profile.toString() == studentId)
     if (!student) return next(generateAPIError(`invalid access`, 400));
     if (!Object.values(studentCounsellingStagesEnum).includes(stage)) return next(generateAPIError(`invalid stage`, 400));
+    if (!new Date(nextActionDate) || new Date() >= new Date()) return next(generateAPIError(`invalid nextActionDate`, 400));
+    student.nextActionDate = nextActionDate
     student.stage = stage
     req.user.logs.push({
         action: "student stage shifted",
-        details: `studentId:${studentId}&stage:${stage}&note:${note}`
+        details: `studentId:${studentId}&stage:${stage}&note:${note}&nextActionDate:${nextActionDate}`
     })
     await req.user.save()
     await studentModel.populate(student, { path: "profile", select: "firstName lastName email displayPicSrc" },)
