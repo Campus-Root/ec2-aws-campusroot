@@ -20,7 +20,7 @@ export const Login = errorWrapper(async (req, res, next) => {
     const user = await userModel.findOne({ email: email })
     if (!user) return next(generateAPIError("Invalid credentials. Please try again", 401));
     if (!user.password) return next(generateAPIError("Login with Google", 401));
-    if (user.nextLoginTime > new Date()) return next(generateAPIError(`Account locked. Please try after ${Math.ceil((user.nextLoginTime - new Date()) / (1000 * 60))} min.`, 401));
+    // if (user.nextLoginTime > new Date()) return next(generateAPIError(`Account locked. Please try after ${Math.ceil((user.nextLoginTime - new Date()) / (1000 * 60))} min.`, 401));
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
         if (user.failedLoginAttempts > 2) {
