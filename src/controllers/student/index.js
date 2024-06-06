@@ -93,7 +93,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       { path: "activity.applications.processing.docChecklist.doc activity.applications.accepted.docChecklist.doc activity.applications.rejected.docChecklist.doc activity.applications.completed.docChecklist.doc activity.applications.cancelled.docChecklist.doc", select: "name contentType createdAt" },
     ]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
-    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member", select: "firstName displayPicSrc lastName email role" })
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.shortListed.processCoordinator activity.applications.processing.processCoordinator activity.applications.accepted.processCoordinator activity.applications.rejected.processCoordinator activity.applications.completed.processCoordinator activity.applications.cancelled.processCoordinator activity.shortListed.counsellor activity.applications.processing.counsellor activity.applications.accepted.counsellor activity.applications.rejected.counsellor activity.applications.completed.counsellor activity.applications.cancelled.counsellor", select: "firstName displayPicSrc lastName email role" })
   ]);
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
