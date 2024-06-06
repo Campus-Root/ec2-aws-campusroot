@@ -130,7 +130,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             }
         }]
         if (student) {
-            if (student.socialAuth.google && student.socialAuth.google.id) {
+            if (student.socialAuth && student.socialAuth.google && student.socialAuth.google.id) {
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
                 let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
                 student.logs.push({ action: `Logged in using Google auth` });
@@ -212,7 +212,6 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         }
     }
     catch (error) {
-        console.log(error);
         return next(generateAPIError(error.message, 400))
     }
 })
