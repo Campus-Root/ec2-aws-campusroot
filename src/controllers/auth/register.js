@@ -211,5 +211,8 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             return res.status(200).json({ success: true, message: `Google Registration Successful`, data: { AccessToken, role: student.userType } });
         }
     }
-    catch (error) { return next(generateAPIError(error.message, 400)) }
+    catch (error) {
+        console.log(error);
+        return next(generateAPIError(error.message, 400))
+    }
 })
