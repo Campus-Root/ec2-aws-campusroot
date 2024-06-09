@@ -12,7 +12,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 export const profile = errorWrapper(async (req, res, next) => {
     await Promise.all([
-        await userModel.populate(req.user, { path: "advisors.info", select: "-applications -leads -students -googleTokens -logs -updates -password -communities -phoneVerified -otp" }),
+        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role" }),
         await Document.populate(req.user,
             [{ path: "tests.docId", select: "name contentType createdAt", },
             { path: "workExperience.docId", select: "name contentType createdAt", },
@@ -218,7 +218,7 @@ export const editProfile = errorWrapper(async (req, res, next) => {
     }
     await Promise.all([
         await req.user.save(),
-        await userModel.populate(req.user, { path: "advisors.info", select: "-applications -leads -students -googleTokens -logs -updates -password -communities -phoneVerified -otp" }),
+        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role" }),
         await Document.populate(req.user,
             [{ path: "tests.docId", select: "name contentType createdAt", },
             { path: "workExperience.docId", select: "name contentType createdAt", },
