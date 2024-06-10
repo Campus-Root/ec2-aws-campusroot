@@ -12,7 +12,7 @@ export const switchStage = errorWrapper(async (req, res, next) => {
     if (!student) return next(generateAPIError(`invalid access`, 400));
     if (!Object.values(studentCounsellingStagesEnum).includes(stage)) return next(generateAPIError(`invalid stage`, 400));
     console.log(nextActionDate, new Date(nextActionDate));
-    if (!new Date(nextActionDate) || new Date(nextActionDate) >= new Date()) return next(generateAPIError(`invalid nextActionDate`, 400));
+    if (!new Date(nextActionDate) || new Date(nextActionDate) <= new Date()) return next(generateAPIError(`invalid nextActionDate`, 400));
     student.nextActionDate = nextActionDate
     student.stage = stage
     req.user.logs.push({
