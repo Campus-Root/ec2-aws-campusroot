@@ -19,7 +19,8 @@ export const handleFile = (req, res, next) => {
 			console.log(err.message);
 		} else if (err) {
 			// An unknown error occurred when uploading.
-			return res.status(200).json({ message: "Please make sure the file is in JPEG, PNG, or PDF format" });
+
+			return next(generateAPIError("Please make sure the file is in JPEG, PNG, or PDF format", 500));
 		}
 
 		// Everything went fine.
