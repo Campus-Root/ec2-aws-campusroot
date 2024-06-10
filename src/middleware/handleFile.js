@@ -1,4 +1,5 @@
 import multer from "multer";
+import { generateAPIError } from "../errors/apiError";
 
 export const handleFile = (req, res, next) => {
 	const upload = multer({
