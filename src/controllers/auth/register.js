@@ -52,8 +52,8 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         action: "Registration Done",
         details: "traditional registration done"
     })
-    let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" })
-    let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1y" })
+    let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" })
+    let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" })
     let token = student.tokens.find(token => token.source === req.headers['user-agent']);
     if (token) {
         token.AccessToken = AccessToken;
