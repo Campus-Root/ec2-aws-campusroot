@@ -1,5 +1,4 @@
 import multer from "multer";
-import { generateAPIError } from "../errors/apiError";
 
 export const handleFile = (req, res, next) => {
 	const upload = multer({
@@ -21,7 +20,7 @@ export const handleFile = (req, res, next) => {
 		} else if (err) {
 			// An unknown error occurred when uploading.
 
-			return next(generateAPIError("Please make sure the file is in JPEG, PNG, or PDF format", 500));
+			return res.status(400).json({ message: "Please make sure the file is in JPEG, PNG, or PDF format" });
 		}
 
 		// Everything went fine.
