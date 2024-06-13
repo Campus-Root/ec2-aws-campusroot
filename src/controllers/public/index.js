@@ -176,7 +176,8 @@ export const oneCourse = errorWrapper(async (req, res, next) => {
             "scholarship.termsAndConditions": 0,
             "scholarship.scholarshipLink": 0,
             "contactInfo": 0,
-            "initialDeposits": 0
+            "initialDeposits": 0,
+            "stemDetails.stemLink": 0
         })
         .populate("university", "name location ranking cost currency type logoSrc pictureSrc establishedYear")
     if (!course) return res.status(400).json({ success: true, message: `course ID invalid`, data: null })
