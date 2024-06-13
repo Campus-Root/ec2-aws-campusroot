@@ -98,6 +98,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                         period = { $and: [{ deadlineMonth: { $gte: currentMonth } }, { deadlineMonth: { $lte: next3Months } }] }
                     filter.startDate = { $elemMatch: period };
                 }
+                else if (ele.type === "stem") filter["stemDetails.stem"] = true;
                 else if (ele.type === "budget") {
                     let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
                     if (!filter["$or"]) filter["$or"] = []
