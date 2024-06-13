@@ -116,7 +116,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                     filter.startDate = { $elemMatch: period };
                 }
             });
-            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "AdmissionsRequirements.AcademicRequirements": 1, "AdmissionsRequirements.LanguageRequirements stemDetails.stem ": 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
+            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, "AdmissionsRequirements.LanguageRequirements": 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
                     if (!rates[ele.currency.code] || !rates[req.body.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
