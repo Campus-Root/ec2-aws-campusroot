@@ -179,6 +179,7 @@ const Student = mongoose.Schema(
                         message: "Invalid Type of possibilityOfAdmit"
                     }
                 },
+                notInterested: { type: Boolean, default: false },
                 counsellorRecommended: { type: Boolean }
             }]
         },

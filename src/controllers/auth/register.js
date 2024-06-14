@@ -212,6 +212,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         }
     }
     catch (error) {
+        console.log(error);
         return next(generateAPIError(error.message, 400))
     }
 })
