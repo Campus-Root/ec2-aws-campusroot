@@ -61,7 +61,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
 		defaultSrc: ["'self'"],
-		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/"],
+		imgSrc: ["'self'", "data:", "https://campusroot.com/", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/"],
 		connectSrc: ["'self'", "https://ipapi.co", "blob:"], // Allow blob URLs for workers
 		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
 		workerSrc: ["'self'", "blob:"], // Add worker-src directive
