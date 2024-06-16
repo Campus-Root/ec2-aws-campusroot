@@ -8,7 +8,7 @@ const userSchema = mongoose.Schema({
   displayPicSrc: { type: String, default: "" },
   email: { type: String, required: [true, "Please provide email"], unique: true, validate: { validator: validator.isEmail, message: "please provide valid email", }, trim: true, },
   password: { type: String, trim: true },
-  socialAuth: { type: Object },
+  socialAuth: { google: { id: { type: String } } },
   communities: [{ type: mongoose.Types.ObjectId, ref: "community", }],
   otp: { type: String },
   logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
