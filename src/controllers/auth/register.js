@@ -149,9 +149,9 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             } else {
-                student.firstName = given_name || null;
-                student.lastName = family_name || null;
-                student.displayPicSrc = picture;
+                student.firstName = student.firstName || given_name || null;
+                student.lastName = student.lastName || family_name || null;
+                student.displayPicSrc = (student.displayPicSrc != "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg") ? student.displayPicSrc : picture;
                 student.socialAuth.google = { id: sub };
                 if (email_verified) student.verification[0].status = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
