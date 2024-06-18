@@ -59,7 +59,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "type") filter.type = ele.data;
                 else if (ele.type === "name") {
                     if (!filter["$or"]) filter["$or"] = []
-                    filter["$or"].push({ name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } })
+                    filter["$or"].push({ "location.country": { $regex: ele.data[0], $options: "i" } }, { "location.city": { $regex: ele.data[0], $options: "i" } }, { "location.state": { $regex: ele.data[0], $options: "i" } }, { name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } })
                 }
                 else if (ele.type === "AcademicTestName") {
                     if (!filter["$and"]) filter["$and"] = []
