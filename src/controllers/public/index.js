@@ -220,14 +220,17 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     const uniKeyword = {
         $or: [
             { name: { $regex: req.query.search, $options: "i" } },
-            { code: { $regex: req.query.search, $options: "i" } }
+            { code: { $regex: req.query.search, $options: "i" } },
+            { "location.country": { $regex: req.query.search, $options: "i" } },
+            { "location.state": { $regex: req.query.search, $options: "i" } },
+            { "location.city": { $regex: req.query.search, $options: "i" } }
         ],
-        // courses: { $exists: true, $not: { $size: 0 } }
+        courses: { $exists: true, $not: { $size: 0 } }
     };
     const disciplineSearchResults = disciplineRegexMatch(req.query.search)
     const subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
     if (req.query.country) uniKeyword["location.country"] = req.query.country
-    const uniSearchResults = await universityModel.find(uniKeyword, "name courses community logoSrc").limit(5).populate("courses", "name")
+    const uniSearchResults = await universityModel.find(uniKeyword, "name location community logoSrc").limit(5)
     return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
 })
 export const requestCallBack = errorWrapper(async (req, res, next) => {
