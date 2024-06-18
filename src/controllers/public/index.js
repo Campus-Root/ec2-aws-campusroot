@@ -225,7 +225,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
             { "location.state": { $regex: req.query.search, $options: "i" } },
             { "location.city": { $regex: req.query.search, $options: "i" } }
         ],
-        courses: { $exists: true, $not: { $size: 0 } }
+        courses: { $gt: 0 }
     };
     const disciplineSearchResults = disciplineRegexMatch(req.query.search)
     const subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
