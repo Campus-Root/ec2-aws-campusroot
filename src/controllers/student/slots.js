@@ -131,15 +131,15 @@ export const getEvents = errorWrapper(async (req, res, next) => {
     const result = []
     const endTime = new Date(thirtyDaysLater.getFullYear(), thirtyDaysLater.getMonth(), thirtyDaysLater.getDate(), 12, 30, 0);
     while (today < endTime) {
-        let todayStartTime = new Date(today).setHours(3, 30, 0);
-        let todayEndTime = new Date(today).setHours(12, 30, 0);
+        let todayStartTime = new Date(today).setHours(3, 30, 0);  // morning time in gmt
+        let todayEndTime = new Date(today).setHours(12, 30, 0);// evening time in gmt
         let currentTime = (today < todayStartTime) ? new Date(todayStartTime) : new Date(today);
         if (today.getDay() !== 0) {
             const availableSlots = [];
             let lunchStart = new Date(today).setHours(7, 30, 0);
             let lunchEnd = new Date(today).setHours(8, 30, 0);
             while (currentTime < todayEndTime) {
-                let slotEnd = new Date(currentTime.getTime() + 30 * 60 * 1000)
+                let slotEnd = new Date(currentTime.getTime() + 30 * 60 * 1000)    // duration time in gmt
                 let isSlotAvailable = ((
                     !busySlots.some(busySlot =>
                         ((currentTime <= new Date(busySlot.start)) && (new Date(busySlot.start) < slotEnd)) ||

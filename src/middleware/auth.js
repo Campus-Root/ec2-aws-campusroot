@@ -28,7 +28,7 @@ export const authMiddleware = async (req, res, next) => {
             let user = await userModel.findOne({ _id: decodedNew.id, "tokens.RefreshToken": refreshToken }).select("tokens")
             if (!user) return res.status(401).json({ success: false, message: `login again`, data: null });
             let AccessToken = jwt.sign({ id: decodedNew.id }, ACCESS_SECRET, { expiresIn: "1h" })
-            let RefreshToken = jwt.sign({ id: decodedNew.id }, REFRESH_SECRET, { expiresIn: "1y" })
+            let RefreshToken = jwt.sign({ id: decodedNew.id }, REFRESH_SECRET, { expiresIn: "1m" })
             res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions)
             req.AccessToken = AccessToken
             let token = user.tokens.find(token => token.RefreshToken === refreshToken);
