@@ -15,7 +15,7 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET
 
 
 export const Login = errorWrapper(async (req, res, next) => {
-    const { email, password, deviceToken } = req.body
+    const { email, password, DeviceToken } = req.body
     if (!email || !password) return next(generateAPIError(`Incomplete details`, 400));
     const user = await userModel.findOne({ email: email })
     if (!user) return next(generateAPIError("Invalid credentials. Please try again", 401));
@@ -48,7 +48,7 @@ export const Login = errorWrapper(async (req, res, next) => {
         token.AccessToken = AccessToken;
         token.RefreshToken = RefreshToken;
     } else {
-        if (deviceToken) newToken.DeviceToken = deviceToken;
+        if (DeviceToken) newToken.DeviceToken = DeviceToken;
         user.tokens.push(newToken);
     }
     user.failedLoginAttempts = 0

@@ -6,7 +6,7 @@ import { teamModel } from "../../models/Team.js";
 import sendMail from "../../utils/sendEMAIL.js";
 import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
-import chatModel from "../../models/Chat.js";
+// import chatModel from "../../models/Chat.js";
 import fs from "fs"
 import Handlebars from "handlebars";
 import path from "path";
@@ -25,11 +25,11 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     if (!Object.values(DestinationTypeEnum).includes(country)) return next(generateAPIError(`select destination country`, 400));
     if (!Object.values(LanguageTypeEnum).includes(language)) return next(generateAPIError(`select language communication`, 400));
     const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country, language: language } });
-    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-    const Counsellor = await teamModel.findById(Counsellors[0]._id);
-    student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
-    await student.save()
-    Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
+    // const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+    // const Counsellor = await teamModel.findById(Counsellors[0]._id);
+    // student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
+    // await student.save()
+    // Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
     const verification = [{
         type: "email",
         status: false,
@@ -54,20 +54,15 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     })
     let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" })
     let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" })
-    let token = student.tokens.find(token => token.source === req.headers['user-agent']);
-    if (token) {
-        token.AccessToken = AccessToken;
-        token.RefreshToken = RefreshToken;
-    } else {
-        student.tokens.push({
-            AccessToken: AccessToken,
-            RefreshToken: RefreshToken,
-            source: req.headers['user-agent']
-        });
-    }
+    student.tokens.push({
+        AccessToken: AccessToken,
+        RefreshToken: RefreshToken,
+        source: req.headers['user-agent'],
+        DeviceToken: DeviceToken
+    })
     await student.save();
-    await Counsellor.save();
-    await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
+    // await Counsellor.save();
+    // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
     res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
     return res.status(200).json({ success: true, message: `student registration successful`, data: { AccessToken, role: student.role || student.userType } });
 });
@@ -108,7 +103,7 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: `${role} Registration successful`, data: { email, firstName, lastName, role }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 export const googleLogin = errorWrapper(async (req, res, next) => {
-    const { credential, country } = req.body;
+    const { credential } = req.body;
     if (!credential) return next("credential undefined", 400)
     try {
         const { given_name, family_name, email, picture, email_verified, sub } = jwtDecode(credential)
@@ -135,17 +130,12 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
                 let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
                 student.logs.push({ action: `Logged in using Google auth` });
-                let token = student.tokens.find(token => token.source === req.headers['user-agent']);
-                if (token) {
-                    token.AccessToken = AccessToken;
-                    token.RefreshToken = RefreshToken;
-                } else {
-                    student.tokens.push({
-                        AccessToken: AccessToken,
-                        RefreshToken: RefreshToken,
-                        source: req.headers['user-agent']
-                    });
-                }
+                student.tokens.push({
+                    AccessToken: AccessToken,
+                    RefreshToken: RefreshToken,
+                    source: req.headers['user-agent'],
+                    DeviceToken: DeviceToken
+                })
                 await student.save();
                 res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
@@ -158,23 +148,18 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
                 let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
-                let token = student.tokens.find(token => token.source === req.headers['user-agent']);
-                if (token) {
-                    token.AccessToken = AccessToken;
-                    token.RefreshToken = RefreshToken;
-                } else {
-                    student.tokens.push({
-                        AccessToken: AccessToken,
-                        RefreshToken: RefreshToken,
-                        source: req.headers['user-agent']
-                    });
-                }
+                student.tokens.push({
+                    AccessToken: AccessToken,
+                    RefreshToken: RefreshToken,
+                    source: req.headers['user-agent'],
+                    DeviceToken: DeviceToken
+                })
                 await student.save();
                 res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             }
         } else {
-            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { country: country, language: "English" } });
+            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { language: "English" } });
             student.verification = verification
             student.verification[0].status = email_verified;
             if (!email_verified) {
@@ -187,27 +172,22 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 const htmlToSend = template(replacement);
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
-            const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-            student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
-            const Counsellor = await teamModel.findById(Counsellors[0]._id);
-            Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
-            await Counsellor.save();
+            // const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+            // student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
+            // const Counsellor = await teamModel.findById(Counsellors[0]._id);
+            // Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
+            // await Counsellor.save();
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
             let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
-            let token = student.tokens.find(token => token.source === req.headers['user-agent']);
-            if (token) {
-                token.AccessToken = AccessToken;
-                token.RefreshToken = RefreshToken;
-            } else {
-                student.tokens.push({
-                    AccessToken: AccessToken,
-                    RefreshToken: RefreshToken,
-                    source: req.headers['user-agent']
-                });
-            }
+            student.tokens.push({
+                AccessToken: AccessToken,
+                RefreshToken: RefreshToken,
+                source: req.headers['user-agent'],
+                DeviceToken: DeviceToken
+            })
             await student.save();
-            await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
+            // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
             res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
             return res.status(200).json({ success: true, message: `Google Registration Successful`, data: { AccessToken, role: student.userType } });
         }
