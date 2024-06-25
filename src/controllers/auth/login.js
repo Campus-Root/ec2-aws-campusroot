@@ -15,7 +15,7 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET
 
 
 export const Login = errorWrapper(async (req, res, next) => {
-    const { email, password } = req.body
+    const { email, password, deviceToken } = req.body
     if (!email || !password) return next(generateAPIError(`Incomplete details`, 400));
     const user = await userModel.findOne({ email: email })
     if (!user) return next(generateAPIError("Invalid credentials. Please try again", 401));
@@ -36,18 +36,20 @@ export const Login = errorWrapper(async (req, res, next) => {
         return next(generateAPIError("Invalid credentials. Please try again", 401));
     }
     let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" })
-    let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1y" })
+    let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1m" })
     const source = req.headers['user-agent'];
     let token = user.tokens.find(token => token.source === source);
+    let newToken = {
+        AccessToken: AccessToken,
+        RefreshToken: RefreshToken,
+        source: source
+    }
     if (token) {
         token.AccessToken = AccessToken;
         token.RefreshToken = RefreshToken;
     } else {
-        user.tokens.push({
-            AccessToken: AccessToken,
-            RefreshToken: RefreshToken,
-            source: source
-        });
+        if (deviceToken) newToken.DeviceToken = deviceToken;
+        user.tokens.push(newToken);
     }
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
