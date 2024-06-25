@@ -24,8 +24,8 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     if (alreadyExists) return next(generateAPIError(`Email already registered`, 400));
     if (!Object.values(DestinationTypeEnum).includes(country)) return next(generateAPIError(`select destination country`, 400));
     if (!Object.values(LanguageTypeEnum).includes(language)) return next(generateAPIError(`select language communication`, 400));
-    const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: [country], language: language } });
-    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+    const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country, language: language } });
+    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
     const Counsellor = await teamModel.findById(Counsellors[0]._id);
     student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
     await student.save()
@@ -53,7 +53,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         details: "traditional registration done"
     })
     let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" })
-    let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" })
+    let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" })
     let token = student.tokens.find(token => token.source === req.headers['user-agent']);
     if (token) {
         token.AccessToken = AccessToken;
@@ -108,9 +108,10 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: `${role} Registration successful`, data: { email, firstName, lastName, role }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 export const googleLogin = errorWrapper(async (req, res, next) => {
-    if (!req.body.credential) return next("credential undefined", 400)
+    const { credential, country } = req.body;
+    if (!credential) return next("credential undefined", 400)
     try {
-        const { given_name, family_name, email, picture, email_verified, sub } = jwtDecode(req.body.credential)
+        const { given_name, family_name, email, picture, email_verified, sub } = jwtDecode(credential)
         const teamMember = await teamModel.findOne({ email: email })
         if (teamMember) return res.redirect(`${process.env.STUDENT_URL}/team`)
         let student = await studentModel.findOne({ email: email });
@@ -132,7 +133,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         if (student) {
             if (student.socialAuth?.google?.id) {
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
+                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
                 student.logs.push({ action: `Logged in using Google auth` });
                 let token = student.tokens.find(token => token.source === req.headers['user-agent']);
                 if (token) {
@@ -156,7 +157,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 if (email_verified) student.verification[0].status = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
+                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
                 let token = student.tokens.find(token => token.source === req.headers['user-agent']);
                 if (token) {
                     token.AccessToken = AccessToken;
@@ -173,7 +174,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             }
         } else {
-            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { country: ["United States of America"], language: "English" } });
+            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { country: country, language: "English" } });
             student.verification = verification
             student.verification[0].status = email_verified;
             if (!email_verified) {
@@ -186,14 +187,14 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 const htmlToSend = template(replacement);
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
-            const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor" } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+            const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
             student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
             const Counsellor = await teamModel.findById(Counsellors[0]._id);
             Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
             await Counsellor.save();
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-            let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1y" });
+            let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
             let token = student.tokens.find(token => token.source === req.headers['user-agent']);
             if (token) {
                 token.AccessToken = AccessToken;

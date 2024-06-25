@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
-import { TeamRoleEnum, studentCounsellingStagesEnum } from "../utils/enum.js";
+import { DestinationTypeEnum, TeamRoleEnum, studentCounsellingStagesEnum } from "../utils/enum.js";
 import userModel from "./User.js";
 
 const Team = mongoose.Schema({
     role: { type: String, enum: { values: Object.values(TeamRoleEnum), message: "Invalid role" } },
     students: [{ profile: { type: mongoose.Types.ObjectId, ref: "user", }, stage: { type: String, enum: { values: Object.values(studentCounsellingStagesEnum), message: "Invalid stage" } }, nextActionDate: { type: String, } }], // for counsellors
+    expertiseCountry: [{ type: String, enum: { values: Object.values(DestinationTypeEnum), message: "Invalid country" }}],
     numberOfStudentsAssisted: { type: Number, default: 0 }, // for counsellors
     linkedIn: { type: String }, // for all team
     googleTokens: {

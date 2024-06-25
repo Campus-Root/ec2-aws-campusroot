@@ -7,6 +7,7 @@ const userSchema = mongoose.Schema({
   lastName: { type: String, trim: true, },
   displayPicSrc: { type: String, default: "" },
   email: { type: String, required: [true, "Please provide email"], unique: true, validate: { validator: validator.isEmail, message: "please provide valid email", }, trim: true, },
+  about: { type: String },
   password: { type: String, trim: true },
   socialAuth: { google: { id: { type: String } } },
   communities: [{ type: mongoose.Types.ObjectId, ref: "community", }],
@@ -19,6 +20,7 @@ const userSchema = mongoose.Schema({
     source: { type: String },
     AccessToken: { type: String },
     RefreshToken: { type: String },
+    DeviceToken: { type: String },
   }]
 },
   { discriminatorKey: 'userType' },
