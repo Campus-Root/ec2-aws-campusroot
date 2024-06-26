@@ -10,9 +10,12 @@ import 'dotenv/config';
 import Handlebars from "handlebars";
 import path from "path";
 import { fileURLToPath } from "url";
+import { isValidObjectId } from "mongoose";
+import { teamModel } from "../../models/Team.js";
+import chatModel from "../../models/Chat.js";
 export const profile = errorWrapper(async (req, res, next) => {
     await Promise.all([
-        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role" }),
+        await userModel.populate(req.user, { path: "advisors", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
         await Document.populate(req.user,
             [{ path: "tests.docId", select: "name contentType createdAt", },
             { path: "workExperience.docId", select: "name contentType createdAt", },
@@ -218,7 +221,7 @@ export const editProfile = errorWrapper(async (req, res, next) => {
     }
     await Promise.all([
         await req.user.save(),
-        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role" }),
+        await userModel.populate(req.user, { path: "advisors", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
         await Document.populate(req.user,
             [{ path: "tests.docId", select: "name contentType createdAt", },
             { path: "workExperience.docId", select: "name contentType createdAt", },
@@ -433,3 +436,24 @@ export const verifyUserOTP = errorWrapper(async (req, res, next) => {
     await user.save()
     return res.status(200).json({ success: true, message: `phone verification successful`, data: user.verification, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
+export const requestCounsellor = errorWrapper(async (req, res, next) => {
+    const { country } = req.body
+    await userModel.populate(req.user, { path: "advisors", select: "firstName displayPicSrc lastName email role language about expertiseCountry" });
+    let alreadyExist = req.user.advisors.find(ele => ele.role == "counsellor" && ele.expertiseCountry.includes(country))
+    console.log(alreadyExist);
+    if (alreadyExist && isValidObjectId(alreadyExist._id)) return next(generateAPIError(`expert counsellor for selected destination is already assigned`, 400));
+    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+    req.user.advisors.push(Counsellors[0]._id)
+    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
+    await req.user.save()
+    await userModel.populate(req.user, { path: "advisors", select: "firstName displayPicSrc lastName email role language about expertiseCountry" });
+    req.user.logs.push({
+        action: `${country} counsellor assigned`,
+        details: `counsellorId:${Counsellors[0]}&country:${country}}`
+    })
+    return res.status(200).json({ success: true, message: `counsellor assigned`, data: req.user.advisors, AccessToken: req.AccessToken ? req.AccessToken : null });
+})
+
+// change counsellor in apply 
+

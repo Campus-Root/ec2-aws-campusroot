@@ -6,7 +6,7 @@ import { checkDisposableEmail } from "../middleware/validations.js";
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
 import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent } from "../controllers/student/index.js";
-import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
+import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, requestCounsellor, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
 import { addShortListed, apply, deleteUploadedFromApplication, forceForwardApply, removeForceApply, removeShortListed, requestCancellation, uploadInApplication } from "../controllers/student/application.js";
 const router = express.Router();
 //        {{base}}/api/v1/student
@@ -23,8 +23,11 @@ router.get("/profile", authMiddleware, isStudent, profile);
 router.put("/profile", authMiddleware, isStudent, editProfile);
 router.put("/phone", authMiddleware, isStudent, editPhone);
 router.put("/email", authMiddleware, isStudent, checkDisposableEmail, editEmail);
-router.get("/events/:team", authMiddleware, isStudent, getEvents)
-router.post("/book-slot/:team", authMiddleware, isStudent, bookSlot)
+
+
+router.post("/request-counsellor",authMiddleware, isStudent, requestCounsellor)
+router.get("/events/:teamMemberId", authMiddleware, isStudent, getEvents)
+router.post("/book-slot/:teamMemberId", authMiddleware, isStudent, bookSlot)
 router.post("/modify-slot", authMiddleware, isStudent, modifySlot)
 router.put("/generate-recommendations", authMiddleware, isStudent, generateRecommendations);
 router.post("/add-to-short-list", authMiddleware, isStudent, addShortListed);
