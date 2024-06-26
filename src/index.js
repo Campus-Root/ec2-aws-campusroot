@@ -22,7 +22,7 @@ const server = createServer(app);
 
 import path from 'path';
 import { fileURLToPath } from 'url';
-
+import { getTokens } from "./utils/sendNotification.js";
 const __filename = fileURLToPath(import.meta.url);
 
 
@@ -122,14 +122,15 @@ io.on('connection', function (socket) {
 			else {
 				if (triggerObject.action == "ping") {
 					activityList.push({ ...reciever, activity: 'offline' });
-					// const message = {
-					// 	notification: {
-					// 		title: 'Test Notification',
-					// 		body: 'This is a test notification from your Express server!'
-					// 	},
-					// 	token: 'reciever token' 
-					// };
-					// sendNotification(message,recieverId)
+					const message = {
+						notification: {
+							title: 'Test Notification',
+							body: 'This is a test notification from your Express server!',
+							data: { someData: "ustad hotel" }
+						},
+						tokens: getTokens([reciever._id])
+					};
+					sendPushNotification(message);
 				}
 			}
 		});
@@ -138,8 +139,6 @@ io.on('connection', function (socket) {
 		}
 	});
 });
-
-
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 

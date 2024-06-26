@@ -1,41 +1,41 @@
-// import admin from 'firebase-admin';
-// import 'dotenv/config'
-// export const sendNotification = async ({ token, title, body }) => {
-//     try {
-//         admin.initializeApp({ credential: admin.credential.cert(process.env.FCM) });
-//         const message = {
-//             token,
-//             notification: {
-//                 title,
-//                 body,
-//             },
-//         };
-//         console.log(message);
-//         const response = await admin.messaging().send(message);
-//         console.log('Successfully sent notification:');
-//         console.log(response);
-//         // If you want to send a response back, you can return it
-//         return response;
-//     } catch (error) {
-//         console.error('Error sending notification:', error);
-//     }
-// }
 
-// // // Example usage
-// sendNotification({
-//     token: "esU7WCKzr_RvtI8wBpPIlP:APA91bHxnGA9nbhAj7K4ng72MS6dI3g7P-hqG-BjoABNbWN4eDZpCV1ki-U-AVG88oxgbSIszREAI2kNX9JIlZLltXpS7-7vAvh1hh8rCAp1CG8Bs_eTzYSZWE91p7lrHsej9zO0J1__",
-//     title: "title",
-//     body: "body"
-// });
+import 'dotenv/config'
+import axios from 'axios';
+import userModel from '../models/User.js';
+export const getTokens = async (ids) => {
+    try {
+        const users = await userModel.find({ _id: { $in: ids }, "tokens.DeviceToken": { $exists: true } }, "tokens.DeviceToken");
+        let tokens = [];
+        for (const user of users) for (let token of user.tokens) if (token.DeviceToken) tokens.push(token.DeviceToken);
+        return (tokens);
+    } catch (err) {
+        console.error(err);
+    }
+
+}
+
+export const sendPushNotification = async ({ tokens, notification }) => {
+    try {
+        const headers = {
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept': '*/*',
+            'Content-Type': 'application/json'
+        };
+        const response = await axios.post(EXPO_URL, {
+            to: tokens,
+            sound: "default",
+            title: notification.title,
+            body: notification.body,
+            data: notification.data
+        }, { headers });
+        console.log('Response:', response.data);
+        return true;
+    } catch (error) {
+        console.error('Error:', error.response ? error.response.data : error.message);
+    }
+}
 
 
 
 
 
-
-
-// // const senderDeviceInfo = new DeviceInfo({
-// //     token: senderToken,
-// //     platform: req.headers['user-agent'],
-// //     deviceName: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-// //   });
