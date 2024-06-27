@@ -110,6 +110,7 @@ io.on('connection', function (socket) {
 	socket.on('trigger', (triggerObject) => {
 		console.log(triggerObject.action, triggerObject.sender.firstName);
 		var activityList = [];
+		let offlineUsers = [];
 		triggerObject.recievers.forEach(reciever => {
 			var online = io.sockets.adapter.rooms.get(reciever._id);
 			console.log("reciever", reciever.firstName, online ? "online" : "offline");
@@ -122,18 +123,21 @@ io.on('connection', function (socket) {
 			else {
 				if (triggerObject.action == "ping") {
 					activityList.push({ ...reciever, activity: 'offline' });
-					const message = {
-						notification: {
-							title: 'Test Notification',
-							body: 'This is a test notification from your Express server!',
-							data: { someData: "ustad hotel" }
-						},
-						tokens: getTokens([reciever._id])
-					};
-					sendPushNotification(message);
+					offlineUsers.push(reciever._id);
 				}
 			}
 		});
+		if (offlineUsers.length > 0) {
+			const message = {
+				notification: {
+					title: 'Test Notification',
+					body: 'This is a test notification from your Express server!',
+					data: { someData: "ustad hotel" }
+				},
+				tokens: getTokens(offlineUsers)
+			};
+			sendPushNotification(message);
+		}
 		if (triggerObject.action == "ping") {
 			socket.emit('trigger', { sender: null, action: "activityList", data: activityList });
 		}
