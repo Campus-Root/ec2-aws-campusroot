@@ -4,6 +4,7 @@ import { DestinationTypeEnum, UniversityTypeEnum, CurrencySymbolEnum } from "../
 const universitySchema = mongoose.Schema(
     {
         ranking: [{ rank: { type: Number }, source: { type: String }, }],
+        // rank, rating  and acceptance, graduation , median earning 
         name: { type: String, required: [true, "Please provide name"], minlength: 3, trim: true, },
         code: { type: String, },
         location: {

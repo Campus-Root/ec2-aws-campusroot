@@ -74,6 +74,29 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   }
   return res.status(200).json({ success: true, message: "Recommendations Generated", data: req.user.recommendations, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
+export const hideRecommendation = errorWrapper(async (req, res) => {
+  const { recommendationId } = req.body
+  const recommendation = req.user.recommendations.data.find(ele => ele._id.toString() == recommendationId)
+  if (!recommendation) return next(generateAPIError(`invalid recommendationId`, 400));
+  recommendation.notInterested = true;
+  await req.user.save();
+  await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration" })
+  if (req.user.preference.currency) {
+    const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
+    const applyCurrencyConversion = (element) => {
+      if (element.course.currency.code !== req.user.preference.currency) {
+        if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
+          next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+        }
+        element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
+        element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
+      }
+    };
+    req.user.recommendations.data.forEach(applyCurrencyConversion);
+  }
+  return res.status(200).json({ success: true, message: "Recommendation hidden", data: req.user.recommendations, AccessToken: req.AccessToken ? req.AccessToken : null });
+})
 export const dashboard = errorWrapper(async (req, res, next) => {
   await Promise.all([
     await applicationModel.populate(req.user, [
