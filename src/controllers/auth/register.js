@@ -134,7 +134,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                     AccessToken: AccessToken,
                     RefreshToken: RefreshToken,
                     source: req.headers['user-agent'],
-                    DeviceToken: DeviceToken
+                    // DeviceToken: DeviceToken
                 })
                 await student.save();
                 res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
@@ -152,7 +152,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                     AccessToken: AccessToken,
                     RefreshToken: RefreshToken,
                     source: req.headers['user-agent'],
-                    DeviceToken: DeviceToken
+                    // DeviceToken: DeviceToken
                 })
                 await student.save();
                 res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
@@ -184,7 +184,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 AccessToken: AccessToken,
                 RefreshToken: RefreshToken,
                 source: req.headers['user-agent'],
-                DeviceToken: DeviceToken
+                // DeviceToken: DeviceToken
             })
             await student.save();
             // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
