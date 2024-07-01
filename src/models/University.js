@@ -3,8 +3,11 @@ import { DestinationTypeEnum, UniversityTypeEnum, CurrencySymbolEnum } from "../
 
 const universitySchema = mongoose.Schema(
     {
-        ranking: [{ rank: { type: Number }, source: { type: String }, }],
-        // rank, rating  and acceptance, graduation , median earning 
+        rank: { type: Object },
+        acceptanceRate: { type: String },
+        graduationRate: { type: String },
+        medianEarning: { type: Object },
+        rating: { type: Object },
         name: { type: String, required: [true, "Please provide name"], minlength: 3, trim: true, },
         code: { type: String, },
         location: {
@@ -37,8 +40,6 @@ const universitySchema = mongoose.Schema(
         establishedYear: { type: Number },
         about: { type: String },
         campusrootReview: { type: Number }, //hide
-        graduationRate: { type: Number },
-        acceptanceRate: { type: Number },
         cost: [
             {
                 name: { type: String },
