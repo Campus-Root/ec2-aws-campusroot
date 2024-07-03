@@ -36,7 +36,7 @@ export const Login = errorWrapper(async (req, res, next) => {
         return next(generateAPIError("Invalid credentials. Please try again", 401));
     }
     let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" })
-    let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "1m" })
+    let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "30d" })
     const source = req.headers['user-agent'];
     let token = user.tokens.find(token => token.source === source);
     let newToken = {

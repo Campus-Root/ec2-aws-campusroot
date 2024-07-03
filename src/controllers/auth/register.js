@@ -53,7 +53,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         details: "traditional registration done"
     })
     let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" })
-    let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" })
+    let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" })
     student.tokens.push({
         AccessToken: AccessToken,
         RefreshToken: RefreshToken,
@@ -128,7 +128,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         if (student) {
             if (student.socialAuth?.google?.id) {
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
+                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" });
                 student.logs.push({ action: `Logged in using Google auth` });
                 student.tokens.push({
                     AccessToken: AccessToken,
@@ -147,7 +147,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 if (email_verified) student.verification[0].status = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
+                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" });
                 student.tokens.push({
                     AccessToken: AccessToken,
                     RefreshToken: RefreshToken,
@@ -179,7 +179,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             // await Counsellor.save();
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-            let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "1m" });
+            let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" });
             student.tokens.push({
                 AccessToken: AccessToken,
                 RefreshToken: RefreshToken,
