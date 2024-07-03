@@ -129,11 +129,10 @@ const Student = mongoose.Schema(
             testDate: { type: Date },
             docId: { type: mongoose.Types.ObjectId, ref: "document" },
         }],
-        // advisors: [{
-        //     info: { type: mongoose.Types.ObjectId, ref: "user" },
-        //     role: { type: String },   // counsellor processCoordinator visaExpert loanExpert
-        // },],
-        advisors: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        advisors: {
+            type: Map,
+            of: [{ type: mongoose.Types.ObjectId, ref: 'user' }]
+        },
         workExperience: [{
             companyName: { type: String, },
             sector: {
