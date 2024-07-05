@@ -16,7 +16,7 @@ const Team = mongoose.Schema({
     },// for all team
     language: [{ type: String }],
     leads: [{ type: mongoose.Types.ObjectId, ref: "leads" }],// for remoteStudentAdvisor
-    applications: [{ type: mongoose.Types.ObjectId, ref: "application" }],// for Process Coordinators
+    applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],// for Process Coordinators
 
 
 

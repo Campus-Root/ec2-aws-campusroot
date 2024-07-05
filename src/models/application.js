@@ -1,12 +1,8 @@
 import mongoose from "mongoose"
 import { applicationStagesEnum, applicationStateEnum } from "../utils/enum.js";
-
+import productModel from "./Product.js";
 const applicationSchema = mongoose.Schema({
-    university: { type: mongoose.Types.ObjectId, ref: "university" },
-    course: { type: mongoose.Types.ObjectId, ref: "course" },
-    intake: { type: Date },
-    deadline: { type: Date },
-    user: { type: mongoose.Types.ObjectId, ref: "user" },
+
     processCoordinator: { type: mongoose.Types.ObjectId, ref: "user" },
     counsellor: { type: mongoose.Types.ObjectId, ref: "user" },
     approval: {
@@ -32,11 +28,8 @@ const applicationSchema = mongoose.Schema({
     notes: { type: String },
     status: { type: String, enum: { values: Object.values(applicationStateEnum), message: "Invalid Status" }, },
     stage: { type: String, enum: { values: Object.values(applicationStagesEnum), message: "Invalid Stage Name" } }
-
-},
-    { timestamps: true }
+}
 );
 
 
-const applicationModel = mongoose.model("application", applicationSchema);
-export default applicationModel
+export const applicationModel = productModel.discriminator("application", applicationSchema);

@@ -1,7 +1,7 @@
 import courseModel from "../../models/Course.js";
 import universityModel from "../../models/University.js";
 import Document from "../../models/Uploads.js";
-import applicationModel from "../../models/application.js";
+import {applicationModel} from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -100,23 +100,19 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
 export const dashboard = errorWrapper(async (req, res, next) => {
   await Promise.all([
     await applicationModel.populate(req.user, [
-      { path: "activity.applications.processing" },
-      { path: "activity.applications.accepted" },
-      { path: "activity.applications.rejected" },
-      { path: "activity.applications.completed" },
-      { path: "activity.applications.cancelled" },
+      { path: "activity.applications" }
     ]),
     await universityModel.populate(req.user, [
-      { path: "activity.shortListed.university recommendations.data.university activity.applications.processing.university activity.applications.accepted.university activity.applications.rejected.university activity.applications.completed.university activity.applications.cancelled.university", select: "name logoSrc location type establishedYear " },
+      { path: "activity.shortListed.university recommendations.data.university activity.applications.university", select: "name logoSrc location type establishedYear " },
     ]),
     await courseModel.populate(req.user, [
-      { path: "recommendations.data.course activity.shortListed.course activity.applications.processing.course activity.applications.accepted.course activity.applications.rejected.course activity.applications.completed.course activity.applications.cancelled.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency" },
+      { path: "recommendations.data.course activity.shortListed.course activity.applications.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency" },
     ]),
     await Document.populate(req.user, [
-      { path: "activity.applications.processing.docChecklist.doc activity.applications.accepted.docChecklist.doc activity.applications.rejected.docChecklist.doc activity.applications.completed.docChecklist.doc activity.applications.cancelled.docChecklist.doc", select: "name contentType createdAt" },
+      { path: "activity.applications.docChecklist.doc", select: "name contentType createdAt" },
     ]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
-    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.shortListed.processCoordinator activity.applications.processing.processCoordinator activity.applications.accepted.processCoordinator activity.applications.rejected.processCoordinator activity.applications.completed.processCoordinator activity.applications.cancelled.processCoordinator activity.shortListed.counsellor activity.applications.processing.counsellor activity.applications.accepted.counsellor activity.applications.rejected.counsellor activity.applications.completed.counsellor activity.applications.cancelled.counsellor", select: "firstName displayPicSrc lastName email role" })
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.shortListed.processCoordinator activity.applications.processCoordinator activity.shortListed.counsellor activity.applications.counsellor", select: "firstName displayPicSrc lastName email role" })
   ]);
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -131,13 +127,9 @@ export const dashboard = errorWrapper(async (req, res, next) => {
     };
     req.user.recommendations.data.forEach(applyCurrencyConversion);
     req.user.activity.shortListed.forEach(applyCurrencyConversion);
-    req.user.activity.applications.processing.forEach(applyCurrencyConversion);
-    req.user.activity.applications.accepted.forEach(applyCurrencyConversion);
-    req.user.activity.applications.rejected.forEach(applyCurrencyConversion);
-    req.user.activity.applications.completed.forEach(applyCurrencyConversion);
-    req.user.activity.applications.cancelled.forEach(applyCurrencyConversion);
+    req.user.activity.applications.forEach(applyCurrencyConversion);
   }
-  const applications = [...req.user.activity.applications.accepted, ...req.user.activity.applications.processing];
+  const applications = req.user.activity.applications.filter(ele => ele.stage === "Processing", ele.stage === "Accepted");
   let checklist = applications.flatMap(application =>
     application.docChecklist.filter(item => !item.isChecked).map(item => ({
       checklistId: item._id,
@@ -170,23 +162,14 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
   const student = await studentModel.findById(studentId, "firstName lastName displayPicSrc tests workExperience researchPapers education activity.applications skills communities")
   await communityModel.populate(student, { path: "communities", select: "participants university posts", })
   await applicationModel.populate(student, [
-    { path: "activity.applications.processing", select: "university course intake status stage" },
-    { path: "activity.applications.accepted", select: "university course intake status stage" },
-    { path: "activity.applications.rejected", select: "university course intake status stage" },
-    { path: "activity.applications.completed", select: "university course intake status stage" },
+    { path: "activity.applications", select: "university course intake status stage" },
   ])
   await universityModel.populate(student, [
-    { path: "activity.applications.processing.university", select: "name logoSrc location type establishedYear" },
-    { path: "activity.applications.accepted.university", select: "name logoSrc location type establishedYear" },
-    { path: "activity.applications.rejected.university", select: "name logoSrc location type establishedYear" },
-    { path: "activity.applications.completed.university", select: "name logoSrc location type establishedYear" },
+    { path: "activity.applications.university", select: "name logoSrc location type establishedYear" },
     { path: "communities.university", select: "name logoSrc location type establishedYear", }
   ])
   await courseModel.populate(student, [
-    { path: "activity.applications.processing.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
-    { path: "activity.applications.accepted.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
-    { path: "activity.applications.rejected.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
-    { path: "activity.applications.completed.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
+    { path: "activity.applications.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
   ])
   await userModel.populate(student, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
   return res.status(200).json({ success: true, message: `student details`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });

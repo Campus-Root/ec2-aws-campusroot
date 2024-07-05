@@ -221,13 +221,7 @@ const Student = mongoose.Schema(
                 university: { type: mongoose.Types.ObjectId, ref: "university" },
                 course: { type: mongoose.Types.ObjectId, ref: "course" }
             }],
-            applications: {
-                processing: [{ type: mongoose.Types.ObjectId, ref: "application" }],
-                accepted: [{ type: mongoose.Types.ObjectId, ref: "application" }],
-                rejected: [{ type: mongoose.Types.ObjectId, ref: "application" }],
-                completed: [{ type: mongoose.Types.ObjectId, ref: "application" }],
-                cancelled: [{ type: mongoose.Types.ObjectId, ref: "application" }],
-            },
+            applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],
             meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }]
         },
         skills: [{ type: String, }],

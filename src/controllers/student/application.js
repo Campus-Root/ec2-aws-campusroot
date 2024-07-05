@@ -4,7 +4,7 @@ import universityModel from "../../models/University.js";
 import fs from "fs";
 import Document from "../../models/Uploads.js";
 import { teamModel } from "../../models/Team.js";
-import applicationModel from "../../models/application.js";
+import {applicationModel} from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -110,16 +110,16 @@ export const apply = errorWrapper(async (req, res, next) => {
         stage: "Waiting For Counsellor's Approval"
     });
     await teamModel.findOneAndUpdate({ _id: processCoordinator.info }, { $push: { applications: newApplication._id } })
-    req.user.activity.applications.processing.push(newApplication._id)
+    req.user.activity.applications.push(newApplication._id)
     req.user.logs.push({
         action: `application process Initiated`,
         details: `applicationId:${newApplication._id}`
     })
     await req.user.save()
-    await applicationModel.populate(req.user, { path: "activity.applications.processing" })
-    await userModel.populate(req.user, [{ path: "activity.applications.processing.user", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.processing.counsellor", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.processing.processCoordinator", select: "firstName lastName email displayPicSrc" }])
-    await universityModel.populate(req.user, { path: "activity.applications.processing.university", select: "name logoSrc location type establishedYear " })
-    await courseModel.populate(req.user, { path: "activity.applications.processing.course", select: "name tuitionFee currency studyMode discipline subDiscipline schoolName studyLevel duration", })
+    await applicationModel.populate(req.user, { path: "activity.applications" })
+    await userModel.populate(req.user, [{ path: "activity.applications.user", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.counsellor", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.processCoordinator", select: "firstName lastName email displayPicSrc" }])
+    await universityModel.populate(req.user, { path: "activity.applications.university", select: "name logoSrc location type establishedYear " })
+    await courseModel.populate(req.user, { path: "activity.applications.course", select: "name tuitionFee currency studyMode discipline subDiscipline schoolName studyLevel duration", })
     if (req.user.preference.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
         const applyCurrencyConversion = (element) => {
@@ -131,9 +131,9 @@ export const apply = errorWrapper(async (req, res, next) => {
                 element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
             }
         };
-        req.user.activity.applications.processing.forEach(applyCurrencyConversion);
+        req.user.activity.applications.forEach(applyCurrencyConversion);
     }
-    res.status(200).json({ success: true, message: 'New Application Registered', data: req.user.activity.applications.processing.slice(-1), AccessToken: req.AccessToken ? req.AccessToken : null });
+    res.status(200).json({ success: true, message: 'New Application Registered', data: req.user.activity.applications.slice(-1), AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const requestCancellation = errorWrapper(async (req, res, next) => {
     const updatedApplication = await applicationModel.findOneAndUpdate({ _id: req.params.applicationId }, { $set: { cancellationRequest: true } }, { new: true });

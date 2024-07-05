@@ -79,7 +79,7 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
             await application.save()
             break;
         case "delete":
-            if(checklistItem.doc) await Document.findByIdAndDelete(checklistItem.doc)
+            if (checklistItem.doc) await Document.findByIdAndDelete(checklistItem.doc)
             await application.updateOne({ $pull: { docChecklist: { _id: checklistItemId } } });
             break;
         default: return next(generateAPIError(`bad action, choose one among : delete,edit`, 400));
@@ -107,7 +107,6 @@ export const cancellation = errorWrapper(async (req, res, next) => {
     if (cancel == true) {
         application.status = "Cancelled"
         application.log.push({ status: "Cancelled" })
-        await studentModel.updateOne({ _id: application.user }, { $pull: { "activity.applications.processing": applicationId }, $push: { "activity.applications.cancelled": applicationId } })
     } else {
         application.cancellationRequest = false
     }
@@ -136,13 +135,11 @@ export const result = errorWrapper(async (req, res, next) => {
             record.status = result
             record.stages = [{ name: "Result Received", message: note }]
             await universityModel.updateOne({ _id: application.university }, { $push: { profilesAdmits: application.user } })
-            await studentModel.updateOne({ _id: application.user }, { $pull: { "activity.applications.processing": applicationId }, $push: { "activity.applications.accepted": applicationId } })
             break;
         case "Rejected":
             application.status = result
             application.stage = "Result Received"
             record.status = result
-            await studentModel.updateOne({ _id: application.user }, { $pull: { "activity.applications.processing": applicationId }, $push: { "activity.applications.rejected": applicationId } })
             break;
         default:
             return next(generateAPIError("invalid result", 400));
@@ -167,11 +164,9 @@ export const revertResult = errorWrapper(async (req, res, next) => {
         case "Accepted":
             application.log = application.log.filter(ele => ele.status != "Accepted")
             await universityModel.updateOne({ _id: application.university }, { $pull: { profilesAdmits: application.user } })
-            await studentModel.updateOne({ _id: application.user }, { $push: { "activity.applications.processing": applicationId }, $pull: { "activity.applications.accepted": applicationId } })
             break;
         case "Rejected":
             application.log = application.log.filter(ele => ele.status != "Rejected")
-            await studentModel.updateOne({ _id: application.user }, { $push: { "activity.applications.processing": applicationId }, $pull: { "activity.applications.rejected": applicationId } })
             break;
     }
     application.status = "Processing"
