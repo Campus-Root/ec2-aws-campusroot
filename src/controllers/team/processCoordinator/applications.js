@@ -1,7 +1,7 @@
 import courseModel from "../../../models/Course.js";
 import universityModel from "../../../models/University.js";
 import Document from "../../../models/Uploads.js";
-import applicationModel from "../../../models/application.js";
+import {applicationModel} from "../../../models/application.js";
 import { studentModel } from "../../../models/Student.js";
 import fs from "fs"
 import { generateAPIError } from "../../../errors/apiError.js";

@@ -1,6 +1,6 @@
 import universityModel from "../../../models/University.js";
 import courseModel from "../../../models/Course.js";
-import applicationModel from "../../../models/application.js";
+import {applicationModel} from "../../../models/application.js";
 import { generateAPIError } from "../../../errors/apiError.js";
 import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { teamModel } from "../../../models/Team.js";
