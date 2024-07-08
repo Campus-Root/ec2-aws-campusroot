@@ -18,7 +18,7 @@ const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 
 export const StudentRegister = errorWrapper(async (req, res, next) => {
-    const { firstName, lastName, email, password, displayPicSrc, country, language } = req.body;
+    const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
     if (!password || !email || !firstName || !lastName) return next(generateAPIError(`Incomplete details`, 400));
     const alreadyExists = await studentModel.findOne({ email: email });
     if (alreadyExists) return next(generateAPIError(`Email already registered`, 400));
@@ -58,7 +58,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         AccessToken: AccessToken,
         RefreshToken: RefreshToken,
         source: req.headers['user-agent'],
-        DeviceToken: DeviceToken
+        DeviceToken: DeviceToken || null,
     })
     await student.save();
     // await Counsellor.save();
