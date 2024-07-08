@@ -4,6 +4,7 @@ import universityModel from "../../models/University.js"
 import communityModel from "../../models/Community.js"
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { generateAPIError } from "../../errors/apiError.js";
+import { packageModel } from "../../models/Package.js";
 export const devDetails = async (req, res) => {
     try {
         return res.status(200).json({ success: true, message: `all Details of Developer`, data: req.user })
@@ -36,6 +37,19 @@ export const addDestination = async (req, res) => {
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
     }
 }
+
+
+export const addPackage = async (req, res) => {
+    try {
+        const packages = await packageModel.insertMany(req.body)
+        return res.status(200).json({ success: true, message: `new packages added`, data: packages })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
+    }
+}
+
+
 export const allDestinations = async (req, res) => {
     try {
         const destinations = await destinationModel.find({})

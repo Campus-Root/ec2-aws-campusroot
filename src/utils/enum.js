@@ -154,7 +154,8 @@ export const CurrencySymbolEnum = {
     CAD: "$",
     AUD: "AU$",
     EUR: "€",
-    NZD: "$"
+    NZD: "$",
+    INR: "₹",
 };
 export const IndustryTypeEnum = {
     ENTERTAINMENT: "entertainment",

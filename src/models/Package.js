@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { CurrencySymbolEnum, DestinationTypeEnum } from "../utils/enum.js";
 
 const packageSchema = mongoose.Schema({
     name: { type: String },
@@ -21,6 +22,7 @@ const packageSchema = mongoose.Schema({
     duration: { type: Object },
     requirements: [{ type: String }],
     benefits: [{ type: String }],
+    rules: { type: Object },
     features: [{ type: String }], // rules for features
     termsAndConditions: { type: String },
     active: { type: Boolean },
@@ -28,5 +30,4 @@ const packageSchema = mongoose.Schema({
 },
     { timestamps: true }
 );
-const packageModel = mongoose.model("package", packageSchema);
-export default packageModel
+export const packageModel = mongoose.model("package", packageSchema);

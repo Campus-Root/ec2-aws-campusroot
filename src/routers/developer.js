@@ -1,5 +1,5 @@
 import express from "express";
-import { allDestinations, addDestination, allUniversities, courseDescriptionCreation, deleteDestination, devDetails, editCourse, editDestination, uniDeletion, uniDescriptionCreate, uniDescriptionUpdate, retrive, injectionCourse, test, createCommunity, deleteCommunity } from "../controllers/developer/index.js";
+import { allDestinations, addDestination, allUniversities, courseDescriptionCreation, deleteDestination, devDetails, editCourse, editDestination, uniDeletion, uniDescriptionCreate, uniDescriptionUpdate, retrive, injectionCourse, test, createCommunity, deleteCommunity, addPackage } from "../controllers/developer/index.js";
 import { authMiddleware, isDeveloper } from "../middleware/auth.js";
 
 
@@ -13,6 +13,7 @@ router.get("/profile", authMiddleware, isDeveloper, devDetails);
 router.get("/all-universities", authMiddleware, isDeveloper, allUniversities);
 router.get("/allDestinations", authMiddleware, isDeveloper, allDestinations);
 router.post("/create-destination", authMiddleware, isDeveloper, addDestination);
+router.post("/create-package", authMiddleware, isDeveloper, addPackage)
 router.post("/edit-destination/:id", authMiddleware, isDeveloper, editDestination)
 router.post("/edit-course/:id", authMiddleware, isDeveloper, editCourse)
 router.delete("/delete-destination/:id", authMiddleware, isDeveloper, deleteDestination)
