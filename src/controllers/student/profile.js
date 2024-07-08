@@ -15,7 +15,7 @@ import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
 import { DestinationTypeEnum } from "../../utils/enum.js";
 export const profile = errorWrapper(async (req, res, next) => {
-    const countries = Array.from(req.user.advisors.keys());
+    const countries = Object.keys(req.user.advisors)
     const advisorPaths = countries.map(country => ({
         path: `advisors.${country}`,
         select: 'firstName displayPicSrc lastName email role language about expertiseCountry'
