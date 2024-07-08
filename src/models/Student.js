@@ -14,6 +14,12 @@ const Student = mongoose.Schema(
         }],
         phone: { countryCode: { type: String }, number: { type: String } },
         LeadSource: { type: String },
+        IEH: {
+            institutionName: { type: String },
+            verificationCode: { type: String },
+            verifiedAccess: { type: Boolean, default: false },
+            verificationMethod: { type: String }
+        },
         personalDetails: {
             DOB: { type: Date },
             Gender: { type: String }, // enum
@@ -39,6 +45,7 @@ const Student = mongoose.Schema(
             countyOfBirth: { type: String }, // enum
             maritalStatus: { type: String }, // enum 
             validPassport: { type: String },// enum yes no and processing
+            validPassportNumber: { type: String },// enum yes no and processing
             validPermit: { type: String },// enum yes no and processing,
             visaRejectedDetails: { type: String },
         },
