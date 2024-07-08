@@ -1,7 +1,7 @@
 import courseModel from "../../models/Course.js";
 import universityModel from "../../models/University.js";
 import Document from "../../models/Uploads.js";
-import {applicationModel} from "../../models/application.js";
+import { applicationModel } from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -114,31 +114,34 @@ export const dashboard = errorWrapper(async (req, res, next) => {
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
     await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.shortListed.processCoordinator activity.applications.processCoordinator activity.shortListed.counsellor activity.applications.counsellor", select: "firstName displayPicSrc lastName email role" })
   ]);
-  if (req.user.preference.currency) {
-    const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-    const applyCurrencyConversion = (element) => {
-      if (element.course.currency.code !== req.user.preference.currency) {
-        if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-          next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+  let applications, checklist
+  if (req.user.activity.applications.length > 0) {
+    if (req.user.preference.currency) {
+      const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
+      const applyCurrencyConversion = (element) => {
+        if (element.course.currency.code !== req.user.preference.currency) {
+          if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
+            next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+          }
+          element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
+          element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
         }
-        element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
-        element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
-      }
-    };
-    req.user.recommendations.data.forEach(applyCurrencyConversion);
-    req.user.activity.shortListed.forEach(applyCurrencyConversion);
-    req.user.activity.applications.forEach(applyCurrencyConversion);
+      };
+      req.user.recommendations.data.forEach(applyCurrencyConversion);
+      req.user.activity.shortListed.forEach(applyCurrencyConversion);
+      req.user.activity.applications.forEach(applyCurrencyConversion);
+    }
+    applications = req.user.activity.applications.filter((ele) => ele.stage === "Processing"|| ele.stage === "Accepted");
+    checklist = applications.flatMap(application =>
+      application.docChecklist.filter(item => !item.isChecked).map(item => ({
+        checklistId: item._id,
+        name: item.name,
+        isChecked: item.isChecked,
+        doc: item.doc,
+        desc: item.desc,
+        applicationId: application._id
+      })));
   }
-  const applications = req.user.activity.applications.filter(ele => ele.stage === "Processing", ele.stage === "Accepted");
-  let checklist = applications.flatMap(application =>
-    application.docChecklist.filter(item => !item.isChecked).map(item => ({
-      checklistId: item._id,
-      name: item.name,
-      isChecked: item.isChecked,
-      doc: item.doc,
-      desc: item.desc,
-      applicationId: application._id
-    })));
   return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendations: req.user.recommendations, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 //................download any user related Document...........
