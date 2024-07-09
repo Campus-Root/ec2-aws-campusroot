@@ -229,8 +229,16 @@ const Student = mongoose.Schema(
                 course: { type: mongoose.Types.ObjectId, ref: "course" }
             }],
             applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],
-            meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }]
+            meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }],
+            cart: [{
+                products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
+                totalPrice: { type: Number },
+                requestForQuote: { type: Boolean },
+                suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }]
+            }],
         },
+        purchasedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }],
+        orders: [{ type: mongoose.Types.ObjectId, ref: "order" }],
         skills: [{ type: String, }],
         preference: {
             degree: { type: String },

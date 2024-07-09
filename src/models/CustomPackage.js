@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { CurrencySymbolEnum, DestinationTypeEnum, ProductCategoryEnum } from "../utils/enum.js";
 
-const packageSchema = mongoose.Schema({
+const customPackageSchema = mongoose.Schema({
     name: { type: String },
     description: { type: String },
     country: [{
@@ -10,26 +10,28 @@ const packageSchema = mongoose.Schema({
             message: "Invalid Type"
         }
     }],
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
+    recommender: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
     imageSrc: { type: String },
     priceDetails: {
         totalPrice: { type: Number },
         currency: {
             symbol: { type: String, enum: { values: Object.values(CurrencySymbolEnum), message: "Invalid Type of currency symbol" } },
             code: { type: String, enum: { values: Object.keys(CurrencySymbolEnum), message: "Invalid Type of currency code" } },
-        },
-        availableCoupons: [{ type: mongoose.Schema.Types.ObjectId, ref: "coupon" }],
+        }
     },
-    duration: { 
+    duration: {
         start: { type: Date },
         end: { type: Date }
-     },
+    },
     requirements: [{ type: String }],
     benefits: [{ type: String }],
     products: [{ category: { type: String, enum: { values: Object.values(ProductCategoryEnum), message: "Invalid category" } }, quantity: { type: Number } }],
     termsAndConditions: { type: String },
     active: { type: Boolean },
+    isAccepted: { type: Boolean },
     assigned: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }]
 },
     { timestamps: true }
 );
-export const packageModel = mongoose.model("package", packageSchema);
+export const customPackageModel = mongoose.model("customPackage", customPackageSchema);

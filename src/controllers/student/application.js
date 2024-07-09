@@ -4,7 +4,7 @@ import universityModel from "../../models/University.js";
 import fs from "fs";
 import Document from "../../models/Uploads.js";
 import { teamModel } from "../../models/Team.js";
-import {applicationModel} from "../../models/application.js";
+import { applicationModel } from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -13,6 +13,7 @@ import 'dotenv/config';
 import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
 import { currencySymbols } from "../../utils/enum.js";
+import productModel from "../../models/Product.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const addShortListed = errorWrapper(async (req, res, next) => {
     const { universityId, courseId } = req.body;
@@ -55,86 +56,50 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
     })
     return res.status(200).json({ success: true, message: `list updated`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-export const apply = errorWrapper(async (req, res, next) => {
-    let { universityId, courseId, intake } = req.body
-    // if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to process the application`, 400));
-    // if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to process the application`, 400));
-    if (! await universityModel.findById(universityId)) return next(generateAPIError(`invalid university Id`, 400));
-    const course = await courseModel.findById(courseId, "startDate")
-    if (!course) return next(generateAPIError(`invalid course Id`, 400));
-    if (!intake || new Date(intake) <= new Date()) return next(generateAPIError(`invalid intake`, 400));
-    const Exists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(intake).getUTCMonth())
-    if (Exists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400));
-    if (!req.user.advisors.find(ele => ele.role === "processCoordinator")) {
-        const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator" } },
-        {
-            $project: {
-                _id: 1, applications: 1,
-                applicationsCount: {
-                    $cond: {
-                        if: { $isArray: "$applications" },
-                        then: { $size: "$applications" },
-                        else: 0
-                    }
-                }
-            }
-        }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
-        req.user.advisors.push({
-            info: processCoordinators[0]._id,
-            role: "processCoordinator"
+// export const apply = errorWrapper(async (req, res, next) => {       // this is to initiate payments
+//     const { stdPackageId, products, key } = req.body;
+//     // products , package,
+
+//     //purchasing package and claiming products   create a order 
+//     //claim products
+//     //purchasing single or bunch of products product
+//     switch (key) {
+//         case value:
+
+//             break;
+
+//         default:
+//             break;
+//     }
+// })
+export const requestQuote = errorWrapper(async (req, res, next) => {
+    const { courseIds } = req.body;
+    let courses = await courseModel.find({ $in: courseIds }, "university elite")
+    if (courses.length !== courseIds.length) return next(generateAPIError(`invalid courseIds`, 400));
+    let Products = [], quant = new Map()
+    for (const course of courses) {
+        let category = (course.elite) ? "elite application" : "premium application"
+        const product = await productModel.create({
+            university: course.university,
+            course: course._id,
+            user: req.user._id,
+            category
         })
-        await teamModel.findOneAndUpdate({ _id: processCoordinators[0]._id }, { $push: { students: { profile: req.user._id } }, });
-        await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
-        await Document.updateMany({ user: req.user._id, type: "General" }, { $push: { viewers: processCoordinators[0]._id } })
+        quant.set(category, (quant.get(category) || 0) + 1);
+        Products.push(product._id)
     }
-    const alreadyExists = await applicationModel.find({ user: req.user._id, intake: intake, course: courseId })
-    if (alreadyExists.length > 0) return next(generateAPIError(`Already applied for this intake`, 400));
-    let counsellor = req.user.advisors.find(ele => ele.role == "counsellor")
-    let processCoordinator = req.user.advisors.find(ele => ele.role == "processCoordinator")
-    let deadlineDate;
-    if (Exists[0].deadlineMonth != null) {
-        const currentYear = new Date().getFullYear();
-        const deadlineYear = Exists[0].deadlineMonth >= new Date().getMonth() ? currentYear : currentYear + 1;
-        deadlineDate = new Date(deadlineYear, Exists[0].deadlineMonth, 2);
-    }
-    const newApplication = await applicationModel.create({
-        counsellor: counsellor.info,
-        university: universityId,
-        course: courseId,
-        intake: intake,
-        deadline: deadlineDate ? deadlineDate : null,
-        user: req.user._id,
-        processCoordinator: processCoordinator.info,
-        log: [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }],
-        status: "Processing",
-        stage: "Waiting For Counsellor's Approval"
-    });
-    await teamModel.findOneAndUpdate({ _id: processCoordinator.info }, { $push: { applications: newApplication._id } })
-    req.user.activity.applications.push(newApplication._id)
-    req.user.logs.push({
-        action: `application process Initiated`,
-        details: `applicationId:${newApplication._id}`
+    totalPrice = quant.get("elite application") * 14900 + quant.get("elite application") * 1800
+    req.user.activity.cart.push({
+        products: Products,
+        totalPrice: totalPrice,
+        requestForQuote: true
     })
     await req.user.save()
-    await applicationModel.populate(req.user, { path: "activity.applications" })
-    await userModel.populate(req.user, [{ path: "activity.applications.user", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.counsellor", select: "firstName lastName email displayPicSrc" }, { path: "activity.applications.processCoordinator", select: "firstName lastName email displayPicSrc" }])
-    await universityModel.populate(req.user, { path: "activity.applications.university", select: "name logoSrc location type establishedYear " })
-    await courseModel.populate(req.user, { path: "activity.applications.course", select: "name tuitionFee currency studyMode discipline subDiscipline schoolName studyLevel duration", })
-    if (req.user.preference.currency) {
-        const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-        const applyCurrencyConversion = (element) => {
-            if (element.course.currency.code !== req.user.preference.currency) {
-                if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-                    next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
-                }
-                element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
-                element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
-            }
-        };
-        req.user.activity.applications.forEach(applyCurrencyConversion);
-    }
-    res.status(200).json({ success: true, message: 'New Application Registered', data: req.user.activity.applications.slice(-1), AccessToken: req.AccessToken ? req.AccessToken : null });
-})
+    await productModel.populate(req.user, { path: "activity.cart.products", select: "university course user category", })
+    await courseModel.populate(req.user, { path: "activity.cart.products.course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" })
+    await universityModel.populate(req.user, { path: "activity.cart.products.university", select: "name logoSrc location type establishedYear " })
+    res.status(200).json({ success: true, message: 'Quote Request sent to team member', data: req.user.activity.cart, AccessToken: req.AccessToken ? req.AccessToken : null });
+});
 export const requestCancellation = errorWrapper(async (req, res, next) => {
     const updatedApplication = await applicationModel.findOneAndUpdate({ _id: req.params.applicationId }, { $set: { cancellationRequest: true } }, { new: true });
     if (!updatedApplication) return next(generateAPIError(`Invalid application ID`, 400));

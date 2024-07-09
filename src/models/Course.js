@@ -10,6 +10,7 @@ const courseSchema = mongoose.Schema(
             state: { type: String },
             city: { type: String },
         },
+        elite: { type: Boolean },
         type: { type: String },
         about: { type: String },
         language: { type: String },

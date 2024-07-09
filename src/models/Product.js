@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ProductCategoryEnum } from "../utils/enum.js";
 
 const productSchema = mongoose.Schema({
     university: { type: mongoose.Types.ObjectId, ref: "university" },
@@ -10,5 +11,11 @@ const productSchema = mongoose.Schema({
     { discriminatorKey: 'category' },
     { timestamps: true }
 );
+productSchema.path('category').enum({
+    values: Object.values(ProductCategoryEnum),
+    message: 'Category `{VALUE}` is not valid'
+});
 const productModel = mongoose.model("product", productSchema);
 export default productModel
+
+

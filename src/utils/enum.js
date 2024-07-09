@@ -143,6 +143,27 @@ export const DestinationTypeEnum = {
     IRELAND: "Ireland",
     NZ: "New Zealand"
 };
+export const OrderStatusEnum = {
+    PENDING: "pending",
+    CANCELLED: "cancelled",
+    COMPLETED: "completed"
+}
+export const PaymentStatusEnum = {
+    PENDING: "pending",
+    PAID: "paid",
+    COMPLETED: "completed",
+    CANCELLED: "cancelled",
+    REFUNDED: "refunded",
+    REFUND_INITIALIZED: "refund initiated",
+}
+export const ProductCategoryEnum = {
+    PREMIUM: "premium application",
+    ELITE: "elite application",
+    SOP: "statement of purpose",
+    LOR: "letter of recommendation",
+    VISA: "VISA process",
+    LOAN: "education loan process"
+}
 export const LanguageTypeEnum = {
     English: "English",
     Hindi: "Hindi",
