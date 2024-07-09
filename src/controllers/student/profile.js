@@ -15,7 +15,7 @@ import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
 import { DestinationTypeEnum } from "../../utils/enum.js";
 export const profile = errorWrapper(async (req, res, next) => {
-    const countries = (typeof (req.user.advisors) !== null || typeof (req.user.advisors) !== undefined) ? Object.keys(req.user.advisors) : [];
+    const countries = Object.keys(DestinationTypeEnum)
     const advisorPaths = countries.map(country => ({
         path: `advisors.${country}`,
         select: 'firstName displayPicSrc lastName email role language about expertiseCountry'
@@ -447,12 +447,10 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
     const countryMap = new Map(Object.entries(DestinationTypeEnum).map(([key, value]) => [value, key]));
     if (!Object.values(DestinationTypeEnum).includes(country)) return next(generateAPIError("currently not serving for this country", 400));
     const countryCode = countryMap.get(country) //  USA
-    const countries = Array.from(req.user.advisors.keys());
-    const advisorPaths = countries.map(ele => ({
-        path: `advisors.${ele}`,
+    await userModel.populate(req.user, {
+        path: `advisors.${countryCode}`,
         select: 'firstName displayPicSrc lastName email role language about expertiseCountry'
-    }));
-    await userModel.populate(req.user, advisorPaths)
+    })
     let alreadyExist = req.user.advisors[countryCode].find(ele => ele.role == "counsellor")
     if (alreadyExist && isValidObjectId(alreadyExist._id)) return next(generateAPIError(`expert counsellor for selected destination is already assigned`, 400));
     let matchId = ""
