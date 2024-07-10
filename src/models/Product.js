@@ -8,13 +8,11 @@ const productSchema = mongoose.Schema({
     deadline: { type: Date },
     user: { type: mongoose.Types.ObjectId, ref: "user" },
 },
-    { discriminatorKey: 'category' },
-    { timestamps: true }
+    {
+        discriminatorKey: 'category',
+        timestamps: true
+    },
 );
-productSchema.path('category').enum({
-    values: Object.values(ProductCategoryEnum),
-    message: 'Category `{VALUE}` is not valid'
-});
 const productModel = mongoose.model("product", productSchema);
 export default productModel
 

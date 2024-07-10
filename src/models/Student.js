@@ -233,7 +233,7 @@ const Student = mongoose.Schema(
             cart: [{
                 products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
                 totalPrice: { type: Number },
-                requestForQuote: { type: Boolean },
+                quotePending: { type: Boolean },
                 suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }]
             }],
         },

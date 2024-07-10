@@ -56,43 +56,30 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
     })
     return res.status(200).json({ success: true, message: `list updated`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-// export const apply = errorWrapper(async (req, res, next) => {       // this is to initiate payments
-//     const { stdPackageId, products, key } = req.body;
-//     // products , package,
+export const checkout = errorWrapper(async (req, res, next) => {       // this is to initiate payments
 
-//     //purchasing package and claiming products   create a order 
-//     //claim products
-//     //purchasing single or bunch of products product
-//     switch (key) {
-//         case value:
-
-//             break;
-
-//         default:
-//             break;
-//     }
-// })
+})
 export const requestQuote = errorWrapper(async (req, res, next) => {
     const { courseIds } = req.body;
-    let courses = await courseModel.find({ $in: courseIds }, "university elite")
+    let courses = await courseModel.find({ "_id": { $in: courseIds } }, "university elite")
     if (courses.length !== courseIds.length) return next(generateAPIError(`invalid courseIds`, 400));
     let Products = [], quant = new Map()
     for (const course of courses) {
-        let category = (course.elite) ? "elite application" : "premium application"
-        const product = await productModel.create({
+        let Class = (course.elite) ? "elite application" : "premium application"
+        const product = await applicationModel.create({
             university: course.university,
             course: course._id,
             user: req.user._id,
-            category
+            Class
         })
-        quant.set(category, (quant.get(category) || 0) + 1);
+        quant.set(Class, (quant.get(Class) || 0) + 1);
         Products.push(product._id)
     }
-    totalPrice = quant.get("elite application") * 14900 + quant.get("elite application") * 1800
+    let totalPrice = quant.get("elite application") * 14900 + quant.get("elite application") * 1800
     req.user.activity.cart.push({
         products: Products,
         totalPrice: totalPrice,
-        requestForQuote: true
+        quotePending: true
     })
     await req.user.save()
     await productModel.populate(req.user, { path: "activity.cart.products", select: "university course user category", })
