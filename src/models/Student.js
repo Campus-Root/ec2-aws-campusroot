@@ -136,10 +136,10 @@ const Student = mongoose.Schema(
             testDate: { type: Date },
             docId: { type: mongoose.Types.ObjectId, ref: "document" },
         }],
-        advisors: {
-            type: Map,
-            of: [{ type: mongoose.Types.ObjectId, ref: 'user' }]
-        },
+        advisors: [{
+            assignedCountries: [{ type: String, enum: { values: Object.values(DestinationTypeEnum), message: "Invalid Type" } }],
+            info: { type: mongoose.Types.ObjectId, ref: 'user' }
+        }],
         workExperience: [{
             companyName: { type: String, },
             sector: {

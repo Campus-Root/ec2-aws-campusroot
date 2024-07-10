@@ -15,13 +15,8 @@ import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
 import { DestinationTypeEnum } from "../../utils/enum.js";
 export const profile = errorWrapper(async (req, res, next) => {
-    const countries = Object.keys(DestinationTypeEnum)
-    const advisorPaths = countries.map(country => ({
-        path: `advisors.${country}`,
-        select: 'firstName displayPicSrc lastName email role language about expertiseCountry'
-    }));
     await Promise.all([
-        await userModel.populate(req.user, advisorPaths),
+        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
         await Document.populate(req.user,
             [{ path: "tests.docId", select: "name contentType createdAt", },
             { path: "workExperience.docId", select: "name contentType createdAt", },
@@ -227,7 +222,7 @@ export const editProfile = errorWrapper(async (req, res, next) => {
     }
     await Promise.all([
         await req.user.save(),
-        await userModel.populate(req.user, { path: "advisors", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
+        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
         await Document.populate(req.user,
             [{ path: "tests.docId", select: "name contentType createdAt", },
             { path: "workExperience.docId", select: "name contentType createdAt", },
@@ -444,36 +439,30 @@ export const verifyUserOTP = errorWrapper(async (req, res, next) => {
 })
 export const requestCounsellor = errorWrapper(async (req, res, next) => {
     const { country } = req.body
-    const countryMap = new Map(Object.entries(DestinationTypeEnum).map(([key, value]) => [value, key]));
-    if (!Object.values(DestinationTypeEnum).includes(country)) return next(generateAPIError("currently not serving for this country", 400));
-    const countryCode = countryMap.get(country) //  USA
-    await userModel.populate(req.user, {
-        path: `advisors.${countryCode}`,
-        select: 'firstName displayPicSrc lastName email role language about expertiseCountry'
-    })
-    let alreadyExist = req.user.advisors[countryCode].find(ele => ele.role == "counsellor")
-    if (alreadyExist && isValidObjectId(alreadyExist._id)) return next(generateAPIError(`expert counsellor for selected destination is already assigned`, 400));
-    let matchId = ""
-    for (const key in req.user.advisors) for (const member of key) if (member.role === "counsellor" && member.expertiseCountry.includes(req.user.country)) matchId = member._id;
-    if (matchId != "") {
-        req.user.advisors[countryCode].push(matchId)
+    await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
+    let alreadyExist = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
+    if (alreadyExist && isValidObjectId(alreadyExist.info._id)) return next(generateAPIError(`expert counsellor for selected country is already assigned`, 400));
+    let alreadyExistButDifferentCountry = req.user.advisors.find(ele => ele.info.role == "counsellor" && ele.info.expertiseCountry.includes(country))
+    if (alreadyExistButDifferentCountry && isValidObjectId(alreadyExistButDifferentCountry.info._id)) {
+        alreadyExistButDifferentCountry.assignedCountries.push(country)
         req.user.logs.push({
             action: `${country} counsellor assigned`,
-            details: `counsellorId:${matchId}&country:${country}}`
+            details: `counsellorId:${alreadyExistButDifferentCountry.info._id}&country:${country}}`
         })
         await req.user.save()
-        await userModel.populate(req.user, advisorPaths)
-        return res.status(200).json({ success: true, message: `counsellor assigned`, data: req.user.advisors, AccessToken: req.AccessToken ? req.AccessToken : null });
+        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
+        return res.status(200).json({ success: true, message: `counsellor assigned for multiple countries`, data: req.user.advisors, AccessToken: req.AccessToken ? req.AccessToken : null });
     }
     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-    req.user.advisors[countryCode].push(Counsellors[0]._id)
+    req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
     await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
     req.user.logs.push({
         action: `${country} counsellor assigned`,
         details: `counsellorId:${Counsellors[0]}&country:${country}}`
     })
     await req.user.save()
-    await userModel.populate(req.user, advisorPaths)
+
+    await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     return res.status(200).json({ success: true, message: `counsellor assigned`, data: req.user.advisors, AccessToken: req.AccessToken ? req.AccessToken : null });
 })

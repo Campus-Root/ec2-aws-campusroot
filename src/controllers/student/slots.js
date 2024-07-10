@@ -13,19 +13,22 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
     if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
     if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
     if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
-    await userModel.populate(req.user, { path: "advisors", select: "googleTokens role" })
-
-    let teamMember = req.user.advisors.find(ele => ele._id.toString() == teamMemberId)
+    await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens role" })
+    let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)
     if (!teamMember) return next(generateAPIError(`invalid teamMember parameter`, 400));
+
+    const alreadyScheduled = await meetingModel.find({ user: req.user._id, member: teamMember.info._id, "data.end.dateTime": { $gte: new Date() } }, "data.start data.end")
+    if (!alreadyScheduled) return next(generateAPIError(`meeting already scheduled at ${alreadyScheduled.data.start.dateTime}`));
+
     let sessionName
-    switch (teamMember.role) {
+    switch (teamMember.info.role) {
         case "counsellor": sessionName = `Counselling Session - ${req.user.firstName} ${req.user.lastName}`
             break;
         case "processCoordinator": sessionName = `Application Processing Session - ${req.user.firstName} ${req.user.lastName}`
             break;
         default: return next(generateAPIError(`invalid teamMemberId`, 400));
     }
-    oauth2Client.setCredentials(teamMember.googleTokens);
+    oauth2Client.setCredentials(teamMember.info.googleTokens);
     let event = {
         summary: sessionName,
         description: notes,
@@ -35,7 +38,7 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
         conferenceData: { createRequest: { requestId: Math.random().toString(16).slice(2), }, },
         reminders: { useDefault: false, overrides: [{ method: "email", minutes: 24 * 60 }, { method: "popup", minutes: 10 },], },
     };
-    let meet = { user: req.user._id, member: teamMember._id }
+    let meet = { user: req.user._id, member: teamMember.info._id }
     if (attendees) attendees.forEach(ele => event.attendees.push({ email: ele }));
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     const { data } = await calendar.events.insert({ calendarId: 'primary', requestBody: event, conferenceDataVersion: 1, sendUpdates: "all", });
@@ -88,11 +91,11 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: msg, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const getEvents = errorWrapper(async (req, res, next) => {
-    await userModel.populate(req.user, { path: "advisors", select: "googleTokens" })
+    await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens" })
     const { teamMemberId } = req.params
-    let teamMember = req.user.advisors.find(ele => ele._id.toString() == teamMemberId)
+    let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)
     if (!teamMember) return next(generateAPIError(`invalid teamMember parameter`, 400));
-    oauth2Client.setCredentials(teamMember.googleTokens);
+    oauth2Client.setCredentials(teamMember.info.googleTokens);
     const { data } = await google.calendar({ version: 'v3', auth: oauth2Client }).events.list({
         calendarId: 'primary',
         timeMin: new Date().toISOString(),
