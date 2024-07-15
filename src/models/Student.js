@@ -230,13 +230,9 @@ const Student = mongoose.Schema(
             }],
             applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],
             meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }],
-            cart: [{
-                products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
-                totalPrice: { type: Number },
-                quotePending: { type: Boolean },
-                suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }]
-            }],
+            cart: [{ type: mongoose.Types.ObjectId, ref: "product" }]
         },
+        suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }],
         purchasedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }],
         orders: [{ type: mongoose.Types.ObjectId, ref: "order" }],
         skills: [{ type: String, }],
