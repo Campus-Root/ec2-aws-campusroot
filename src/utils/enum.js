@@ -14,7 +14,7 @@ export const studentCounsellingStagesEnum = {
     FOLLOW_UP_2: "Follow Up 2",
     FINAL_SHORTLIST: "Final Shortlist",
     CLOSED_LEAD: "Closed Lead",
-    REOPENED: "Reopened"
+    RE_OPENED: "Re-Opened"
 }
 export const applicationStateEnum = {
     PROCESSING: "Processing",
@@ -135,6 +135,12 @@ export const studyLevelEnum = {
     MS: "masters",
     BS: "bachelors"
 };
+export const PackageVarietyEnum = {
+    BASIC: "Basic",
+    STANDARD: "Standard",
+    PREMIUM: "Premium",
+    CUSTOM: "Custom"
+}
 export const DestinationTypeEnum = {
     USA: "United States of America",
     UK: "United Kingdom",
@@ -150,6 +156,8 @@ export const OrderStatusEnum = {
 }
 export const PaymentStatusEnum = {
     PENDING: "pending",
+    ATTEMPTED: "attempted",
+    CREATED: "created",
     PAID: "paid",
     COMPLETED: "completed",
     CANCELLED: "cancelled",

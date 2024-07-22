@@ -1,14 +1,7 @@
 import mongoose from "mongoose"
-import { applicationStagesEnum, applicationStateEnum, ProductCategoryEnum } from "../utils/enum.js";
-import productModel from "./Product.js";
+import { applicationStagesEnum, applicationStateEnum } from "../utils/enum.js";
+import {productModel} from "./Product.js";
 const applicationSchema = mongoose.Schema({
-    class: {
-        type: String,
-        enum: {
-            values: Object.values(ProductCategoryEnum),
-            message: 'Category `{VALUE}` is not valid'
-        }
-    },
     processCoordinator: { type: mongoose.Types.ObjectId, ref: "user" },
     counsellor: { type: mongoose.Types.ObjectId, ref: "user" },
     approval: {

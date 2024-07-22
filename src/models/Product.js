@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { ProductCategoryEnum } from "../utils/enum.js";
 
 const productSchema = mongoose.Schema({
     university: { type: mongoose.Types.ObjectId, ref: "university" },
@@ -13,7 +12,6 @@ const productSchema = mongoose.Schema({
         timestamps: true
     },
 );
-const productModel = mongoose.model("product", productSchema);
-export default productModel
+export const productModel = mongoose.model("product", productSchema);
 
 

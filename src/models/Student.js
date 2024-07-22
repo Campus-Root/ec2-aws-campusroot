@@ -228,12 +228,12 @@ const Student = mongoose.Schema(
                 university: { type: mongoose.Types.ObjectId, ref: "university" },
                 course: { type: mongoose.Types.ObjectId, ref: "course" }
             }],
-            applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],
+            products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
             meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }],
             cart: [{ type: mongoose.Types.ObjectId, ref: "product" }]
         },
-        suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }],
-        purchasedPackages: [{ type: mongoose.Types.ObjectId, ref: "customPackage" }],
+        suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],
+        purchasedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],
         orders: [{ type: mongoose.Types.ObjectId, ref: "order" }],
         skills: [{ type: String, }],
         preference: {

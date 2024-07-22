@@ -14,6 +14,8 @@ import { isValidObjectId } from "mongoose";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
 import { DestinationTypeEnum } from "../../utils/enum.js";
+import { packageModel } from "../../models/Package.js";
+import { orderModel } from "../../models/Order.js";
 export const profile = errorWrapper(async (req, res, next) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
@@ -38,7 +40,10 @@ export const profile = errorWrapper(async (req, res, next) => {
             { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
             { path: "documents.test.general", select: "name contentType createdAt", },
             { path: "documents.test.languageProf", select: "name contentType createdAt", },
-            { path: "documents.workExperiences", select: "name contentType createdAt", },])
+            { path: "documents.workExperiences", select: "name contentType createdAt", },]),
+        await orderModel.populate(req.user, { path: "orders", select: "paymentDetails Package status priceDetails cancellationReason cancellationDate logs" }),
+        await packageModel.populate(req.user, { path: "suggestedPackages purchasedPackages orders.Package", select: "name description country priceDetails requirements benefits products termsAndConditions active" })
+
     ])
     const profile = { ...req.user._doc }
     delete profile.logs;
@@ -456,13 +461,28 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
     req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
-    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
+    const chat = await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
     req.user.logs.push({
         action: `${country} counsellor assigned`,
         details: `counsellorId:${Counsellors[0]}&country:${country}}`
     })
     await req.user.save()
-
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
-    return res.status(200).json({ success: true, message: `counsellor assigned`, data: req.user.advisors, AccessToken: req.AccessToken ? req.AccessToken : null });
+
+    let result = await chatModel
+        .find({ "participants": { $eq: req.user._id } })
+        .populate("participants", "firstName lastName displayPicSrc email userType role")
+        .populate("unSeenMessages.message")
+        .populate("lastMessage")
+        .sort({ updatedAt: -1 })
+        .lean();
+    result = await userModel.populate(chat, [
+        { path: "unSeenMessages.message.sender", select: "firstName lastName displayPicSrc email userType role" },
+        { path: "admins", select: "firstName lastName displayPicSrc email userType role" },
+    ])
+    for (const { unSeenMessages, lastMessage } of result) {
+        unSeenMessages.forEach(ele => { ele.message.content = decrypt(ele.message.iv, ele.message.content); });
+        if (lastMessage) lastMessage.content = decrypt(lastMessage.iv, lastMessage.content)
+    }
+    return res.status(200).json({ success: true, message: `counsellor assigned`, data: { advisors: req.user.advisors, chats: result }, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
