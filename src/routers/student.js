@@ -2,12 +2,12 @@
 import express from "express";
 import { handleFile } from "../middleware/handleFile.js";
 import { authMiddleware, isStudent } from "../middleware/auth.js";
-import { checkDisposableEmail } from "../middleware/validations.js";
+import { checkDisposableEmail, validatePayment, validateProducts } from "../middleware/validations.js";
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
 import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation } from "../controllers/student/index.js";
 import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, requestCounsellor, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
-import { addShortListed, deleteUploadedFromApplication, forceForwardApply, removeForceApply, removeShortListed, requestCancellation, checkout, uploadInApplication, paymentVerification } from "../controllers/student/application.js";
+import { addShortListed, deleteUploadedFromApplication, forceForwardApply, removeForceApply, removeShortListed, requestCancellation, checkout, uploadInApplication, paymentVerification, order } from "../controllers/student/application.js";
 const router = express.Router();
 //        {{base}}/api/v1/student
 
@@ -25,7 +25,7 @@ router.put("/phone", authMiddleware, isStudent, editPhone);
 router.put("/email", authMiddleware, isStudent, checkDisposableEmail, editEmail);
 
 
-router.post("/request-counsellor",authMiddleware, isStudent, requestCounsellor)
+router.post("/request-counsellor", authMiddleware, isStudent, requestCounsellor)
 router.get("/events/:teamMemberId", authMiddleware, isStudent, getEvents)
 router.post("/book-slot/:teamMemberId", authMiddleware, isStudent, bookSlot)
 router.post("/modify-slot", authMiddleware, isStudent, modifySlot)
@@ -44,7 +44,8 @@ router.get("/download/:documentId", authMiddleware, isStudent, downloadDocument)
 
 
 router.post("/checkout", authMiddleware, isStudent, checkout)
-router.post("/paymentVerification",paymentVerification)
+router.post("/paymentVerification", paymentVerification)
+router.post("/order", authMiddleware, isStudent, validatePayment, validateProducts, order)
 router.post("/apply-force", authMiddleware, isStudent, forceForwardApply)
 router.post("/apply-omit-force", authMiddleware, isStudent, removeForceApply)
 router.post("/upload-application", authMiddleware, isStudent, handleFile, uploadInApplication);
