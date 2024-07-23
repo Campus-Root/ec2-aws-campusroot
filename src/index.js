@@ -111,6 +111,7 @@ io.on('connection', function (socket) {
 		console.log(triggerObject.action, triggerObject.sender.firstName);
 		var activityList = [];
 		let offlineUsers = [];
+		console.log(triggerObject);
 		triggerObject.recievers.forEach(reciever => {
 			var online = io.sockets.adapter.rooms.get(reciever._id);
 			console.log("reciever", reciever.firstName, online ? "online" : "offline");
