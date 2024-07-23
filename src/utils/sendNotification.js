@@ -21,7 +21,7 @@ export const sendPushNotification = async ({ tokens, notification }) => {
             'Accept': '*/*',
             'Content-Type': 'application/json'
         };
-        const response = await axios.post(EXPO_URL, {
+        const response = await axios.post(process.env.EXPO_URL, {
             to: tokens,
             sound: "default",
             title: notification.title,
