@@ -136,7 +136,7 @@ io.on('connection', function (socket) {
 				},
 				tokens: getTokens(offlineUsers)
 			};
-			sendPushNotification(message);
+			if(sendPushNotification(message))console.log("push notifications sent");;
 		}
 		if (triggerObject.action == "ping") {
 			socket.emit('trigger', { sender: null, action: "activityList", data: activityList });
