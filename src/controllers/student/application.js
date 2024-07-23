@@ -61,11 +61,11 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
     return res.status(200).json({ success: true, message: `list updated`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const checkout = errorWrapper(async (req, res, next) => {       // this is to initiate payments
-    const { packageId, products, currency } = req.body;
-    let order, Package
+    const { packageId, products, userCurrency } = req.body;
+    let order, Package, razorPay
     const hasPackageId = Boolean(packageId);
     const hasProducts = Array.isArray(products) && products.length > 0;
-    let orderOptions
+    let orderOptions, newProductIds = []
     switch (true) {
         case !hasPackageId && !hasProducts:
             return next(generateAPIError(`either add packageId or products to checkout`, 400));
@@ -78,13 +78,13 @@ export const checkout = errorWrapper(async (req, res, next) => {       // this i
             let { priceDetails: { totalPrice, currency } } = Package
             orderOptions = {
                 currency: currency.code,
-                amount: totalPrice,
+                amount: totalPrice * 100,
                 notes: {
                     "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
                     "item_ids": [Package._id]
                 }
             }
-            const razorPay = RazorpayInstance.orders.create(orderOptions);
+            razorPay = await RazorpayInstance.orders.create(orderOptions);
             order = await orderModel.create({
                 student: req.user._id,
                 Package: packageId,
@@ -104,11 +104,73 @@ export const checkout = errorWrapper(async (req, res, next) => {       // this i
             await orderModel.populate(req.user, { path: "orders" })
             return res.status(200).json({ success: true, message: 'order placed', data: razorPay, AccessToken: req.AccessToken ? req.AccessToken : null });
         case !hasPackageId && hasProducts:
-            return res.status(200).json({ success: true, message: 'purchased products successfully', data: { orders: req.user.orders }, AccessToken: req.AccessToken ? req.AccessToken : null });
+            totalPrice = 0, currency = "INR"
+            for (const product of products) {
+                {
+                    let newProductDetails = {
+                        user: req.user._id,
+                        university: product.data.university ? product.data.university : null,
+                        course: product.data.course ? product.data.course : null,
+                        intake: product.data.intake ? product.data.intake : null,
+                        deadline: product.data.deadline ? product.data.deadline : null
+                    }, newProduct
+                    switch (product.category) {
+                        case "premium application":
+                            newProduct = await premiumApplicationModel.create(newProductDetails)
+                            totalPrice += 1999
+                            break;
+                        case "elite application":
+                            newProduct = await eliteApplicationModel.create(newProductDetails)
+                            totalPrice += 14999
+                            break;
+                        case "statement of purpose":
+                            totalPrice += 1199
+                            break;
+                        case "letter of recommendation":
+                            totalPrice += 699
+                            break;
+                        case "VISA process":
+                            totalPrice += 699
+                            break;
+                        case "education loan process":
+                            totalPrice += 999
+                            break;
+                        default:
+                            break;
+                    }
+                    newProductIds.push(newProduct._id)
+                }
+            }
+
+            orderOptions = {
+                currency: "INR",
+                amount: totalPrice * 100,
+                notes: {
+                    "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
+                    "item_ids": [newProductIds]
+                }
+            }
+            razorPay = RazorpayInstance.orders.create(orderOptions);
+            order = await orderModel.create({
+                student: req.user._id,
+                paymentDetails: {
+                    paymentStatus: "pending",
+                    razorpay_order_id: razorPay.id,
+                    amount: razorPay.amount,
+                    amount_due: razorPay.amount_due,
+                    created_at: 1721380929,
+                    currency: razorPay.currency,
+                    misc: razorPay
+                },
+                products: newProductIds,
+                status: "pending",
+            })
+            await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id }, })
+            req.user.logs.push({ action: `order placed`, details: `orderId:${order._id}` })
+            // await orderModel.populate(req.user, { path: "orders" })
+            return res.status(200).json({ success: true, message: 'order placed', data: razorPay, AccessToken: req.AccessToken ? req.AccessToken : null });
         default: return next(generateAPIError(`some internal server error`, 500));
     }
-
-
 })
 export const paymentVerification = errorWrapper(async (req, res, next) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -126,8 +188,8 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
             "paymentDetails.misc": razorPay
         }
     }, { new: true });
-    await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } }, { new: true });
-    res.redirect(`https://${process.env.SERVER_URL}paymentsuccess?reference=${razorpay_order_id}`);
+    await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package, "activity.products": order.products } }, { new: true });
+    res.redirect(`${process.env.SERVER_URL}paymentsuccess?reference=${order._id}`);
 })
 export const order = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
