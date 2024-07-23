@@ -22,7 +22,7 @@ const server = createServer(app);
 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getTokens } from "./utils/sendNotification.js";
+import { getTokens, sendPushNotification } from "./utils/sendNotification.js";
 const __filename = fileURLToPath(import.meta.url);
 
 

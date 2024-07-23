@@ -4,7 +4,7 @@ import universityModel from "../../models/University.js";
 import fs from "fs";
 import Document from "../../models/Uploads.js";
 import { teamModel } from "../../models/Team.js";
-import {  eliteApplicationModel, premiumApplicationModel } from "../../models/application.js";
+import { eliteApplicationModel, premiumApplicationModel } from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -106,40 +106,39 @@ export const checkout = errorWrapper(async (req, res, next) => {       // this i
         case !hasPackageId && hasProducts:
             totalPrice = 0, currency = "INR"
             for (const product of products) {
-                {
-                    let newProductDetails = {
-                        user: req.user._id,
-                        university: product.data.university ? product.data.university : null,
-                        course: product.data.course ? product.data.course : null,
-                        intake: product.data.intake ? product.data.intake : null,
-                        deadline: product.data.deadline ? product.data.deadline : null
-                    }, newProduct
-                    switch (product.category) {
-                        case "premium application":
-                            newProduct = await premiumApplicationModel.create(newProductDetails)
-                            totalPrice += 1999
-                            break;
-                        case "elite application":
-                            newProduct = await eliteApplicationModel.create(newProductDetails)
-                            totalPrice += 14999
-                            break;
-                        case "statement of purpose":
-                            totalPrice += 1199
-                            break;
-                        case "letter of recommendation":
-                            totalPrice += 699
-                            break;
-                        case "VISA process":
-                            totalPrice += 699
-                            break;
-                        case "education loan process":
-                            totalPrice += 999
-                            break;
-                        default:
-                            break;
-                    }
-                    newProductIds.push(newProduct._id)
+                let newProductDetails = {
+                    user: req.user._id,
+                    university: product.data.university ? product.data.university : null,
+                    course: product.data.course ? product.data.course : null,
+                    intake: product.data.intake ? product.data.intake : null,
+                    deadline: product.data.deadline ? product.data.deadline : null
+                }, newProduct
+                switch (product.category) {
+                    case "premium application":
+                        newProduct = await premiumApplicationModel.create(newProductDetails)
+                        totalPrice += 1999
+                        break;
+                    case "elite application":
+                        newProduct = await eliteApplicationModel.create(newProductDetails)
+                        totalPrice += 14999
+                        break;
+                    case "statement of purpose":
+                        totalPrice += 1199
+                        break;
+                    case "letter of recommendation":
+                        totalPrice += 699
+                        break;
+                    case "VISA process":
+                        totalPrice += 699
+                        break;
+                    case "education loan process":
+                        totalPrice += 999
+                        break;
+                    default:
+                        break;
                 }
+                newProductIds.push(newProduct._id)
+
             }
 
             orderOptions = {
