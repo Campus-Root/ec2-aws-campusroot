@@ -1,13 +1,13 @@
 import universityModel from "../../../models/University.js";
 import courseModel from "../../../models/Course.js";
-import {applicationModel} from "../../../models/application.js";
 import { generateAPIError } from "../../../errors/apiError.js";
 import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { teamModel } from "../../../models/Team.js";
+import { productModel } from "../../../models/Product.js";
 
 export const approval = errorWrapper(async (req, res, next) => {
     const { applicationId, action, justification } = req.body
-    const application = await applicationModel.findById(applicationId);
+    const application = await productModel.findById(applicationId);
     if (application.counsellor.toString() != req.user._id) return next(generateAPIError(`invalid access`, 400));
     if (!justification) return next(generateAPIError(`justification necessary`, 400));
     const historyLog = application.log.find(ele => ele.status == "Processing")

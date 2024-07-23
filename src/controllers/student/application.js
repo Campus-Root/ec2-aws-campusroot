@@ -4,7 +4,7 @@ import universityModel from "../../models/University.js";
 import fs from "fs";
 import Document from "../../models/Uploads.js";
 import { teamModel } from "../../models/Team.js";
-import { applicationModel } from "../../models/application.js";
+import {  eliteApplicationModel, premiumApplicationModel } from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -132,21 +132,25 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
 export const order = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     const { products } = req.body
-    let productIds = []
+    let productIds = [], course, counsellor, processCoordinator, newProduct, country
     for (const product of products) {
-        const newProduct = await productModel.create({
+        let newProductDetails = {
             user: req.user._id,
-            category: product.category,
             university: product.data.university ? product.data.university : null,
             course: product.data.course ? product.data.course : null,
             intake: product.data.intake ? product.data.intake : null,
             deadline: product.data.deadline ? product.data.deadline : null
-        })
+        }
         switch (product.category) {
-            case "premium application" || "elite application":
-                course = await courseModel.findById(product.data.course, "location elite startDate")
-                let country = course.location.country
-                counsellor = advisors.find(ele => info.role === "counsellor" && assignedCountries.includes(country))
+            case "premium application":
+                newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
+                newProductDetails.status = "Processing"
+                newProductDetails.stage = "Waiting For Counsellor's Approval"
+                newProduct = await premiumApplicationModel.create(newProductDetails)
+                course = await courseModel.findById(product.data.course, "location elite startDate university")
+                if (course.university && !newProduct.university) newProduct.university = course.university
+                country = course.location.country
+                counsellor = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
                 if (counsellor) newProduct.counsellor = counsellor._id
                 else {
                     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
@@ -154,22 +158,49 @@ export const order = errorWrapper(async (req, res, next) => {
                     req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
                     newProduct.counsellor = Counsellors[0]._id
                 }
-                processCoordinator = advisors.find(ele => info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
+                processCoordinator = req.user.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
                 if (processCoordinator) {
                     if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
                     newProduct.processCoordinator = processCoordinator.info._id
-                    await teamModel.findOneAndUpdate({ _id: processCoordinator.info._id }, { $push: { applications: newProduct._id } })
+                    await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: newProduct._id } })
                 }
                 else {
                     const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
                     await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: newProduct._id } });
-                    req.user.advisors.push({ info: processCoordinator[0]._id, assignedCountries: [country] })
+                    req.user.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
                     await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
-                    newProduct.processCoordinator = processCoordinator.info._id
+                    newProduct.processCoordinator = processCoordinators[0]._id
                 }
-                newProduct.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
-                newProduct.status = "Processing"
-                newProduct.stage = "Waiting For Counsellor's Approval"
+                break;
+            case "elite application":
+                newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
+                newProductDetails.status = "Processing"
+                newProductDetails.stage = "Waiting For Counsellor's Approval"
+                newProduct = await eliteApplicationModel.create(newProductDetails)
+                course = await courseModel.findById(product.data.course, "location elite startDate university")
+                if (course.university && !newProduct.university) newProduct.university = course.university
+                country = course.location.country
+                counsellor = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
+                if (counsellor) newProduct.counsellor = counsellor._id
+                else {
+                    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+                    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                    req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
+                    newProduct.counsellor = Counsellors[0]._id
+                }
+                processCoordinator = req.user.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
+                if (processCoordinator) {
+                    if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
+                    newProduct.processCoordinator = processCoordinator.info._id
+                    await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: newProduct._id } })
+                }
+                else {
+                    const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
+                    await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: newProduct._id } });
+                    req.user.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
+                    await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
+                    newProduct.processCoordinator = processCoordinators[0]._id
+                }
                 break;
             case "statement of purpose":
                 break;
@@ -183,20 +214,20 @@ export const order = errorWrapper(async (req, res, next) => {
         await newProduct.save()
         productIds.push(newProduct._id)
     }
-    req.order.push(...productIds)
+    req.order.products.push(...productIds)
     req.user.activity.products.push(...productIds)
     req.user.logs.push({
         action: `products added to package`,
-        details: ``
+        details: `productIds:${productIds}`
     })
     await req.order.save()
     await req.user.save()
     await packageModel.populate(req.user, { path: "orders.Package" })
-    await productModel.populate(req.user, { path: "orders.products" })
+    await productModel.populate(req.user, { path: "orders.products", path: "activity.products" })
     return res.status(200).json({ success: true, message: 'order', data: req.order, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 export const requestCancellation = errorWrapper(async (req, res, next) => {
-    const updatedApplication = await applicationModel.findOneAndUpdate({ _id: req.params.applicationId }, { $set: { cancellationRequest: true } }, { new: true });
+    const updatedApplication = await productModel.findOneAndUpdate({ _id: req.params.applicationId }, { $set: { cancellationRequest: true } }, { new: true });
     if (!updatedApplication) return next(generateAPIError(`Invalid application ID`, 400));
     await Document.populate(updatedApplication, { path: "docChecklist.doc", select: "name contentType createdAt", })
     await userModel.populate(updatedApplication, [
@@ -215,7 +246,7 @@ export const requestCancellation = errorWrapper(async (req, res, next) => {
 // ..............applications documents...................
 export const uploadInApplication = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId } = req.body;
-    const application = await applicationModel.findById(applicationId);
+    const application = await productModel.findById(applicationId);
     if (!application) return next(generateAPIError(`invalid application ID`, 400));
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
     if (!checklistItem) return next(generateAPIError(`invalid checklist ID`, 400));
@@ -254,7 +285,7 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
     const { applicationId, checklistItemId, documentId } = req.body;
     const doc = await Document.findById(documentId)
     if (!doc) return next(generateAPIError(`invalid document ID`, 400));
-    const application = await applicationModel.findById(applicationId);
+    const application = await productModel.findById(applicationId);
     if (!application) return next(generateAPIError(`invalid application ID`, 400));
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
     if (!checklistItem) return next(generateAPIError(`invalid checklist ID`, 400));
@@ -289,7 +320,7 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
 })
 export const forceForwardApply = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body;
-    const application = await applicationModel.findById(applicationId)
+    const application = await productModel.findById(applicationId)
     if (!application) return next(generateAPIError("invalid ApplicationId"))
     if (application.user.toString() != req.user._id.toString()) return next(generateAPIError("invalid Access"))
     if (application.approval.counsellorApproval !== false) return next(generateAPIError("Wait for Counsellors Response"))
@@ -304,7 +335,7 @@ export const forceForwardApply = errorWrapper(async (req, res, next) => {
 })
 export const removeForceApply = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body;
-    const application = await applicationModel.findById(applicationId)
+    const application = await productModel.findById(applicationId)
     if (!application) return next(generateAPIError("invalid ApplicationId"))
     if (application.user.toString() != req.user._id.toString()) return next(generateAPIError("invalid Access"))
     if (application.approval.counsellorApproval !== false) return next(generateAPIError("Wait for Counsellors Response"))

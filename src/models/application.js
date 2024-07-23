@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 import { applicationStagesEnum, applicationStateEnum } from "../utils/enum.js";
-import {productModel} from "./Product.js";
+import { productModel } from "./Product.js";
 const applicationSchema = mongoose.Schema({
     processCoordinator: { type: mongoose.Types.ObjectId, ref: "user" },
     counsellor: { type: mongoose.Types.ObjectId, ref: "user" },
@@ -29,6 +29,5 @@ const applicationSchema = mongoose.Schema({
     stage: { type: String, enum: { values: Object.values(applicationStagesEnum), message: "Invalid Stage Name" } }
 }
 );
-
-
-export const applicationModel = productModel.discriminator("application", applicationSchema);
+export const premiumApplicationModel = productModel.discriminator("premium application", applicationSchema);
+export const eliteApplicationModel = productModel.discriminator("elite application", applicationSchema);

@@ -1,6 +1,5 @@
 import courseModel from "../../models/Course.js";
 import universityModel from "../../models/University.js";
-import {applicationModel} from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import Document from "../../models/Uploads.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -51,16 +50,16 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
     const student = await studentModel.findById(id);
     if (!student) return next(generateAPIError(`Invalid StudentId`, 400));
     await meetingModel.populate(student, [{ path: "activity.meetings", select: "data user member", },])
-    await applicationModel.populate(student, { path: "activity.applications", populate: { path: "university course docChecklist.doc", select: "name logoSrc location type establishedYear  contentType createdAt", }, })
-    await courseModel.populate(student, [{ path: "recommendations.data.course activity.shortListed.course activity.applications.course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails", },])
+    await productModel.populate(student, { path: "activity.products", populate: { path: "university course docChecklist.doc", select: "name logoSrc location type establishedYear  contentType createdAt", }, })
+    await courseModel.populate(student, [{ path: "recommendations.data.course activity.shortListed.course activity.products.course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails", },])
     await Document.populate(student, [{ path: "documents.personal.resume documents.personal.passportBD documents.personal.passportADD documents.academic.secondarySchool documents.academic.plus2 documents.academic.degree documents.academic.bachelors.transcripts documents.academic.bachelors.bonafide documents.academic.bachelors.CMM documents.academic.bachelors.PCM documents.academic.bachelors.OD documents.academic.masters.transcripts documents.academic.masters.bonafide documents.academic.masters.CMM documents.academic.masters.PCM documents.academic.masters.OD documents.test.general documents.test.languageProf documents.workExperiences workExperience.docId tests.docId", select: "name contentType createdAt", },])
-    await universityModel.populate(student, [{ path: "recommendations.data.university activity.shortListed.university activity.applications.university", select: "name logoSrc location type establishedYear ", },])
+    await universityModel.populate(student, [{ path: "recommendations.data.university activity.shortListed.university activity.products.university", select: "name logoSrc location type establishedYear ", },])
     await userModel.populate(student, [{ path: "advisors.info activity.meetings.user activity.meetings.member", select: "firstName lastName email displayPicSrc", },])
     return res.status(200).json({ success: true, message: `All details of Student`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 export const singleApplications = errorWrapper(async (req, res, next) => {
     const { id } = req.params
-    const application = await applicationModel.findById(id)
+    const application = await productModel.findById(id)
     if (!application) return next(generateAPIError(`invalid applicationId`, 400));
     await userModel.populate(application, { path: "user processCoordinator counsellor", select: "firstName lastName email displayPicSrc" })
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt" })
@@ -108,7 +107,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "deadline") filter["deadline"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
             });
             filter[req.user.role] = req.user._id
-            const applications = await applicationModel.find(filter, "course university intake deadline user approval stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
+            const applications = await productModel.find(filter, "course university intake deadline user approval stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
             totalDocs = await studentModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
             await userModel.populate(applications, { path: "user processCoordinator", select: "firstName lastName email displayPicSrc" })

@@ -1,7 +1,6 @@
 import courseModel from "../../models/Course.js";
 import universityModel from "../../models/University.js";
 import Document from "../../models/Uploads.js";
-import { applicationModel } from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -13,6 +12,7 @@ import { gradeConversions } from "../../utils/gradeConversions.js";
 import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
 import { currencySymbols } from "../../utils/enum.js";
+import { productModel } from "../../models/Product.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
   // if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
@@ -99,23 +99,23 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
 })
 export const dashboard = errorWrapper(async (req, res, next) => {
   await Promise.all([
-    await applicationModel.populate(req.user, [
-      { path: "activity.applications" }
+    await productModel.populate(req.user, [
+      { path: "activity.products" }
     ]),
     await universityModel.populate(req.user, [
-      { path: "activity.shortListed.university recommendations.data.university activity.applications.university", select: "name logoSrc location type establishedYear " },
+      { path: "activity.shortListed.university recommendations.data.university activity.products.university", select: "name logoSrc location type establishedYear " },
     ]),
     await courseModel.populate(req.user, [
-      { path: "recommendations.data.course activity.shortListed.course activity.applications.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency" },
+      { path: "recommendations.data.course activity.shortListed.course activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency" },
     ]),
     await Document.populate(req.user, [
-      { path: "activity.applications.docChecklist.doc", select: "name contentType createdAt" },
+      { path: "activity.products.docChecklist.doc", select: "name contentType createdAt" },
     ]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
-    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.shortListed.processCoordinator activity.applications.processCoordinator activity.shortListed.counsellor activity.applications.counsellor", select: "firstName displayPicSrc lastName email role" })
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.shortListed.processCoordinator activity.products.processCoordinator activity.shortListed.counsellor activity.products.counsellor", select: "firstName displayPicSrc lastName email role" })
   ]);
   let applications, checklist
-  if (req.user.activity.applications.length > 0) {
+  if (req.user.activity.products.length > 0) {
     if (req.user.preference.currency) {
       const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
       const applyCurrencyConversion = (element) => {
@@ -129,9 +129,9 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       };
       req.user.recommendations.data.forEach(applyCurrencyConversion);
       req.user.activity.shortListed.forEach(applyCurrencyConversion);
-      req.user.activity.applications.forEach(applyCurrencyConversion);
+      req.user.activity.products.forEach(applyCurrencyConversion);
     }
-    applications = req.user.activity.applications.filter((ele) => ele.stage === "Processing"|| ele.stage === "Accepted");
+    applications = req.user.activity.products.filter((ele) => ele.stage === "Processing" || ele.stage === "Accepted");
     checklist = applications.flatMap(application =>
       application.docChecklist.filter(item => !item.isChecked).map(item => ({
         checklistId: item._id,
@@ -162,17 +162,17 @@ export const allStudents = errorWrapper(async (req, res, next) => {
 })
 export const singleStudent = errorWrapper(async (req, res, next) => {
   const { studentId } = req.params
-  const student = await studentModel.findById(studentId, "firstName lastName displayPicSrc tests workExperience researchPapers education activity.applications skills communities")
+  const student = await studentModel.findById(studentId, "firstName lastName displayPicSrc tests workExperience researchPapers education activity.products skills communities")
   await communityModel.populate(student, { path: "communities", select: "participants university posts", })
-  await applicationModel.populate(student, [
-    { path: "activity.applications", select: "university course intake status stage" },
+  await productModel.populate(student, [
+    { path: "activity.products", select: "university course intake status stage" },
   ])
   await universityModel.populate(student, [
-    { path: "activity.applications.university", select: "name logoSrc location type establishedYear" },
+    { path: "activity.products.university", select: "name logoSrc location type establishedYear" },
     { path: "communities.university", select: "name logoSrc location type establishedYear", }
   ])
   await courseModel.populate(student, [
-    { path: "activity.applications.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
+    { path: "activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
   ])
   await userModel.populate(student, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
   return res.status(200).json({ success: true, message: `student details`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });

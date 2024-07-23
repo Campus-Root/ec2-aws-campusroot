@@ -3,7 +3,7 @@ import { generateAPIError } from '../errors/apiError.js';
 import { errorWrapper } from './errorWrapper.js';
 import { orderModel } from '../models/Order.js';
 import courseModel from '../models/Course.js';
-import { applicationModel } from '../models/application.js';
+import { productModel } from '../models/Product.js';
 export const validateCredentials = [
     body('email')
         .isEmail()
@@ -59,7 +59,7 @@ export const validateProducts = errorWrapper(async (req, res, next) => {
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(product.data.intake).getUTCMonth())
                 if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` });
                 if (!isNaN(intakeExists[0].deadlineMonth) && !product.data.deadline) product.data.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth - 1, 1);
-                existingApplication = await applicationModel.findOne({
+                existingApplication = await productModel.findOne({
                     course: product.data.course,
                     user: req.user._id,
                     intake: product.data.intake,
@@ -75,7 +75,7 @@ export const validateProducts = errorWrapper(async (req, res, next) => {
                 if (!product.data.intake || new Date(product.data.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(product.data.intake).getUTCMonth())
                 if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` });
-                existingApplication = await applicationModel.findOne({
+                existingApplication = await productModel.findOne({
                     course: product.data.course,
                     user: req.user._id,
                     intake: product.data.intake,

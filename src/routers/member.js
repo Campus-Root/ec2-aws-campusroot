@@ -26,7 +26,6 @@ export default router;
 import { graphqlHTTP } from 'express-graphql';
 import { buildSchema } from 'graphql';
 import { studentModel } from "../models/Student.js";
-// import applicationModel from "../models/application.js";
 import leadsModel from "../models/leads.js";
 
 // Define the GraphQL schema
@@ -85,7 +84,7 @@ import leadsModel from "../models/leads.js";
 //     },
 //     applications: async ({ page, perPage }) => {
 //         const skip = (page - 1) * perPage;
-//         const applications = await applicationModel.find().skip(skip).limit(perPage);
+//         const applications = await productModel.find().skip(skip).limit(perPage);
 //         return applications;
 //     },
 //     leads: async ({ page, perPage }) => {

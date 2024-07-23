@@ -1,16 +1,16 @@
 import courseModel from "../../../models/Course.js";
 import universityModel from "../../../models/University.js";
 import Document from "../../../models/Uploads.js";
-import {applicationModel} from "../../../models/application.js";
 import { studentModel } from "../../../models/Student.js";
 import fs from "fs"
 import { generateAPIError } from "../../../errors/apiError.js";
 import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { applicationStagesEnum } from "../../../utils/enum.js";
 import userModel from "../../../models/User.js";
+import { productModel } from "../../../models/Product.js";
 export const switchStage = errorWrapper(async (req, res, next) => {
     const { applicationId, status, stage, note } = req.body
-    const application = await applicationModel.findById(applicationId)
+    const application = await productModel.findById(applicationId)
     if (!application) return next(generateAPIError(`invalid applicationId`, 400));
     if (application.processCoordinator.toString() != req.user._id) return next(generateAPIError(`invalid access to this application`, 400));
     if (application.status != status) return next(generateAPIError(`invalid status`, 400));
@@ -32,7 +32,7 @@ export const switchStage = errorWrapper(async (req, res, next) => {
 export const addToChecklist = errorWrapper(async (req, res, next) => {
     const { applicationId, name, isChecked, desc } = req.body
     if (!name) return next(generateAPIError(`name of item is required`, 400));
-    const application = await applicationModel.findById(applicationId)
+    const application = await productModel.findById(applicationId)
     if (!application) return next(generateAPIError(`invalid applicationId`, 400));
     const checklistItem = { name: name }
     if (isChecked) checklistItem.isChecked = isChecked
@@ -65,7 +65,7 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
 })
 export const editItemInChecklist = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId, action, name, isChecked, desc, type } = req.body
-    let application = await applicationModel.findById(applicationId);
+    let application = await productModel.findById(applicationId);
     if (!application) return next(generateAPIError(`invalid application ID`, 400));
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
     if (!checklistItem) return next(generateAPIError(`invalid checklist ID`, 400));
@@ -84,7 +84,7 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
             break;
         default: return next(generateAPIError(`bad action, choose one among : delete,edit`, 400));
     }
-    application = await applicationModel.findById(applicationId);
+    application = await productModel.findById(applicationId);
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
     await userModel.populate(application, [
         { path: "user", select: "firstName lastName email displayPicSrc" },
@@ -101,7 +101,7 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
 })
 export const cancellation = errorWrapper(async (req, res, next) => {
     const { applicationId, cancel } = req.body
-    const application = await applicationModel.findById(applicationId)
+    const application = await productModel.findById(applicationId)
     if (!application) return next(generateAPIError(`invalid application ID`, 400));
     if (!application.cancellationRequest) next(generateAPIError(`let user request for cancellation`, 400));
     if (cancel == true) {
@@ -123,7 +123,7 @@ export const cancellation = errorWrapper(async (req, res, next) => {
 })
 export const result = errorWrapper(async (req, res, next) => {
     const { applicationId, result, note } = req.body
-    const application = await applicationModel.findById(applicationId)
+    const application = await productModel.findById(applicationId)
     if (!application) return next(generateAPIError(`invalid application ID`, 400));
     if (application.status == result) return next(generateAPIError(`already status updated as ${result}`, 400));
     if (application.status != "Processing") return next(generateAPIError(`application is not in processing state`, 400));
@@ -158,7 +158,7 @@ export const result = errorWrapper(async (req, res, next) => {
 })
 export const revertResult = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body
-    const application = await applicationModel.findById(applicationId)
+    const application = await productModel.findById(applicationId)
     if (!application) return next(generateAPIError(`invalid application ID`, 400));
     switch (application.status) {
         case "Accepted":
