@@ -468,21 +468,6 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
-
-    let result = await chatModel
-        .find({ "participants": { $eq: req.user._id } })
-        .populate("participants", "firstName lastName displayPicSrc email userType role")
-        .populate("unSeenMessages.message")
-        .populate("lastMessage")
-        .sort({ updatedAt: -1 })
-        .lean();
-    result = await userModel.populate(chat, [
-        { path: "unSeenMessages.message.sender", select: "firstName lastName displayPicSrc email userType role" },
-        { path: "admins", select: "firstName lastName displayPicSrc email userType role" },
-    ])
-    for (const { unSeenMessages, lastMessage } of result) {
-        unSeenMessages.forEach(ele => { ele.message.content = decrypt(ele.message.iv, ele.message.content); });
-        if (lastMessage) lastMessage.content = decrypt(lastMessage.iv, lastMessage.content)
-    }
-    return res.status(200).json({ success: true, message: `counsellor assigned`, data: { advisors: req.user.advisors, chats: result }, AccessToken: req.AccessToken ? req.AccessToken : null });
+    await userModel.populate(chat, { path: "participants", select: "firstName lastName displayPicSrc email userType role" });
+    return res.status(200).json({ success: true, message: `counsellor assigned`, data: { advisors: req.user.advisors, chat: chat }, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
