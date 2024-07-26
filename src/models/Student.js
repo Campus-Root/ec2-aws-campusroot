@@ -241,7 +241,7 @@ const Student = mongoose.Schema(
                 },
                 intake: { type: Date }
             }],
-            wishlist: [{ type: mongoose.Types.ObjectId, ref: "course" }],
+            wishList: [{ type: mongoose.Types.ObjectId, ref: "course" }],
         },
         suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],
         purchasedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],
