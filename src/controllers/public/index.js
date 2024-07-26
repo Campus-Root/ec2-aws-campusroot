@@ -11,7 +11,7 @@ import { costConversion } from "../../utils/currencyConversion.js";
 import { disciplineRegexMatch, subDisciplineRegexMatch } from "../../utils/regex.js";
 import leadsModel from "../../models/leads.js";
 import { leadCreation, refreshToken } from "../../utils/CRMintegrations.js";
-
+import 'dotenv/config';
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
     const { page } = req.body, filter = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page

@@ -164,6 +164,10 @@ export const PaymentStatusEnum = {
     REFUNDED: "refunded",
     REFUND_INITIALIZED: "refund initiated",
 }
+export const ListEnum={
+    SHORTLIST:"shortlist",
+    CART:"cart"
+}
 export const ProductCategoryEnum = {
     PREMIUM: "premium application",
     ELITE: "elite application",

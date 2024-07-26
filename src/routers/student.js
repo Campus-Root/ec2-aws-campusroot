@@ -2,7 +2,7 @@
 import express from "express";
 import { handleFile } from "../middleware/handleFile.js";
 import { authMiddleware, isStudent } from "../middleware/auth.js";
-import { checkDisposableEmail, validatePayment, validateProducts } from "../middleware/validations.js";
+import { checkDisposableEmail, isPaid, validatePayment, validateProducts } from "../middleware/validations.js";
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
 import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation } from "../controllers/student/index.js";
@@ -44,7 +44,7 @@ router.get("/download/:documentId", authMiddleware, isStudent, downloadDocument)
 
 
 router.post("/checkout", authMiddleware, isStudent, checkout)
-router.post("/paymentVerification", paymentVerification)
+router.post("/paymentVerification", isPaid, paymentVerification)
 router.post("/order", authMiddleware, isStudent, validatePayment, validateProducts, order)
 router.post("/apply-force", authMiddleware, isStudent, forceForwardApply)
 router.post("/apply-omit-force", authMiddleware, isStudent, removeForceApply)

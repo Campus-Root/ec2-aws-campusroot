@@ -17,8 +17,15 @@ import { productModel } from "../../models/Product.js";
 import { packageModel } from "../../models/Package.js";
 import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
-import crypto from "crypto";
+import { priceModel } from "../../models/prices.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
+export const addToCart = errorWrapper(async (req, res, next) => {
+
+})
+export const removeFromCart = errorWrapper(async (req, res, next) => {
+
+})
+
 export const addShortListed = errorWrapper(async (req, res, next) => {
     const { universityId, courseId } = req.body;
     if (!(await universityModel.findById(universityId))) return next(generateAPIError(`invalid universityId`, 400));
@@ -60,134 +67,165 @@ export const removeShortListed = errorWrapper(async (req, res, next) => {
     })
     return res.status(200).json({ success: true, message: `list updated`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
-export const checkout = errorWrapper(async (req, res, next) => {       // this is to initiate payments
+export const checkout = errorWrapper(async (req, res, next) => {
     const { packageId, products, userCurrency } = req.body;
-    let order, Package, razorPay
     const hasPackageId = Boolean(packageId);
     const hasProducts = Array.isArray(products) && products.length > 0;
-    let orderOptions, newProductIds = []
+    let newProductIds = [], course, Package, errorStack = [], newProducts;
     switch (true) {
         case !hasPackageId && !hasProducts:
             return next(generateAPIError(`either add packageId or products to checkout`, 400));
-        case hasPackageId && hasProducts:
-            return next(generateAPIError(`cannot add both products and package at checkout`, 400));
         case hasPackageId && !hasProducts:
             Package = await packageModel.findById(packageId);
-            if (!Package) return next(generateAPIError(`invalid packageId`, 400));
-            if (!Package.active) return next(generateAPIError(`inactive package selected`, 400))
-            let { priceDetails: { totalPrice, currency } } = Package
-            orderOptions = {
-                currency: currency.code,
-                amount: totalPrice * 100,
-                notes: {
-                    "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
-                    "item_ids": [Package._id]
-                }
-            }
-            razorPay = await RazorpayInstance.orders.create(orderOptions);
-            order = await orderModel.create({
-                student: req.user._id,
-                Package: packageId,
-                paymentDetails: {
-                    paymentStatus: "pending",
-                    razorpay_order_id: razorPay.id,
-                    amount: razorPay.amount,
-                    amount_due: razorPay.amount_due,
-                    created_at: 1721380929,
-                    currency: razorPay.currency,
-                    misc: razorPay
-                },
-                status: "pending",
-            })
-            await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id }, })
-            req.user.logs.push({ action: `order placed`, details: `orderId:${order._id}` })
-            await orderModel.populate(req.user, { path: "orders" })
-            return res.status(200).json({ success: true, message: 'order placed', data: razorPay, AccessToken: req.AccessToken ? req.AccessToken : null });
+            if (!Package) return next(generateAPIError(`invalid packageId`, 400, { packageId: packageId }));
+            if (!Package.active) return next(generateAPIError(`inactive package selected`, 400, { packageId: packageId }));
+            totalPrice = Package.priceDetails.totalPrice;
+            currency = Package.priceDetails.currency;
+            break;
         case !hasPackageId && hasProducts:
             totalPrice = 0, currency = "INR"
+            newProducts = [];
             for (const product of products) {
                 let newProductDetails = {
                     user: req.user._id,
-                    university: product.data.university ? product.data.university : null,
                     course: product.data.course ? product.data.course : null,
-                    intake: product.data.intake ? product.data.intake : null,
-                    deadline: product.data.deadline ? product.data.deadline : null
-                }, newProduct
-                switch (product.category) {
-                    case "premium application":
-                        newProduct = await premiumApplicationModel.create(newProductDetails)
-                        totalPrice += 1999
-                        break;
-                    case "elite application":
-                        newProduct = await eliteApplicationModel.create(newProductDetails)
-                        totalPrice += 14999
-                        break;
-                    case "statement of purpose":
-                        totalPrice += 1199
-                        break;
-                    case "letter of recommendation":
-                        totalPrice += 699
-                        break;
-                    case "VISA process":
-                        totalPrice += 699
-                        break;
-                    case "education loan process":
-                        totalPrice += 999
-                        break;
-                    default:
-                        break;
+                    intake: new Date(product.data.intake) ? new Date(product.data.intake) : null
                 }
+                course = await courseModel.findById(newProductDetails.course, "elite startDate university")
+                if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });  //product course check
+                if (!newProductDetails.intake || new Date(newProductDetails.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
+                intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
+                if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` }); //product intake check
+                if (!isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
+                if (course.university) newProductDetails.university = course.university // adding university
+                let priceObject = await priceModel.findOne({ productCategory: product.category }, "price currency")
+                totalPrice += Number(priceObject.price)
+                let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: newProductDetails.intake, category: product.category }, "_id")
+                if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // duplicates check
+                if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
+                if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
+                if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
+                newProducts.push(newProductDetails)
+            }
+            if (errorStack.length > 0) return next(generateAPIError(`Invalid products`, 400, errorStack));
+            for (const product of newProducts) {
+                let newProduct
+                if (product.category === ProductCategoryEnum.PREMIUM) newProduct = await premiumApplicationModel.create(newProductDetails)
+                else if (product.category === ProductCategoryEnum.ELITE) newProduct = await eliteApplicationModel.create(newProductDetails)
                 newProductIds.push(newProduct._id)
-
             }
-
-            orderOptions = {
-                currency: "INR",
-                amount: totalPrice * 100,
-                notes: {
-                    "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
-                    "item_ids": [newProductIds]
+            break;
+        case hasPackageId && hasProducts:
+            Package = await packageModel.findById(packageId);
+            if (!Package) return next(generateAPIError(`invalid packageId`, 400, { packageId: packageId }));
+            if (!Package.active) return next(generateAPIError(`inactive package selected`, 400, { packageId: packageId }));
+            totalPrice = Package.priceDetails.totalPrice;
+            currency = Package.priceDetails.currency;
+            const rules = new Map();
+            Package.products.forEach(ele => { rules.set(ele.category, ele.quantity) });
+            let productsCanBeAdded = new Map(rules)
+            newProducts = [];
+            for (const product of products) {
+                let newProductDetails = {
+                    user: req.user._id,
+                    course: product.data.course ? product.data.course : null,
+                    intake: new Date(product.data.intake) ? new Date(product.data.intake) : null
                 }
+                const availableQuantity = productsCanBeAdded.get(product.category) || 0;
+                if (availableQuantity <= 0) errorStack.push({ ...product, errorMessage: `limit exceeded` })       // quantity check based on category
+                productsCanBeAdded.set(product.category, availableQuantity - 1);
+                course = await courseModel.findById(newProductDetails.course, "location elite startDate university")
+                if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });             // product course check
+                if (!Package.country.includes(course.location.country)) errorStack.push({ ...product, errorMessage: `country mismatched` }); // product country check
+                if (!newProductDetails.intake || new Date(newProductDetails.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
+                let intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
+                if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` });   // product intake check
+                if (!isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
+                if (course.university) newProductDetails.university = course.university // adding university
+                let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: newProductDetails.intake, category: product.category }, "_id")
+                if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // product duplicate check
+                if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
+                if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
+                if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
+                newProducts.push(newProductDetails)
             }
-            razorPay = RazorpayInstance.orders.create(orderOptions);
-            order = await orderModel.create({
-                student: req.user._id,
-                paymentDetails: {
-                    paymentStatus: "pending",
-                    razorpay_order_id: razorPay.id,
-                    amount: razorPay.amount,
-                    amount_due: razorPay.amount_due,
-                    created_at: 1721380929,
-                    currency: razorPay.currency,
-                    misc: razorPay
-                },
-                products: newProductIds,
-                status: "pending",
-            })
-            await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id }, })
-            req.user.logs.push({ action: `order placed`, details: `orderId:${order._id}` })
-            // await orderModel.populate(req.user, { path: "orders" })
-            return res.status(200).json({ success: true, message: 'order placed', data: razorPay, AccessToken: req.AccessToken ? req.AccessToken : null });
+            if (errorStack.length > 0) return next(generateAPIError(`Invalid products`, 400, errorStack));
+            for (const product of newProducts) {
+                let newProduct
+                if (product.category === ProductCategoryEnum.PREMIUM) newProduct = await premiumApplicationModel.create(newProductDetails)
+                else if (product.category === ProductCategoryEnum.ELITE) newProduct = await eliteApplicationModel.create(newProductDetails)
+                newProductIds.push(newProduct._id)
+            }
+            break;
         default: return next(generateAPIError(`some internal server error`, 500));
     }
+    const orderOptions = {
+        currency: currency,
+        amount: totalPrice * 100,
+        notes: {
+            "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
+            "item_ids": { "package": packageId ? packageId : null, "products": newProductIds }
+        }
+    }
+    const razorPay = await RazorpayInstance.orders.create(orderOptions);
+    const order = await orderModel.create({
+        student: req.user._id,
+        Package: packageId ? packageId : null,
+        products: newProductIds,
+        paymentDetails: {
+            paymentStatus: "pending",
+            razorpay_order_id: razorPay.id,
+            amount: razorPay.amount,
+            amount_due: razorPay.amount_due,
+            created_at: 1721380929,
+            currency: razorPay.currency,
+            misc: razorPay
+        },
+        status: "pending",
+    })
+    await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
+    return res.status(200).json({ success: true, message: 'order placed', data: razorPay, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const paymentVerification = errorWrapper(async (req, res, next) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET).update(body.toString()).digest("hex");
-    if (expectedSignature !== razorpay_signature) return res.status(400).json({ success: false, message: "payment verification failed, contact for support" });
-    const razorPay = await RazorpayInstance.orders.fetch(razorpay_order_id)
-    if (razorPay.status !== "paid") return res.status(400).json({ success: false, message: "payment status is not paid" });
-    const order = await orderModel.findOneAndUpdate({ "paymentDetails.razorpay_order_id": razorpay_order_id }, {
-        $set: {
-            "paymentDetails.paymentStatus": razorPay.status,
-            "paymentDetails.amount": razorPay.amount,
-            "paymentDetails.amount_due": razorPay.amount_due,
-            "paymentDetails.currency": razorPay.currency,
-            "paymentDetails.misc": razorPay
+    const { razorpay_order_id } = req.body;
+    const order = await orderModel.findOneAndUpdate({ "paymentDetails.razorpay_order_id": razorpay_order_id }, { $set: { "paymentDetails.paymentStatus": req.razorPay.status, "paymentDetails.amount": req.razorPay.amount, "paymentDetails.amount_due": req.razorPay.amount_due, "paymentDetails.currency": req.razorPay.currency, "paymentDetails.misc": req.razorPay } }, { new: true });
+    const student = await studentModel.findById(order.student, "advisors")
+    const hasPackageId = Boolean(order.Package);
+    const hasProducts = Array.isArray(order.products) && order.products.length > 0;
+    if (hasProducts) {
+        for (const product of order.products) {
+            const Product = productModel.findById(product)
+            let course = await courseModel.findById(Product.course, "location.country")
+            let country = course.location.country
+            if (Product.category === ProductCategoryEnum.PREMIUM || Product.category === ProductCategoryEnum.ELITE) {
+                counsellor = student.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
+                if (counsellor) Product.counsellor = counsellor._id
+                else {
+                    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+                    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                    student.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
+                    Product.counsellor = Counsellors[0]._id
+                }
+                processCoordinator = student.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
+                if (processCoordinator) {
+                    if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
+                    Product.processCoordinator = processCoordinator.info._id
+                    await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: Product._id } })
+                }
+                else {
+                    const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
+                    await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: Product._id } });
+                    student.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
+                    await chatModel.create({ participants: [student._id, processCoordinators[0]._id] });
+                    Product.processCoordinator = processCoordinators[0]._id
+                }
+            }
+            product.order = order_id;
+            await product.save();
         }
-    }, { new: true });
-    await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package, "activity.products": order.products } }, { new: true });
+    }
+    if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } });
+    await student.save();
     res.redirect(`${process.env.SERVER_URL}paymentsuccess?reference=${order._id}`);
 })
 export const order = errorWrapper(async (req, res, next) => {
@@ -197,28 +235,30 @@ export const order = errorWrapper(async (req, res, next) => {
     for (const product of products) {
         let newProductDetails = {
             user: req.user._id,
-            university: product.data.university ? product.data.university : null,
             course: product.data.course ? product.data.course : null,
             intake: product.data.intake ? product.data.intake : null,
-            deadline: product.data.deadline ? product.data.deadline : null
-        }
+            order: req.order._id
+        }, intakeExists
         switch (product.category) {
             case "premium application":
                 newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
                 newProductDetails.status = "Processing"
                 newProductDetails.stage = "Waiting For Counsellor's Approval"
                 newProduct = await premiumApplicationModel.create(newProductDetails)
-                course = await courseModel.findById(product.data.course, "location elite startDate university")
-                if (course.university && !newProduct.university) newProduct.university = course.university
+                course = await courseModel.findById(newProductDetails.course, "location startDate university")
+                if (course.university && !newProduct.university) newProduct.university = course.university  // adding university
+                intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProduct.intake).getUTCMonth())
+                if (!isNaN(intakeExists[0].deadlineMonth)) newProduct.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
                 country = course.location.country
                 counsellor = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
                 if (counsellor) newProduct.counsellor = counsellor._id
                 else {
                     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
                     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
                     req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
                     newProduct.counsellor = Counsellors[0]._id
-                }
+                } // adding counsellor
                 processCoordinator = req.user.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
                 if (processCoordinator) {
                     if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
@@ -231,21 +271,24 @@ export const order = errorWrapper(async (req, res, next) => {
                     req.user.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
                     await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
                     newProduct.processCoordinator = processCoordinators[0]._id
-                }
+                }// adding processCoordinator
                 break;
-            case "elite application":
+            case ProductCategoryEnum.ELITE:
                 newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
                 newProductDetails.status = "Processing"
                 newProductDetails.stage = "Waiting For Counsellor's Approval"
                 newProduct = await eliteApplicationModel.create(newProductDetails)
-                course = await courseModel.findById(product.data.course, "location elite startDate university")
-                if (course.university && !newProduct.university) newProduct.university = course.university
+                course = await courseModel.findById(newProductDetails.course, "location startDate university")
+                if (course.university && !newProduct.university) newProduct.university = course.university    // adding university 
+                intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProduct.intake).getUTCMonth())
+                if (!isNaN(intakeExists[0].deadlineMonth)) newProduct.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
                 country = course.location.country
                 counsellor = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
                 if (counsellor) newProduct.counsellor = counsellor._id
                 else {
                     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
                     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
                     req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
                     newProduct.counsellor = Counsellors[0]._id
                 }
@@ -254,22 +297,22 @@ export const order = errorWrapper(async (req, res, next) => {
                     if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
                     newProduct.processCoordinator = processCoordinator.info._id
                     await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: newProduct._id } })
-                }
+                } // adding counsellor
                 else {
                     const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
                     await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: newProduct._id } });
                     req.user.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
                     await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
                     newProduct.processCoordinator = processCoordinators[0]._id
-                }
+                }// adding processCoordinator
                 break;
-            case "statement of purpose":
+            case ProductCategoryEnum.SOP:
                 break;
-            case "letter of recommendation":
+            case ProductCategoryEnum.LOR:
                 break;
-            case "VISA process":
+            case ProductCategoryEnum.VISA:
                 break;
-            case "education loan process":
+            case ProductCategoryEnum.LOAN:
                 break;
         }
         await newProduct.save()

@@ -1,6 +1,6 @@
 import mongoose, { Types } from "mongoose";
 import userModel from "./User.js";
-import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, DestinationTypeEnum, TestNamesEnum, TestDescriptionEnum, possibilityOfAdmitEnum } from "../utils/enum.js";
+import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, DestinationTypeEnum, TestNamesEnum, TestDescriptionEnum, possibilityOfAdmitEnum, ProductCategoryEnum } from "../utils/enum.js";
 
 const Student = mongoose.Schema(
     {
@@ -230,7 +230,17 @@ const Student = mongoose.Schema(
             }],
             products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
             meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }],
-            cart: [{ type: mongoose.Types.ObjectId, ref: "product" }]
+            // cart: [{ type: mongoose.Types.ObjectId, ref: "product" }],
+            cart: [{
+                course: { type: mongoose.Types.ObjectId, ref: "course" },
+                category: {
+                    type: String, enum: {
+                        values: Object.values(ProductCategoryEnum),
+                        message: "Invalid Type of product category"
+                    }
+                },
+                intake: { type: Date }
+            }],
         },
         suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],
         purchasedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],

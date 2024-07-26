@@ -6,6 +6,7 @@ const productSchema = mongoose.Schema({
     intake: { type: Date },
     deadline: { type: Date },
     user: { type: mongoose.Types.ObjectId, ref: "user" },
+    order: { type: mongoose.Types.ObjectId, ref: "order" },
 },
     {
         discriminatorKey: 'category',

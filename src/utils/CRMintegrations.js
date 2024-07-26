@@ -1,3 +1,4 @@
+import 'dotenv/config';
 export const refreshToken = async () => {
     try {
         const formData = new URLSearchParams();
