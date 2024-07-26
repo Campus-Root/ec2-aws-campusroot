@@ -4,7 +4,6 @@ import universityModel from "../../models/University.js";
 import fs from "fs";
 import Document from "../../models/Uploads.js";
 import { teamModel } from "../../models/Team.js";
-import { eliteApplicationModel, premiumApplicationModel } from "../../models/application.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import { generateAPIError } from "../../errors/apiError.js";
@@ -91,7 +90,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
     const { packageId, products, userCurrency } = req.body;
     const hasPackageId = Boolean(packageId);
     const hasProducts = Array.isArray(products) && products.length > 0;
-    let newProductIds = [], course, Package, errorStack = [], newProducts;
+    let newProductIds = [], course, Package, errorStack = [], newProducts, insertedProducts;
     switch (true) {
         case !hasPackageId && !hasProducts:
             return next(generateAPIError(`either add packageId or products to checkout`, 400));
@@ -109,7 +108,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 let newProductDetails = {
                     user: req.user._id,
                     course: product.data.course ? product.data.course : null,
-                    intake: new Date(product.data.intake) ? new Date(product.data.intake) : null
+                    intake: new Date(product.data.intake) ? new Date(product.data.intake) : null,
                 }
                 course = await courseModel.findById(newProductDetails.course, "elite startDate university")
                 if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });  //product course check
@@ -125,15 +124,12 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
                 if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
                 if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
+                newProductDetails.category = product.category // adding category
                 newProducts.push(newProductDetails)
             }
             if (errorStack.length > 0) return next(generateAPIError(`Invalid products`, 400, errorStack));
-            for (const product of newProducts) {
-                let newProduct
-                if (product.category === ProductCategoryEnum.PREMIUM) newProduct = await premiumApplicationModel.create(newProductDetails)
-                else if (product.category === ProductCategoryEnum.ELITE) newProduct = await eliteApplicationModel.create(newProductDetails)
-                newProductIds.push(newProduct._id)
-            }
+            insertedProducts = await productModel.insertMany(newProducts);
+            newProductIds = insertedProducts.map(product => product._id);
             break;
         case hasPackageId && hasProducts:
             Package = await packageModel.findById(packageId);
@@ -167,21 +163,37 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
                 if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
                 if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
+                newProductDetails.category = product.category // adding category
                 newProducts.push(newProductDetails)
             }
             if (errorStack.length > 0) return next(generateAPIError(`Invalid products`, 400, errorStack));
-            for (const product of newProducts) {
-                let newProduct
-                if (product.category === ProductCategoryEnum.PREMIUM) newProduct = await premiumApplicationModel.create(newProductDetails)
-                else if (product.category === ProductCategoryEnum.ELITE) newProduct = await eliteApplicationModel.create(newProductDetails)
-                newProductIds.push(newProduct._id)
-            }
+            insertedProducts = await productModel.insertMany(newProducts);
+            newProductIds = insertedProducts.map(product => product._id);
             break;
         default: return next(generateAPIError(`some internal server error`, 500));
     }
+    if (totalPrice == 0) {
+        const order = await orderModel.create({
+            student: req.user._id,
+            Package: packageId ? packageId : null,
+            products: newProductIds,
+            paymentDetails: {
+                paymentStatus: "paid",
+                amount: 0,
+                amount_due: 0,
+                created_at: 1721380929,
+                currency: "INR",
+                misc: {}
+            },
+            status: "paid",
+        })
+        await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
+        return res.status(200).json({ success: true, message: 'order placed', data: order, AccessToken: req.AccessToken ? req.AccessToken : null });
+
+    }
     const orderOptions = {
         currency: currency,
-        amount: totalPrice * 100,
+        amount: Number(totalPrice) * 100,
         notes: {
             "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
             "item_ids": { "package": packageId ? packageId : null, "products": newProductIds }
@@ -217,19 +229,19 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
             const Product = productModel.findById(product)
             let course = await courseModel.findById(Product.course, "location.country")
             let country = course.location.country
-            if (Product.category === ProductCategoryEnum.PREMIUM || Product.category === ProductCategoryEnum.ELITE) {
+            if ([ProductCategoryEnum.ELITE, ProductCategoryEnum.PREMIUM].includes(Product.category)) {
                 counsellor = student.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
-                if (counsellor) Product.counsellor = counsellor._id
+                if (counsellor) Product.advisors.push(counsellor._id)
                 else {
                     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
                     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
                     student.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
-                    Product.counsellor = Counsellors[0]._id
+                    Product.advisors.push(Counsellors[0]._id)
                 }
                 processCoordinator = student.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
                 if (processCoordinator) {
                     if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
-                    Product.processCoordinator = processCoordinator.info._id
+                    Product.advisors.push(processCoordinator.info._id)
                     await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: Product._id } })
                 }
                 else {
@@ -237,12 +249,16 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
                     await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: Product._id } });
                     student.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
                     await chatModel.create({ participants: [student._id, processCoordinators[0]._id] });
-                    Product.processCoordinator = processCoordinators[0]._id
+                    Product.advisors.push(processCoordinators[0]._id)
                 }
             }
+            product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
+            product.status = "Processing"
+            product.stage = "Waiting For Counsellor's Approval"
             product.order = order_id;
             await product.save();
         }
+        await studentModel.findByIdAndUpdate(order.student, { $addToSet: { "activity.products": order.products } });
     }
     if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } });
     await student.save();
@@ -251,7 +267,7 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
 export const order = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     const { products } = req.body
-    let productIds = [], course, counsellor, processCoordinator, newProduct, country
+    let productIds = [], course, counsellor, processCoordinator, country
     for (const product of products) {
         let newProductDetails = {
             user: req.user._id,
@@ -260,70 +276,36 @@ export const order = errorWrapper(async (req, res, next) => {
             order: req.order._id
         }, intakeExists
         switch (product.category) {
-            case "premium application":
+            case ProductCategoryEnum.PREMIUM || ProductCategoryEnum.ELITE:
                 newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
                 newProductDetails.status = "Processing"
                 newProductDetails.stage = "Waiting For Counsellor's Approval"
-                newProduct = await premiumApplicationModel.create(newProductDetails)
                 course = await courseModel.findById(newProductDetails.course, "location startDate university")
-                if (course.university && !newProduct.university) newProduct.university = course.university  // adding university
-                intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProduct.intake).getUTCMonth())
-                if (!isNaN(intakeExists[0].deadlineMonth)) newProduct.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
+                if (course.university) newProductDetails.university = course.university  // adding university
+                intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
+                if (!isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
                 country = course.location.country
                 counsellor = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
-                if (counsellor) newProduct.counsellor = counsellor._id
+                if (counsellor) newProductDetails.advisors.push(counsellor._id)
                 else {
                     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
                     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
                     await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
                     req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
-                    newProduct.counsellor = Counsellors[0]._id
+                    newProductDetails.advisors.push(Counsellors[0]._id)
                 } // adding counsellor
                 processCoordinator = req.user.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
                 if (processCoordinator) {
                     if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
-                    newProduct.processCoordinator = processCoordinator.info._id
-                    await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: newProduct._id } })
+                    newProductDetails.advisors.push(processCoordinator.info._id)
+                    await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: newProductDetails._id } })
                 }
                 else {
                     const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
-                    await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: newProduct._id } });
+                    await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: newProductDetails._id } });
                     req.user.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
                     await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
-                    newProduct.processCoordinator = processCoordinators[0]._id
-                }// adding processCoordinator
-                break;
-            case ProductCategoryEnum.ELITE:
-                newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
-                newProductDetails.status = "Processing"
-                newProductDetails.stage = "Waiting For Counsellor's Approval"
-                newProduct = await eliteApplicationModel.create(newProductDetails)
-                course = await courseModel.findById(newProductDetails.course, "location startDate university")
-                if (course.university && !newProduct.university) newProduct.university = course.university    // adding university 
-                intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProduct.intake).getUTCMonth())
-                if (!isNaN(intakeExists[0].deadlineMonth)) newProduct.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
-                country = course.location.country
-                counsellor = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
-                if (counsellor) newProduct.counsellor = counsellor._id
-                else {
-                    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-                    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-                    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
-                    req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
-                    newProduct.counsellor = Counsellors[0]._id
-                }
-                processCoordinator = req.user.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
-                if (processCoordinator) {
-                    if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
-                    newProduct.processCoordinator = processCoordinator.info._id
-                    await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: newProduct._id } })
-                } // adding counsellor
-                else {
-                    const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
-                    await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: newProduct._id } });
-                    req.user.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
-                    await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
-                    newProduct.processCoordinator = processCoordinators[0]._id
+                    newProductDetails.advisors.push(processCoordinators[0]._id)
                 }// adding processCoordinator
                 break;
             case ProductCategoryEnum.SOP:
@@ -335,7 +317,7 @@ export const order = errorWrapper(async (req, res, next) => {
             case ProductCategoryEnum.LOAN:
                 break;
         }
-        await newProduct.save()
+        const newProduct = await productModel.create(newProductDetails)
         productIds.push(newProduct._id)
     }
     req.order.products.push(...productIds)

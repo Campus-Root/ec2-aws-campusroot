@@ -26,7 +26,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data[0];
                 else if (ele.type === "rating") filter.uni_rating = { $gte: ele.data[0] };
-                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0], $options: "i" } }, { code: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0], $options: "i" } }, { code: { $regex: ele.data[0], $options: "i" } }]
+                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0].replace(" ","|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ","|"), $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0].replace(" ","|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ","|"), $options: "i" } }]
             });
             const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort({ uni_rating: -1, courses: -1 }).skip(skip).limit(perPage);
             for (const university of listOfUniversities) {
@@ -59,7 +59,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "type") filter.type = ele.data;
                 else if (ele.type === "name") {
                     if (!filter["$or"]) filter["$or"] = []
-                    filter["$or"].push({ "location.country": { $regex: ele.data[0], $options: "i" } }, { "location.city": { $regex: ele.data[0], $options: "i" } }, { "location.state": { $regex: ele.data[0], $options: "i" } }, { name: { $regex: ele.data[0], $options: "i" } }, { unisName: { $regex: ele.data[0], $options: "i" } }, { schoolName: { $regex: ele.data[0], $options: "i" } })
+                    filter["$or"].push({ "location.country": { $regex: ele.data[0].replace(" ","|"), $options: "i" } }, { "location.city": { $regex: ele.data[0].replace(" ","|"), $options: "i" } }, { "location.state": { $regex: ele.data[0].replace(" ","|"), $options: "i" } }, { name: { $regex: ele.data[0].replace(" ","|"), $options: "i" } }, { unisName: { $regex: ele.data[0].replace(" ","|"), $options: "i" } }, { schoolName: { $regex: ele.data[0].replace(" ","|"), $options: "i" } })
                 }
                 else if (ele.type === "AcademicTestName") {
                     if (!filter["$and"]) filter["$and"] = []
@@ -219,11 +219,11 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
     const uniKeyword = {
         $or: [
-            { name: { $regex: req.query.search, $options: "i" } },
-            { code: { $regex: req.query.search, $options: "i" } },
-            { "location.country": { $regex: req.query.search, $options: "i" } },
-            { "location.state": { $regex: req.query.search, $options: "i" } },
-            { "location.city": { $regex: req.query.search, $options: "i" } }
+            { name: { $regex: req.query.search.replace(" ","|"), $options: "i" } },
+            { code: { $regex: req.query.search.replace(" ","|"), $options: "i" } },
+            { "location.country": { $regex: req.query.search.replace(" ","|"), $options: "i" } },
+            { "location.state": { $regex: req.query.search.replace(" ","|"), $options: "i" } },
+            { "location.city": { $regex: req.query.search.replace(" ","|"), $options: "i" } }
         ],
         courses: { $gt: 0 }
     };
