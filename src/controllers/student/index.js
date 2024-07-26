@@ -102,17 +102,18 @@ export const dashboard = errorWrapper(async (req, res, next) => {
     await productModel.populate(req.user, [
       { path: "activity.products" }
     ]),
-    await universityModel.populate(req.user, [
-      { path: "activity.shortListed.university recommendations.data.university activity.products.university", select: "name logoSrc location type establishedYear " },
-    ]),
     await courseModel.populate(req.user, [
-      { path: "recommendations.data.course activity.shortListed.course activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency" },
+      { path: "recommendations.data.course activity.shortListed.course activity.wishList activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university" },
     ]),
+    await universityModel.populate(req.user, [
+      { path: "activity.shortListed.university activity.wishList.university recommendations.data.university activity.products.university", select: "name logoSrc location type establishedYear " },
+    ]),
+
     await Document.populate(req.user, [
       { path: "activity.products.docChecklist.doc", select: "name contentType createdAt" },
     ]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
-    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.shortListed.processCoordinator activity.products.processCoordinator activity.shortListed.counsellor activity.products.counsellor", select: "firstName displayPicSrc lastName email role" })
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.products.processCoordinator activity.products.counsellor", select: "firstName displayPicSrc lastName email role" })
   ]);
   let applications, checklist
   if (req.user.activity.products.length > 0) {

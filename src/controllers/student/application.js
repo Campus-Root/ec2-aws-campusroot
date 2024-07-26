@@ -25,6 +25,26 @@ export const addToCart = errorWrapper(async (req, res, next) => {
 export const removeFromCart = errorWrapper(async (req, res, next) => {
 
 })
+export const wishList = errorWrapper(async (req, res, next) => {
+    const { action, courseId } = req.body;
+    if (!(await courseModel.findById(courseId))) return next(generateAPIError(`invalid courseId`, 400, [{ action, courseId }]));
+    if (!["push", "pull"].includes(action)) return next(generateAPIError(`invalid action`, 400, [{ action, courseId }]));
+    let student
+    switch (action) {
+        case "push":
+            student = await studentModel.findByIdAndUpdate(req.user._id, { $addToSet: { "activity.wishList": courseId } })
+            break;
+        case "pull":
+            student = await studentModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.wishList": courseId } })
+            break;
+    }
+
+    await Promise.all([
+        await courseModel.populate(student, { path: "activity.wishList", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },),
+        await universityModel.populate(student, { path: "activity.wishList.university", select: "name logoSrc location type establishedYear ", })
+    ])
+    res.status(200).json({ success: true, message: `wish-list successfully`, data: student.activity.wishList });
+});
 
 export const addShortListed = errorWrapper(async (req, res, next) => {
     const { universityId, courseId } = req.body;
