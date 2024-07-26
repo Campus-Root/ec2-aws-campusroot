@@ -32,10 +32,10 @@ export const wishList = errorWrapper(async (req, res, next) => {
     let student
     switch (action) {
         case "push":
-            student = await studentModel.findByIdAndUpdate(req.user._id, { $addToSet: { "activity.wishList": courseId } })
+            student = await studentModel.findByIdAndUpdate(req.user._id, { $addToSet: { "activity.wishList": courseId } }, { new: true });
             break;
         case "pull":
-            student = await studentModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.wishList": courseId } })
+            student = await studentModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.wishList": courseId } }, { new: true });
             break;
     }
 
