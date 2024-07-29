@@ -171,8 +171,7 @@ export const ListEnum={
 export const ProductCategoryEnum = {
     PREMIUM: "premium application",
     ELITE: "elite application",
-    SOP: "statement of purpose",
-    LOR: "letter of recommendation",
+    SOP_LOR: "statement of purpose and letter of recommendation",
     VISA: "VISA process",
     LOAN: "education loan process"
 }

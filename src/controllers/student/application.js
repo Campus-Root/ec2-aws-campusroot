@@ -90,7 +90,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
     const { packageId, products, userCurrency } = req.body;
     const hasPackageId = Boolean(packageId);
     const hasProducts = Array.isArray(products) && products.length > 0;
-    let newProductIds = [], course, Package, errorStack = [], newProducts, insertedProducts;
+    let newProductIds = [], course, Package, errorStack = [], newProducts, intakeExists, insertedProducts, totalPrice = 0, currency = "INR";
     switch (true) {
         case !hasPackageId && !hasProducts:
             return next(generateAPIError(`either add packageId or products to checkout`, 400));
@@ -102,7 +102,6 @@ export const checkout = errorWrapper(async (req, res, next) => {
             currency = Package.priceDetails.currency;
             break;
         case !hasPackageId && hasProducts:
-            totalPrice = 0, currency = "INR"
             newProducts = [];
             for (const product of products) {
                 let newProductDetails = {
@@ -115,11 +114,11 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 if (!newProductDetails.intake || new Date(newProductDetails.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
                 if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` }); //product intake check
-                if (!isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
-                if (course.university) newProductDetails.university = course.university // adding university
+                if (intakeExists.length > 0 && intakeExists[0].deadlineMonth && !isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
+                if (course && course.university) newProductDetails.university = course.university // adding university
                 let priceObject = await priceModel.findOne({ productCategory: product.category }, "price currency")
                 totalPrice += Number(priceObject.price)
-                let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: newProductDetails.intake, category: product.category }, "_id")
+                let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: new Date(newProductDetails.intake), category: product.category }, "_id")
                 if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // duplicates check
                 if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
                 if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
@@ -154,11 +153,11 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });             // product course check
                 if (!Package.country.includes(course.location.country)) errorStack.push({ ...product, errorMessage: `country mismatched` }); // product country check
                 if (!newProductDetails.intake || new Date(newProductDetails.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
-                let intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
+                intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
                 if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` });   // product intake check
-                if (!isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
-                if (course.university) newProductDetails.university = course.university // adding university
-                let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: newProductDetails.intake, category: product.category }, "_id")
+                if (intakeExists.length > 0 && intakeExists[0].deadlineMonth && !isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
+                if (course && course.university) newProductDetails.university = course.university // adding university
+                let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: new Date(newProductDetails.intake), category: product.category }, "_id")
                 if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // product duplicate check
                 if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
                 if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
@@ -183,16 +182,15 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 amount_due: 0,
                 created_at: 1721380929,
                 currency: "INR",
-                misc: {}
             },
             status: "paid",
         })
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
-        return res.status(200).json({ success: true, message: 'order placed', data: order, AccessToken: req.AccessToken ? req.AccessToken : null });
+        return res.status(200).json({ success: true, message: 'order placed', data: { order, razorPay: null }, AccessToken: req.AccessToken ? req.AccessToken : null });
 
     }
     const orderOptions = {
-        currency: currency,
+        currency: "INR",
         amount: Number(totalPrice) * 100,
         notes: {
             "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
@@ -216,7 +214,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
         status: "pending",
     })
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
-    return res.status(200).json({ success: true, message: 'order placed', data: razorPay, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return res.status(200).json({ success: true, message: 'order placed', data: { razorPay, order }, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const paymentVerification = errorWrapper(async (req, res, next) => {
     const { razorpay_order_id } = req.body;
