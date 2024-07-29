@@ -177,7 +177,7 @@ export const Package = errorWrapper(async (req, res, next) => {
                 path: "designer",
                 select: "firstName lastName email displayPicSrc"
             })
-            return res.status(200).json({ success: true, message: "Package suggested", data: Package, AccessToken: req.AccessToken ? req.AccessToken : null });
+            return res.status(200).json({ success: true, message: "Package edited", data: Package, AccessToken: req.AccessToken ? req.AccessToken : null });
         default: return next(generateAPIError(`invalid action`, 400));
     }
 })
