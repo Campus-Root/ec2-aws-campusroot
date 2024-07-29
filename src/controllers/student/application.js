@@ -279,6 +279,7 @@ export const order = errorWrapper(async (req, res, next) => {
             user: req.user._id,
             course: product.data.course ? product.data.course : null,
             intake: product.data.intake ? product.data.intake : null,
+            advisors: [],
             order: req.order._id
         }, intakeExists
         switch (product.category) {
@@ -314,9 +315,7 @@ export const order = errorWrapper(async (req, res, next) => {
                     newProductDetails.advisors.push(processCoordinators[0]._id)
                 }// adding processCoordinator
                 break;
-            case ProductCategoryEnum.SOP:
-                break;
-            case ProductCategoryEnum.LOR:
+            case ProductCategoryEnum.SOP_LOR:
                 break;
             case ProductCategoryEnum.VISA:
                 break;
