@@ -262,6 +262,14 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
     await student.save();
     res.redirect(`${process.env.SERVER_URL}paymentsuccess?reference=${order._id}`);
 })
+export const orderInfo = errorWrapper(async (req, res, next) => {
+    const { orderId } = req.query;
+    // https://campusroot.com/paymentsuccess?reference=669fa190dc22145b5fadc789
+    const order = await orderModel.findOne({ _id: orderId, student: req.user._id });
+    await packageModel.populate(order, { path: "Package", select: "-logs" })
+    if (!order) return next(generateAPIError("invalid orderId or you might not have permission", 400, orderId));
+    return res.status(200).json({ success: true, message: 'order info', data: order, AccessToken: req.AccessToken ? req.AccessToken : null });
+})
 export const order = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     const { products } = req.body
