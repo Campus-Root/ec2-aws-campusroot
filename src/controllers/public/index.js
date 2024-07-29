@@ -260,7 +260,8 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
                 name: 1,
                 location: 1,
                 community: 1,
-                logoSrc: 1
+                logoSrc: 1,
+                code:1
             }
         }
     ]);
