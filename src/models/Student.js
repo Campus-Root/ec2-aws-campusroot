@@ -232,14 +232,16 @@ const Student = mongoose.Schema(
             meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }],
             // cart: [{ type: mongoose.Types.ObjectId, ref: "product" }],
             cart: [{
-                course: { type: mongoose.Types.ObjectId, ref: "course" },
                 category: {
                     type: String, enum: {
                         values: Object.values(ProductCategoryEnum),
                         message: "Invalid Type of product category"
                     }
                 },
-                intake: { type: Date }
+                data: {
+                    course: { type: mongoose.Types.ObjectId, ref: "course" },
+                    intake: { type: Date }
+                }
             }],
             wishList: [{ type: mongoose.Types.ObjectId, ref: "course" }],
         },
