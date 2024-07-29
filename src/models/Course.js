@@ -94,8 +94,7 @@ const courseSchema = mongoose.Schema(
     },
     { timestamps: true }
 );
-
-
+courseSchema.index({ name: "text", unisName: "text", schoolName: "text", "location.country": "text", "location.city": "text", "location.state": "text" });
 const courseModel = mongoose.model("course", courseSchema);
 export default courseModel
 
