@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { ProductCategoryEnum } from "../utils/enum.js";
 
 
 export const CartSchema = Joi.object({
