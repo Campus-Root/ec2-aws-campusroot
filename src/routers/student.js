@@ -7,7 +7,7 @@ import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js
 import { editReview, postReview } from "../controllers/student/review.js";
 import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation } from "../controllers/student/index.js";
 import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, requestCounsellor, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
-import { addShortListed, wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, removeShortListed, requestCancellation, checkout, uploadInApplication, paymentVerification, order, orderInfo } from "../controllers/student/application.js";
+import { addShortListed, wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, removeShortListed, requestCancellation, checkout, uploadInApplication, paymentVerification, order, orderInfo, Cart } from "../controllers/student/application.js";
 const router = express.Router();
 //        {{base}}/api/v1/student
 
@@ -34,7 +34,7 @@ router.put("/hide-recommendation", authMiddleware, isStudent, hideRecommendation
 router.post("/add-to-short-list", authMiddleware, isStudent, addShortListed);
 router.patch("/edit-short-list/:id", authMiddleware, isStudent, removeShortListed);
 router.post("/wish-list", authMiddleware, isStudent, wishList);
-
+router.post("/cart", authMiddleware, isStudent, Cart)
 
 router.post("/upload-profile", authMiddleware, isStudent, handleFile, uploadInProfile);
 router.post("/delete-uploaded-profile", authMiddleware, isStudent, deleteUploadedInProfile);

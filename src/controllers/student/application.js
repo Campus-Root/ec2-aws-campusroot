@@ -1,3 +1,4 @@
+import Joi from "joi";
 import courseModel from "../../models/Course.js";
 import chatModel from "../../models/Chat.js"
 import universityModel from "../../models/University.js";
@@ -17,11 +18,42 @@ import { packageModel } from "../../models/Package.js";
 import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
 import { priceModel } from "../../models/prices.js";
+import { CartSchema } from "../../schemas/student.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
-export const addToCart = errorWrapper(async (req, res, next) => {
-
-})
-export const removeFromCart = errorWrapper(async (req, res, next) => {
+export const Cart = errorWrapper(async (req, res, next) => {
+    const { error, value } = CartSchema.validate(req.body)
+    if (error) return next(generateAPIError(error.details[0].message, 400, [value]));
+    let found = req.user.activity.cart.filter(ele => (ele.course.toString() == data.course && ele.intake == data.intake) || ele._id.toString() == itemId)
+    let course, intakeExists;
+    const { action, category, data, itemId } = value;
+    switch (action) {
+        case 'add':
+            course = await courseModel.findById(data.course, "startDate elite");
+            if (!course) return next(generateAPIError(`Invalid courseId`, 400, [value]));
+            if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return next(generateAPIError(`category mismatch`, 400, [value]));
+            intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(data.intake).getUTCMonth());
+            if (intakeExists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400, [value]));
+            if (found.length > 0) return next(generateAPIError(`item already exists`, 400, [value]));
+            req.user.activity.cart.push({ category: category, data: data });
+            break;
+        case 'remove':
+            if (found.length == 0) return next(generateAPIError(`item doesn't exists`, 400, [value]));
+            req.user.activity.cart = req.user.activity.cart.filter(ele => ele._id.toString() != itemId)
+            break;
+        case 'update':
+            if (found.length == 0) return next(generateAPIError(`item doesn't exists`, 400, [value]));
+            course = await courseModel.findById(data.course, "startDate elite");
+            if (!course) return next(generateAPIError(`Invalid courseId`, 400, [value]));
+            if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return next(generateAPIError(`category mismatch`, 400, [value]));
+            intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(data.intake).getUTCMonth());
+            if (intakeExists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400, [value]));
+            found[0].category = category;
+            found[0].data = data;
+            break;
+    }
+    await req.user.save();
+    await courseModel.populate(req.user, { path: "activity.cart", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },)
+    return res.status(200).json({ success: true, message: `cart updated successfully`, data: req.user.activity.cart });
 
 })
 export const wishList = errorWrapper(async (req, res, next) => {
