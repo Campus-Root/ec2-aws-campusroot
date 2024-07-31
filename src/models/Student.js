@@ -224,25 +224,9 @@ const Student = mongoose.Schema(
             loan: { type: Object }
         },
         activity: {
-            shortListed: [{
-                university: { type: mongoose.Types.ObjectId, ref: "university" },
-                course: { type: mongoose.Types.ObjectId, ref: "course" }
-            }],
             products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
             meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }],
-            // cart: [{ type: mongoose.Types.ObjectId, ref: "product" }],
-            cart: [{
-                category: {
-                    type: String, enum: {
-                        values: Object.values(ProductCategoryEnum),
-                        message: "Invalid Type of product category"
-                    }
-                },
-                data: {
-                    course: { type: mongoose.Types.ObjectId, ref: "course" },
-                    intake: { type: Date }
-                }
-            }],
+            cart: [{ category: { type: String, enum: { values: Object.values(ProductCategoryEnum), message: "Invalid Type of product category" } }, data: { course: { type: mongoose.Types.ObjectId, ref: "course" }, intake: { type: Date } } }],
             wishList: [{ type: mongoose.Types.ObjectId, ref: "course" }],
         },
         suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],

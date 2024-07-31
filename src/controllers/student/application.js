@@ -76,48 +76,6 @@ export const wishList = errorWrapper(async (req, res, next) => {
     ])
     res.status(200).json({ success: true, message: `wish-list successfully`, data: student.activity.wishList });
 });
-
-export const addShortListed = errorWrapper(async (req, res, next) => {
-    const { universityId, courseId } = req.body;
-    if (!(await universityModel.findById(universityId))) return next(generateAPIError(`invalid universityId`, 400));
-    if (!(await courseModel.findById(courseId))) return next(generateAPIError(`invalid courseId`, 400));
-    const shortListed = req.user.activity.shortListed;
-    const alreadyExists = shortListed.find((ele) => ele.course == courseId);
-    if (alreadyExists) return next(generateAPIError(`course already exist in the list`, 400));
-    shortListed.push({ university: universityId, course: courseId });
-    req.user.logs.push({
-        action: `course shortlisted`,
-        details: `courseId:${courseId}&universityId:${universityId}`
-    })
-    await Promise.all([
-        await req.user.save(),
-        await universityModel.populate(req.user, { path: "activity.shortListed.university", select: "name logoSrc location type establishedYear ", }),
-        await courseModel.populate(req.user, { path: "activity.shortListed.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails", },)
-    ])
-    if (req.user.preference.currency) {
-        const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-        const applyCurrencyConversion = (element) => {
-            if (element.course.currency.code !== req.user.preference.currency) {
-                if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-                    next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
-                }
-                element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
-                element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
-            }
-        };
-        req.user.activity.shortListed.forEach(applyCurrencyConversion);
-    }
-    return res.status(200).json({ success: true, message: `added to shortlist successfully`, data: req.user.activity.shortListed.slice(-1), AccessToken: req.AccessToken ? req.AccessToken : null });
-})
-export const removeShortListed = errorWrapper(async (req, res, next) => {
-    const updateResult = await studentModel.updateOne({ _id: req.user._id }, { $pull: { 'activity.shortListed': { _id: req.params.id } } });
-    if (updateResult.modifiedCount === 0) return next(generateAPIError(`id doesn't exist in the list`, 400));
-    req.user.logs.push({
-        action: `course removed from shortlist`,
-        details: `courseId:${req.params.id}`
-    })
-    return res.status(200).json({ success: true, message: `list updated`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
-})
 export const checkout = errorWrapper(async (req, res, next) => {
     const { packageId, products, userCurrency } = req.body;
     const hasPackageId = Boolean(packageId);
