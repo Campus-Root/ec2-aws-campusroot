@@ -23,13 +23,14 @@ const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next) => {
     const { error, value } = CartSchema.validate(req.body)
     if (error) return next(generateAPIError(error.details[0].message, 400, [value]));
-    let found = req.user.activity.cart.filter(ele => (ele.course.toString() == data.course && ele.intake == data.intake) || ele._id.toString() == itemId)
-    let course, intakeExists;
     const { action, category, data, itemId } = value;
+    let found = req.user.activity.cart.filter(ele => (ele.data.course.toString() == data.course && new Date(ele.data.intake) == new Date(data.intake)) || ele._id.toString() == itemId)
+    let course, intakeExists;
     switch (action) {
         case 'add':
             course = await courseModel.findById(data.course, "startDate elite");
             if (!course) return next(generateAPIError(`Invalid courseId`, 400, [value]));
+            if (!category) return next(generateAPIError(`category required`, 400, [value]));
             if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return next(generateAPIError(`category mismatch`, 400, [value]));
             intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(data.intake).getUTCMonth());
             if (intakeExists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400, [value]));
@@ -54,7 +55,6 @@ export const Cart = errorWrapper(async (req, res, next) => {
     await req.user.save();
     await courseModel.populate(req.user, { path: "activity.cart", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },)
     return res.status(200).json({ success: true, message: `cart updated successfully`, data: req.user.activity.cart });
-
 })
 export const wishList = errorWrapper(async (req, res, next) => {
     const { action, courseId } = req.body;

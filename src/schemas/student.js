@@ -9,5 +9,5 @@ export const CartSchema = Joi.object({
         course: Joi.string(),
         intake: Joi.date()
     }),
-    itemId: Joi.string()
+    itemId: Joi.string().allow('')
 }).required();
