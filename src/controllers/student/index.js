@@ -81,7 +81,7 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
   recommendation.notInterested = true;
   await req.user.save();
   await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration" })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration startDate" })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
     const applyCurrencyConversion = (element) => {
@@ -95,6 +95,7 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
     };
     req.user.recommendations.data.forEach(applyCurrencyConversion);
   }
+
   return res.status(200).json({ success: true, message: "Recommendation hidden", data: req.user.recommendations, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const dashboard = errorWrapper(async (req, res, next) => {
