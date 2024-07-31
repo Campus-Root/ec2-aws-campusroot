@@ -103,12 +103,11 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       { path: "activity.products" }
     ]),
     await courseModel.populate(req.user, [
-      { path: "recommendations.data.course activity.shortListed.course activity.wishList activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university" },
+      { path: "recommendations.data.course activity.cart.data.course activity.wishList activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university" },
     ]),
     await universityModel.populate(req.user, [
-      { path: "activity.shortListed.university activity.wishList.university recommendations.data.university activity.products.university", select: "name logoSrc location type establishedYear " },
+      { path: "activity.cart.data.course.university activity.wishList.university recommendations.data.university activity.products.university", select: "name logoSrc location type establishedYear " },
     ]),
-
     await Document.populate(req.user, [
       { path: "activity.products.docChecklist.doc", select: "name contentType createdAt" },
     ]),
@@ -128,9 +127,9 @@ export const dashboard = errorWrapper(async (req, res, next) => {
           element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
         }
       };
-      req.user.recommendations.data.forEach(applyCurrencyConversion);
-      req.user.activity.shortListed.forEach(applyCurrencyConversion);
-      req.user.activity.products.forEach(applyCurrencyConversion);
+      if (req.user.recommendations.data.length > 0) req.user.recommendations.data.forEach(applyCurrencyConversion);
+      // if (req.user.activity.cart.data.length > 0) req.user.activity.cart.data.forEach(applyCurrencyConversion);
+      if (req.user.activity.products.length > 0) req.user.activity.products.forEach(applyCurrencyConversion);
     }
     applications = req.user.activity.products.filter((ele) => ele.stage === "Processing" || ele.stage === "Accepted");
     checklist = applications.flatMap(application =>

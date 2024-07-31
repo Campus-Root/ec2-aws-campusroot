@@ -53,8 +53,9 @@ export const Cart = errorWrapper(async (req, res, next) => {
             break;
     }
     await req.user.save();
-    await courseModel.populate(req.user, { path: "activity.cart", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },)
-    return res.status(200).json({ success: true, message: `cart updated successfully`, data: req.user.activity.cart });
+    await courseModel.populate(req.user, { path: "activity.cart.data.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },)
+    await universityModel.populate(req.user, { path: "activity.cart.data.course.university", select: "name logoSrc location type establishedYear ", })
+    return res.status(200).json({ success: true, message: `cart updated successfully`, data: req.user.activity.cart, AccessToken: req.AccessToken ? req.AccessToken : null });
 })
 export const wishList = errorWrapper(async (req, res, next) => {
     const { action, courseId } = req.body;
@@ -74,7 +75,7 @@ export const wishList = errorWrapper(async (req, res, next) => {
         await courseModel.populate(student, { path: "activity.wishList", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },),
         await universityModel.populate(student, { path: "activity.wishList.university", select: "name logoSrc location type establishedYear ", })
     ])
-    res.status(200).json({ success: true, message: `wish-list successfully`, data: student.activity.wishList });
+    res.status(200).json({ success: true, message: `wish-list successfully`, data: student.activity.wishList, AccessToken: req.AccessToken ? req.AccessToken : null });
 });
 export const checkout = errorWrapper(async (req, res, next) => {
     const { packageId, products, userCurrency } = req.body;
