@@ -15,16 +15,20 @@ import { currencySymbols } from "../../utils/enum.js";
 import { productModel } from "../../models/Product.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
-  // if (!req.user.verification[0].status) return next(generateAPIError(`do verify your email to generate recommendations`, 400));
-  // if (!req.user.verification[1].status) return next(generateAPIError(`do verify your phone number to generate recommendations`, 400));
+  // if (!req.user.verification[0].status) return { statusCode: 400, data: student , message:    `do verify your email to generate recommendations`};
+  // if (!req.user.verification[1].status) return { statusCode: 400, data: student , message:    `do verify your phone number to generate recommendations`};
   const GRE = req.user.tests.find(ele => ele.name == "Graduate Record Examination")
-  if (GRE == undefined) return next(generateAPIError("add GRE test details", 400))
+  if (GRE == undefined) return { statusCode: 400, data: null, message: "add GRE test details" }
   const totalScore = GRE.scores.find(ele => ele.description === "totalScore")
   const gre = totalScore ? totalScore.count : GRE.scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
   const ug = req.user.education.underGraduation
-  if (!ug || !ug.totalScore) return next(generateAPIError("add ug gpa", 400))
+  if (!ug || !ug.totalScore) return {
+    statusCode: 400, data: null, message: "add ug gpa"
+  }
   let ug_gpa = (req.user.education.underGraduation.gradingSystem != "gpa") ? gradeConversions(ug.gradingSystem, "gpa", ug.totalScore) : ug.totalScore
-  if (!req.user.preference.courses) return next(generateAPIError("add course preferences", 400))
+  if (!req.user.preference.courses) return {
+    statusCode: 400, data: null, message: "add course preferences"
+  }
   let criteria = {
     ug_gpa: ug_gpa,
     gre: gre,
@@ -64,7 +68,9 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     const applyCurrencyConversion = (element) => {
       if (element.course.currency.code !== req.user.preference.currency) {
         if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-          next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+          return {
+            statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available'
+          };
         }
         element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
         element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
@@ -72,12 +78,12 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     };
     req.user.recommendations.data.forEach(applyCurrencyConversion);
   }
-  return res.status(200).json({ success: true, message: "Recommendations Generated", data: req.user.recommendations, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return ({ statusCode: 200, message: "Recommendations Generated", data: req.user.recommendations });
 })
 export const hideRecommendation = errorWrapper(async (req, res) => {
   const { recommendationId } = req.body
   const recommendation = req.user.recommendations.data.find(ele => ele._id.toString() == recommendationId)
-  if (!recommendation) return next(generateAPIError(`invalid recommendationId`, 400));
+  if (!recommendation) return { statusCode: 400, data: null, message: `invalid recommendationId` };
   recommendation.notInterested = true;
   await req.user.save();
   await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
@@ -87,7 +93,9 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
     const applyCurrencyConversion = (element) => {
       if (element.course.currency.code !== req.user.preference.currency) {
         if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-          next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+          return {
+            statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available'
+          };
         }
         element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
         element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
@@ -96,7 +104,7 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
     req.user.recommendations.data.forEach(applyCurrencyConversion);
   }
 
-  return res.status(200).json({ success: true, message: "Recommendation hidden", data: req.user.recommendations, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return ({ statusCode: 200, message: "Recommendation hidden", data: req.user.recommendations });
 })
 export const dashboard = errorWrapper(async (req, res, next) => {
   await Promise.all([
@@ -122,7 +130,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       const applyCurrencyConversion = (element) => {
         if (element.course.currency.code !== req.user.preference.currency) {
           if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-            next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+            return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
           }
           element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
           element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
@@ -143,14 +151,14 @@ export const dashboard = errorWrapper(async (req, res, next) => {
         applicationId: application._id
       })));
   }
-  return res.status(200).json({ success: true, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendations: req.user.recommendations, checklist: checklist }, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return ({ statusCode: 200, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendations: req.user.recommendations, checklist: checklist } });
 });
 //................download any user related Document...........
 export const downloadDocument = errorWrapper(async (req, res, next) => {
   const { documentId } = req.params;
   const document = await Document.findById(documentId);
-  if (!document) return next(generateAPIError(`invalid document ID`, 400));
-  // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return next(generateAPIError(`access denied`, 401));
+  if (!document) return { statusCode: 400, data: null, message: `invalid document ID` };
+  // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return { statusCode: 400, data: student , message:    `access denied`};
   return res.contentType(document.contentType).send(document.data);
 })
 export const allStudents = errorWrapper(async (req, res, next) => {
@@ -159,7 +167,7 @@ export const allStudents = errorWrapper(async (req, res, next) => {
     await universityModel.populate(students, { path: "activity.admitReceived.university", select: "name logoSrc location type ", }),
     await courseModel.populate(students, { path: "activity.admitReceived.course", select: "name schoolDetails", })
   ])
-  return res.status(200).json({ success: true, message: `all students`, data: students, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return ({ statusCode: 200, message: `all students`, data: students });
 })
 export const singleStudent = errorWrapper(async (req, res, next) => {
   const { studentId } = req.params
@@ -176,5 +184,5 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
     { path: "activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
   ])
   await userModel.populate(student, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
-  return res.status(200).json({ success: true, message: `student details`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
+  return ({ statusCode: 200, message: `student details`, data: student });
 })

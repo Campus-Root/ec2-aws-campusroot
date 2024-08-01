@@ -1,5 +1,4 @@
 import userModel from "../../models/User.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import meetingModel from "../../models/meetings.js";
 import { oauth2Client } from "../../utils/oAuthClient.js";
@@ -8,25 +7,29 @@ import 'dotenv/config';
 export const bookSlot = errorWrapper(async (req, res, next) => {
     const { startTime, endTime, attendees, timeZone, notes } = req.body
     const { teamMemberId } = req.params
-    // if (req.user.verification[0].status === false) return next(generateAPIError(`do verify your email to book a slot`, 400));
-    // if (req.user.verification[1].status === false) return next(generateAPIError(`do verify your phone number to book a slot`, 400));
-    if (!new Date(startTime)) return next(generateAPIError("invalid startTime", 400))
-    if (!new Date(endTime)) return next(generateAPIError("invalid endTime", 400))
-    if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
+    // if (req.user.verification[0].status === false) return { statusCode: 400, data: student , message:    `do verify your email to book a slot`};
+    // if (req.user.verification[1].status === false) return { statusCode: 400, data: student , message:    `do verify your phone number to book a slot`};
+    if (!new Date(startTime)) return { statusCode: 400, data: null, message: "invalid startTime" }
+    if (!new Date(endTime)) return {
+        statusCode: 400, data: null, message: "invalid endTime"
+    }
+    if (!timeZone) return {
+        statusCode: 400, data: null, message: "invalid timeZone"
+    }
     await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens role" })
     let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)
-    if (!teamMember) return next(generateAPIError(`invalid teamMember parameter`, 400));
-
+    if (!teamMember) return { statusCode: 400, data: null, message: `invalid teamMember parameter` };
     const alreadyScheduled = await meetingModel.find({ user: req.user._id, member: teamMember.info._id, "data.end.dateTime": { $gte: new Date() } }, "data.start data.end")
-    if (!alreadyScheduled) return next(generateAPIError(`meeting already scheduled at ${alreadyScheduled.data.start.dateTime}`));
-
+    if (!alreadyScheduled) return { statusCode: 400, data: null, message: `meeting already scheduled at ${alreadyScheduled.data.start.dateTime}` };
     let sessionName
     switch (teamMember.info.role) {
         case "counsellor": sessionName = `Counselling Session - ${req.user.firstName} ${req.user.lastName}`
             break;
         case "processCoordinator": sessionName = `Application Processing Session - ${req.user.firstName} ${req.user.lastName}`
             break;
-        default: return next(generateAPIError(`invalid teamMemberId`, 400));
+        default: return {
+            statusCode: 400, data: null, message: `invalid teamMemberId`
+        };
     }
     oauth2Client.setCredentials(teamMember.info.googleTokens);
     let event = {
@@ -52,15 +55,17 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await userModel.populate(meeting, { path: "user member", select: "firstName lastName email displayPicSrc role" })
-    return res.status(200).json({ success: true, message: `slot booking successful`, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return ({ statusCode: 200, message: `slot booking successful`, data: meeting });
 })
 export const modifySlot = errorWrapper(async (req, res, next) => {
     const { meetingId, option, startTime, endTime, timeZone } = req.body
     const meeting = await meetingModel.findById(meetingId).populate("member", "googleTokens")
-    if (!meeting || !meeting.data.id) return next(generateAPIError("invalid meetingId", 400))
+    if (!meeting || !meeting.data.id) return { statusCode: 400, data: null, message: "invalid meetingId" }
     oauth2Client.setCredentials(meeting.member.googleTokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    if (meeting.status === "cancelled") return next(generateAPIError("cannot modify cancelled meeting", 400))
+    if (meeting.status === "cancelled") return {
+        statusCode: 400, data: null, message: "cannot modify cancelled meeting"
+    }
     let msg, response
     switch (option) {
         case "cancelEvent":
@@ -71,8 +76,12 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
             req.user.logs.push({ action: `Event cancelled`, details: `meetingId:${meetingId}` })
             break;
         case "rescheduleEvent":
-            if (!startTime && !endTime) return next(generateAPIError("invalid start and end time", 400))
-            if (!timeZone) return next(generateAPIError("invalid timeZone", 400))
+            if (!startTime && !endTime) return {
+                statusCode: 400, data: null, message: "invalid start and end time"
+            }
+            if (!timeZone) return {
+                statusCode: 400, data: null, message: "invalid timeZone"
+            }
             const updatedEvent = {
                 ...meeting.data,
                 start: { dateTime: new Date(startTime), timeZone: timeZone, },
@@ -83,18 +92,20 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
             meeting.status = "rescheduled"
             msg = 'Event rescheduled successfully'
             req.user.logs.push({ action: `Event rescheduled ${startTime}`, details: `meetingId:${meetingId}` })
-        default: return next(generateAPIError("invalid option", 400))
+        default: return {
+            statusCode: 400, data: null, message: "invalid option"
+        }
     }
     await req.user.save()
     await meeting.save()
     await userModel.populate(meeting, { path: "user member", select: "firstName lastName email displayPicSrc role" })
-    return res.status(200).json({ success: true, message: msg, data: meeting, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return ({ statusCode: 200, message: msg, data: meeting });
 })
 export const getEvents = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens" })
     const { teamMemberId } = req.params
     let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)
-    if (!teamMember) return next(generateAPIError(`invalid teamMember parameter`, 400));
+    if (!teamMember) return { statusCode: 400, data: null, message: `invalid teamMember parameter` };
     oauth2Client.setCredentials(teamMember.info.googleTokens);
     const { data } = await google.calendar({ version: 'v3', auth: oauth2Client }).events.list({
         calendarId: 'primary',
@@ -146,7 +157,7 @@ export const getEvents = errorWrapper(async (req, res, next) => {
         today.setDate(today.getDate() + 1)
         today.setHours(3, 30, 0, 0);
     }
-    return res.status(200).json({ success: true, message: `free slots for next 30 days`, data: result, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return ({ statusCode: 200, message: `free slots for next 30 days`, data: result });
 })
 
 

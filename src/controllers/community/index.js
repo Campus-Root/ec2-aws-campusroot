@@ -11,8 +11,10 @@ import Document from "../../models/Uploads.js";
 export const joinInCommunity = errorWrapper(async (req, res, next) => {
     const { communityId } = req.body
     const existingCommunity = await communityModel.findById(communityId)
-    if (!existingCommunity) return next(generateAPIError("invalid Community", 400))
-    if (existingCommunity.participants.includes(req.decoded.id)) return next(generateAPIError("you're already a participant", 400))
+    if (!existingCommunity) return { statusCode: 400, data: null, message: "invalid Community" }
+    if (existingCommunity.participants.includes(req.decoded.id)) return {
+        statusCode: 400, data: null, message: "you're already a participant"
+    }
     const community = await communityModel.findOneAndUpdate({ _id: communityId }, { $push: { participants: req.decoded.id } }, { new: true })
     const user = await userModel.findById(req.decoded.id)
     user.logs.push({
@@ -23,20 +25,22 @@ export const joinInCommunity = errorWrapper(async (req, res, next) => {
     await userModel.findOneAndUpdate({ _id: req.decoded.id }, { $push: { communities: communityId } })
     await userModel.populate(community, { path: "participants", select: "firstName lastName displayPicSrc" })
     await universityModel.populate(community, { path: "university", select: "name logoSrc location type establishedYear" })
-    return res.status(200).json({ success: true, message: `join success`, data: community, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `join success`, data: community })
 })
 export const fetchJoinedCommunities = errorWrapper(async (req, res, next) => {
     const user = await userModel.findById(req.decoded.id)
     await communityModel.populate(user, { path: "communities", select: "participants university posts", },)
     await userModel.populate(user, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
     await universityModel.populate(user, { path: "communities.university", select: "name logoSrc location type establishedYear", },)
-    return res.status(200).json({ success: true, message: `joined communities`, data: user.communities, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `joined communities`, data: user.communities })
 })
 export const vacateCommunity = errorWrapper(async (req, res, next) => {
     const { communityId } = req.body
     const existingCommunity = await communityModel.findById(communityId)
-    if (!existingCommunity) return next(generateAPIError("invalid CommunityId", 400))
-    if (!existingCommunity.participants.includes(req.decoded.id)) return next(generateAPIError("you're not a participant", 400))
+    if (!existingCommunity) return { statusCode: 400, data: null, message: "invalid CommunityId" }
+    if (!existingCommunity.participants.includes(req.decoded.id)) return {
+        statusCode: 400, data: null, message: "you're not a participant"
+    }
     const user = await userModel.findById(req.decoded.id)
     user.logs.push({
         action: "left a community",
@@ -44,7 +48,7 @@ export const vacateCommunity = errorWrapper(async (req, res, next) => {
     })
     await user.save()
     await Promise.all([communityModel.findOneAndUpdate({ _id: communityId }, { $pull: { participants: req.decoded.id } }), userModel.findOneAndUpdate({ _id: req.decoded.id }, { $pull: { communities: communityId } })])
-    return res.status(200).json({ success: true, message: `left the community`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `left the community`, data: null })
 })
 export const fetchPosts = errorWrapper(async (req, res, next) => {
     const { page = 1, pageSize = 10 } = req.query;
@@ -93,7 +97,7 @@ export const fetchPosts = errorWrapper(async (req, res, next) => {
         .skip((page - 1) * pageSize)
         .limit(+pageSize);
     const posts = contexts.map(ele => ele.post);
-    return res.status(200).json({ success: true, message: `all your posts`, data: posts, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `all your posts`, data: posts, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 });
 export const myActivity = errorWrapper(async (req, res, next) => {
     const { page = 1, pageSize = 10 } = req.query;
@@ -147,7 +151,7 @@ export const myActivity = errorWrapper(async (req, res, next) => {
         })
         Posts.push({ ...ele._doc, activity })
     }
-    return res.status(200).json({ success: true, message: `all your posts`, data: Posts, additionalData: { totalPages: totalPages, currentPage: +page, pageSize: +pageSize }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `all your posts`, data: Posts, additionalData: { totalPages: totalPages, currentPage: +page, pageSize: +pageSize } })
 })
 export const postsInCommunity = errorWrapper(async (req, res, next) => {
     const { communityId } = req.params;
@@ -188,10 +192,10 @@ export const postsInCommunity = errorWrapper(async (req, res, next) => {
         select: "firstName lastName displayPicSrc "
     }]
     );
-    if (!community) return next(generateAPIError("Invalid CommunityId", 400));
+    if (!community) return { statusCode: 400, data: null, message: "Invalid CommunityId" };
     const totalPostsCount = await communityModel.countDocuments({ _id: communityId });
     const totalPages = Math.ceil(totalPostsCount / pageSize);
-    return res.status(200).json({ success: true, message: `all your posts`, data: community, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `all your posts`, data: community, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
 export const singlePost = errorWrapper(async (req, res, next) => {
     const { postId } = req.params
@@ -223,7 +227,7 @@ export const singlePost = errorWrapper(async (req, res, next) => {
                 { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
         })
-    return res.status(200).json({ success: true, message: `single post`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `single post`, data: post })
 })
 export const feed = errorWrapper(async (req, res, next) => {
     const { page = 1, pageSize = 20 } = req.query;
@@ -260,7 +264,7 @@ export const feed = errorWrapper(async (req, res, next) => {
         .sort({ updatedAt: -1 });
     const totalPostsCount = await postModel.countDocuments({ community: { $in: user.communities } })
     const totalPages = Math.ceil(totalPostsCount / pageSize);
-    return res.status(200).json({ success: true, message: `all your feed`, data: posts, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `all your feed`, data: posts, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
 export const query = errorWrapper(async (req, res, next) => {
     const { action, body, header } = req.body
@@ -269,7 +273,7 @@ export const query = errorWrapper(async (req, res, next) => {
         case "create":
             const { communityId } = req.body
             const community = await communityModel.findById(communityId)
-            if ((body === undefined && header === undefined) || !community || !community.participants.includes(req.decoded.id)) return next(generateAPIError(`Invalid input for ${action} action`, 400))
+            if ((body === undefined && header === undefined) || !community || !community.participants.includes(req.decoded.id)) return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
             const newPost = await postModel.create({ community: communityId })
             const newContext = await contextModel.create({
                 post: newPost._id,
@@ -311,11 +315,13 @@ export const query = errorWrapper(async (req, res, next) => {
                 { path: "query.creator", select: "firstName lastName displayPicSrc" },
                 { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
-            return res.status(200).json({ success: true, message: `${action} successful`, data: newPost, AccessToken: req.AccessToken ? req.AccessToken : null })
+            return ({ statusCode: 200, message: `${action} successful`, data: newPost })
         case "update":
             const { contextId, deleteAttachment } = req.body
             const context = await contextModel.findById(contextId)
-            if (!context || context.creator.toString() != req.decoded.id) return next(generateAPIError(`Invalid input for ${action} action`, 400))
+            if (!context || context.creator.toString() != req.decoded.id) return {
+                statusCode: 400, data: null, message: `Invalid input for ${action} action`
+            }
             if (body !== undefined) context.content.body = body
             if (header !== undefined) context.content.header = header
             if (deleteAttachment && context.attachment) {
@@ -352,12 +358,16 @@ export const query = errorWrapper(async (req, res, next) => {
                 { path: "query.creator", select: "firstName lastName displayPicSrc" },
                 { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
-            return res.status(200).json({ success: true, message: `${action} successful`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null })
+            return ({ statusCode: 200, message: `${action} successful`, data: post })
         case "delete":
             const { postId } = req.body
             const postToBeDeleted = await postModel.findById(postId).populate("query", "creator")
-            if (!postToBeDeleted) return next(generateAPIError("Invalid input for delete action", 400))
-            if (postToBeDeleted.query.creator.toString() != req.decoded.id) return next(generateAPIError("Invalid access for delete action", 400))
+            if (!postToBeDeleted) return {
+                statusCode: 400, data: null, message: "Invalid input for delete action"
+            }
+            if (postToBeDeleted.query.creator.toString() != req.decoded.id) return {
+                statusCode: 400, data: null, message: "Invalid access for delete action"
+            }
             if (postToBeDeleted.query) {
                 const query = await contextModel.findById(postToBeDeleted.query)
                 if (query.attachment) await Document.findByIdAndDelete(query.attachment)
@@ -375,8 +385,10 @@ export const query = errorWrapper(async (req, res, next) => {
             await user.save()
             await communityModel.findOneAndUpdate({ _id: postToBeDeleted.community }, { $pull: { posts: postId } });
             await postModel.findOneAndDelete({ _id: postId });
-            return res.status(200).json({ success: true, message: `${action} successful`, data: null, AccessToken: req.AccessToken ? req.AccessToken : null })
-        default: return next(generateAPIError(`invalid action:${action}`, 400))
+            return ({ statusCode: 200, message: `${action} successful`, data: null })
+        default: return {
+            statusCode: 400, data: null, message: `invalid action:${action}`
+        }
     }
 })
 export const response = errorWrapper(async (req, res, next) => {
@@ -386,7 +398,7 @@ export const response = errorWrapper(async (req, res, next) => {
         case "create":
             const { postId } = req.body
             const post = await postModel.findById(postId)
-            if ((body === undefined && header === undefined) || !post) return next(generateAPIError(`Invalid input for ${action} action`, 400))
+            if ((body === undefined && header === undefined) || !post) return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
             const newContext = await contextModel.create({
                 post: post._id,
                 contextType: "response",
@@ -426,11 +438,13 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "query.creator", select: "firstName lastName displayPicSrc" },
                 { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
-            return res.status(200).json({ success: true, message: `${action} successful`, data: post, AccessToken: req.AccessToken ? req.AccessToken : null })
+            return ({ statusCode: 200, message: `${action} successful`, data: post })
         case "update":
             const { deleteAttachment } = req.body
             const context = await contextModel.findById(contextId)
-            if (!context || context.creator.toString() != req.decoded.id) return next(generateAPIError(`Invalid input for ${action} action`, 400))
+            if (!context || context.creator.toString() != req.decoded.id) return {
+                statusCode: 400, data: null, message: `Invalid input for ${action} action`
+            }
             if (body !== undefined) context.content.body = body
             if (header !== undefined) context.content.header = header
             if (deleteAttachment && context.attachment) {
@@ -467,10 +481,12 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "query.creator", select: "firstName lastName displayPicSrc" },
                 { path: "responses.creator", select: "firstName lastName displayPicSrc" },
             ])
-            return res.status(200).json({ success: true, message: `${action} successful`, data: Post, AccessToken: req.AccessToken ? req.AccessToken : null })
+            return ({ statusCode: 200, message: `${action} successful`, data: Post })
         case "delete":
             const contextToBeDeleted = await contextModel.findById(contextId)
-            if (!contextToBeDeleted) return next(generateAPIError(`Invalid contextId`, 400))
+            if (!contextToBeDeleted) return {
+                statusCode: 400, data: null, message: `Invalid contextId`
+            }
             await Document.findByIdAndDelete(contextToBeDeleted.attachment)
             const postIs = await postModel.findOneAndUpdate({ _id: contextToBeDeleted.post }, { $pull: { responses: contextId } }, { new: true })
             await communityModel.populate(postIs, { path: "community", select: "university" })
@@ -495,23 +511,23 @@ export const response = errorWrapper(async (req, res, next) => {
             })
             await user.save()
             await contextModel.findByIdAndDelete(contextToBeDeleted)
-            return res.status(200).json({ success: true, message: `${action} successful`, data: postIs, AccessToken: req.AccessToken ? req.AccessToken : null })
-        default: return next(generateAPIError(`invalid action:${action}`, 400))
+            return ({ statusCode: 200, message: `${action} successful`, data: postIs })
+        default: return { statusCode: 400, data: null, message: `invalid action:${action} ` }
     }
 })
 export const comment = errorWrapper(async (req, res, next) => {
     const { action, contextId, content, commentId } = req.body
     const context = await contextModel.findById(contextId)
-    if (!context) return next(generateAPIError(`invalid contextId`, 400))
+    if (!context) return { statusCode: 400, data: null, message: `invalid contextId` }
     const user = await userModel.findById(req.decoded.id)
     switch (action) {
         case "create":
-            if (content === undefined) return next(generateAPIError(`invalid content`, 400))
+            if (content === undefined) return { statusCode: 400, data: null, message: `invalid content` }
             const commentToBeCreated = { content: content, user: req.decoded.id }
             context.comments.push(commentToBeCreated)
             break;
         case "update":
-            if (content === undefined) return next(generateAPIError(`invalid content`, 400))
+            if (content === undefined) return { statusCode: 400, data: null, message: `invalid content` }
             const commentToBeEdited = context.comments.find(ele => ele._id.toString() == commentId)
             commentToBeEdited.content = content
             await commentToBeEdited.save()
@@ -519,13 +535,13 @@ export const comment = errorWrapper(async (req, res, next) => {
         case "delete":
             context.comments = context.comments.filter(ele => ele._id.toString() != commentId)
             break;
-        default: return next(generateAPIError(`invalid action:${action}`, 400))
+        default: return { statusCode: 400, data: null, message: `invalid action:${action} ` }
 
     }
     await context.save()
     user.logs.push({
         action: `${action} comment`,
-        details: `contextId:${contextId}`
+        details: `contextId:${contextId} `
     })
     await user.save()
     await communityModel.populate(context, { path: "post.community", select: "university" })
@@ -543,12 +559,12 @@ export const comment = errorWrapper(async (req, res, next) => {
         { path: "post.query.creator", select: "firstName lastName displayPicSrc" },
         { path: "post.responses.creator", select: "firstName lastName displayPicSrc" },
     ])
-    return res.status(200).json({ success: true, message: `${action} comment successful`, data: context, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `${action} comment successful`, data: context })
 })
 export const vote = errorWrapper(async (req, res, next) => {
     const { action, contextId } = req.body
     const context = await contextModel.findById(contextId)
-    if (!context) return next(generateAPIError(`invalid contextId`, 400))
+    if (!context) return { statusCode: 400, data: null, message: `invalid contextId` }
     context.vote = context.vote.filter(ele => ele.user.toString() != req.decoded.id)
     const vote = { user: req.decoded.id }
     switch (action) {
@@ -562,13 +578,13 @@ export const vote = errorWrapper(async (req, res, next) => {
             break;
         case "nota":
             break;
-        default: return next(generateAPIError(`invalid action:${action}`, 400))
+        default: return { statusCode: 400, data: null, message: `invalid action:${action} ` }
     }
     await context.save()
     const user = await userModel.findById(req.decoded.id)
     user.logs.push({
-        action: `${action}`,
-        details: `contextId:${contextId}`
+        action: `${action} `,
+        details: `contextId:${contextId} `
     })
     await user.save()
     await communityModel.populate(context, { path: "post.community", select: "university" })
@@ -586,5 +602,5 @@ export const vote = errorWrapper(async (req, res, next) => {
         { path: "post.query.creator", select: "firstName lastName displayPicSrc" },
         { path: "post.responses.creator", select: "firstName lastName displayPicSrc" },
     ])
-    return res.status(200).json({ success: true, message: `${action} successful`, data: context, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `${action} successful`, data: context })
 })

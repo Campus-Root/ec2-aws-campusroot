@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { applicationStagesEnum, applicationStateEnum, ProductCategoryEnum } from "../utils/enum.js";
 
 const productSchema = mongoose.Schema({
-    university: { type: mongoose.Types.ObjectId, ref: "university" },
     course: { type: mongoose.Types.ObjectId, ref: "course" },
     intake: { type: Date },
     deadline: { type: Date },

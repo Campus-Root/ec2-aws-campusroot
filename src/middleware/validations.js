@@ -21,23 +21,27 @@ export const validateCredentials = [
 ];
 export const validationErrorMiddleware = errorWrapper((req, res, next) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return next(generateAPIError(`${errors.array()[0].msg}`, 400, errors));
+    if (!errors.isEmpty()) return { statusCode: 400, data: errors, message: `${errors.array()[0].msg}` };
     return next();
 })
 export const checkDisposableEmail = errorWrapper(async (req, res, next) => {
     const { email } = req.body;
     const response = await fetch(`https://disposable.debounce.io/?email=${email}`);
     const data = await response.json();
-    if (data.disposable == "true") return next(generateAPIError(`Please do not use throw away email`, 400));
-    if (data.success == "0") return next(generateAPIError(`Invalid email Id`, 400));
+    if (data.disposable == "true") return { statusCode: 400, data: null, message: `Please do not use throw away email` };
+    if (data.success == "0") return {
+        statusCode: 400, data: null, message: `Invalid email Id`
+    };
     next();
 });
 export const validatePayment = errorWrapper(async (req, res, next) => {
     const { orderId } = req.body;
-    if (!req.user.orders.includes(orderId)) return next(generateAPIError(`invalid orderId`, 404));
+    if (!req.user.orders.includes(orderId)) return { statusCode: 400, data: null, message: `invalid orderId` };
     let order = await orderModel.findById(orderId).populate("products").populate("Package");
     req.order = order
-    if (order.paymentDetails.paymentStatus != "paid") return next(generateAPIError(`please complete payment to add products`, 400));
+    if (order.paymentDetails.paymentStatus != "paid") return {
+        statusCode: 400, data: null, message: `please complete payment to add products`
+    };
     next();
 })
 export const validateProducts = errorWrapper(async (req, res, next) => {
@@ -64,7 +68,7 @@ export const validateProducts = errorWrapper(async (req, res, next) => {
         if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // product duplicate check
         if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
     }
-    if (errorStack.length > 0) return next(generateAPIError(`Invalid products`, 400, errorStack));
+    if (errorStack.length > 0) return { statusCode: 400, data: errorStack, message: `Invalid products` };
     next();
 })
 export const isPaid = errorWrapper(async (req, res, next) => {

@@ -178,7 +178,7 @@ const Student = mongoose.Schema(
                 sub_discipline: { type: Array }
             },
             data: [{
-                university: { type: mongoose.Types.ObjectId, ref: "university" },
+                // university: { type: mongoose.Types.ObjectId, ref: "university" },
                 course: { type: mongoose.Types.ObjectId, ref: "course" },
                 possibilityOfAdmit: {
                     type: String, enum: {
@@ -226,7 +226,11 @@ const Student = mongoose.Schema(
         activity: {
             products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
             meetings: [{ type: mongoose.Types.ObjectId, ref: "meeting" }],
-            cart: [{ category: { type: String, enum: { values: Object.values(ProductCategoryEnum), message: "Invalid Type of product category" } }, data: { course: { type: mongoose.Types.ObjectId, ref: "course" }, intake: { type: Date } } }],
+            cart: [{
+                category: { type: String, enum: { values: Object.values(ProductCategoryEnum), message: "Invalid Type of product category" } },
+                course: { type: mongoose.Types.ObjectId, ref: "course" },
+                intake: { type: Date }
+            }],
             wishList: [{ type: mongoose.Types.ObjectId, ref: "course" }],
         },
         suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],

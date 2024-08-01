@@ -19,11 +19,17 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET
 
 export const StudentRegister = errorWrapper(async (req, res, next) => {
     const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
-    if (!password || !email || !firstName || !lastName) return next(generateAPIError(`Incomplete details`, 400));
+    if (!password || !email || !firstName || !lastName) return { statusCode: 400, data: null, message: `Incomplete details` };
     const alreadyExists = await studentModel.findOne({ email: email });
-    if (alreadyExists) return next(generateAPIError(`Email already registered`, 400));
-    if (!Object.values(DestinationTypeEnum).includes(country)) return next(generateAPIError(`select destination country`, 400));
-    if (!Object.values(LanguageTypeEnum).includes(language)) return next(generateAPIError(`select language communication`, 400));
+    if (alreadyExists) return {
+        statusCode: 400, data: null, message: `Email already registered`
+    };
+    if (!Object.values(DestinationTypeEnum).includes(country)) return {
+        statusCode: 400, data: null, message: `select destination country`
+    };
+    if (!Object.values(LanguageTypeEnum).includes(language)) return {
+        statusCode: 400, data: null, message: `select language communication`
+    };
     const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country, language: language } });
     // const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
     // const Counsellor = await teamModel.findById(Counsellors[0]._id);
@@ -64,7 +70,11 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     // await Counsellor.save();
     // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
     res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-    return res.status(200).json({ success: true, message: `student registration successful`, data: { AccessToken, role: student.role || student.userType } });
+    return ({
+        statusCode: 200, message: `student registration successful`, data: {
+            AccessToken, role: student.role || student.userType
+        }
+    });
 });
 export const verifyEmail = errorWrapper(async (req, res, next) => {
     const { email, emailVerificationString } = req.params;
@@ -91,16 +101,18 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
 });
 export const TeamRegister = errorWrapper(async (req, res, next) => {
     const { email, firstName, lastName, password, role } = req.body;
-    if (!email || !firstName || !lastName || !password || !role) return next(generateAPIError(`Incomplete details`, 400));
+    if (!email || !firstName || !lastName || !password || !role) return { statusCode: 400, data: null, message: `Incomplete details` };
     const alreadyExists = await teamModel.findOne({ email: email });
-    if (alreadyExists) return next(generateAPIError(`Email Already Registered`, 400));
+    if (alreadyExists) return {
+        statusCode: 400, data: null, message: `Email Already Registered`
+    };
     const user = await teamModel.create({ email, firstName, lastName, password: await bcrypt.hash(password, 12), role });
     user.logs.push({
         action: `${role} Registration done`,
         details: `traditional registration done`
     })
     await user.save();
-    return res.status(200).json({ success: true, message: `${role} Registration successful`, data: { email, firstName, lastName, role }, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return ({ statusCode: 200, message: `${role} Registration successful`, data: { email, firstName, lastName, role } });
 });
 export const googleLogin = errorWrapper(async (req, res, next) => {
     const { credential } = req.body;
@@ -138,7 +150,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 })
                 await student.save();
                 res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-                return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
+                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             } else {
                 student.firstName = student.firstName || given_name || null;
                 student.lastName = student.lastName || family_name || null;
@@ -156,7 +168,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 })
                 await student.save();
                 res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-                return res.status(200).json({ success: true, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
+                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
             }
         } else {
             student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { language: "English" } });
@@ -189,11 +201,13 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             await student.save();
             // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
             res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-            return res.status(200).json({ success: true, message: `Google Registration Successful`, data: { AccessToken, role: student.userType } });
+            return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken, role: student.userType } });
         }
     }
     catch (error) {
         console.log(error);
-        return next(generateAPIError(error.message, 400))
+        return {
+            statusCode: 400, data: null, message: error.message
+        }
     }
 })

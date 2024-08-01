@@ -11,10 +11,16 @@ import { productModel } from "../../../models/Product.js";
 export const switchStage = errorWrapper(async (req, res, next) => {
     const { applicationId, status, stage, note } = req.body
     const application = await productModel.findById(applicationId)
-    if (!application) return next(generateAPIError(`invalid applicationId`, 400));
-    if (application.processCoordinator.toString() != req.user._id) return next(generateAPIError(`invalid access to this application`, 400));
-    if (application.status != status) return next(generateAPIError(`invalid status`, 400));
-    if (!Object.values(applicationStagesEnum).includes(stage)) return next(generateAPIError(`invalid stage`, 400));
+    if (!application) return { statusCode: 400, data: null, message: `invalid applicationId` };
+    if (application.processCoordinator.toString() != req.user._id) return {
+        statusCode: 400, data: null, message: `invalid access to this application`
+    };
+    if (application.status != status) return {
+        statusCode: 400, data: null, message: `invalid status`
+    };
+    if (!Object.values(applicationStagesEnum).includes(stage)) return {
+        statusCode: 400, data: null, message: `invalid stage`
+    };
     const logs = application.log.find(ele => ele.status == status)
     logs.stages.push({ name: stage, message: note })
     application.stage = stage
@@ -27,13 +33,15 @@ export const switchStage = errorWrapper(async (req, res, next) => {
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `stage shift success`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `stage shift success`, data: application })
 })
 export const addToChecklist = errorWrapper(async (req, res, next) => {
     const { applicationId, name, isChecked, desc } = req.body
-    if (!name) return next(generateAPIError(`name of item is required`, 400));
+    if (!name) return { statusCode: 400, data: null, message: `name of item is required` };
     const application = await productModel.findById(applicationId)
-    if (!application) return next(generateAPIError(`invalid applicationId`, 400));
+    if (!application) return {
+        statusCode: 400, data: null, message: `invalid applicationId`
+    };
     const checklistItem = { name: name }
     if (isChecked) checklistItem.isChecked = isChecked
     if (desc) checklistItem.desc = desc
@@ -61,14 +69,16 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
     ])
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `item added to checklist`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return { statusCode: 200, message: `item added to checklist`, data: application }
 })
 export const editItemInChecklist = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId, action, name, isChecked, desc, type } = req.body
     let application = await productModel.findById(applicationId);
-    if (!application) return next(generateAPIError(`invalid application ID`, 400));
+    if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
-    if (!checklistItem) return next(generateAPIError(`invalid checklist ID`, 400));
+    if (!checklistItem) return {
+        statusCode: 400, data: null, message: `invalid checklist ID`
+    };
     switch (action) {
         case "edit":
             if (name) checklistItem.name = name
@@ -82,7 +92,9 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
             if (checklistItem.doc) await Document.findByIdAndDelete(checklistItem.doc)
             await application.updateOne({ $pull: { docChecklist: { _id: checklistItemId } } });
             break;
-        default: return next(generateAPIError(`bad action, choose one among : delete,edit`, 400));
+        default: return {
+            statusCode: 400, data: null, message: `bad action, choose one among : delete,edit`
+        };
     }
     application = await productModel.findById(applicationId);
     await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
@@ -97,13 +109,15 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `checklist updated successfully`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `checklist updated successfully`, data: application })
 })
 export const cancellation = errorWrapper(async (req, res, next) => {
     const { applicationId, cancel } = req.body
     const application = await productModel.findById(applicationId)
-    if (!application) return next(generateAPIError(`invalid application ID`, 400));
-    if (!application.cancellationRequest) next(generateAPIError(`let user request for cancellation`, 400));
+    if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
+    if (!application.cancellationRequest) return {
+        statusCode: 400, data: null, message: `let user request for cancellation`
+    };
     if (cancel == true) {
         application.status = "Cancelled"
         application.log.push({ status: "Cancelled" })
@@ -119,14 +133,18 @@ export const cancellation = errorWrapper(async (req, res, next) => {
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: "cancellation request attended", data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: "cancellation request attended", data: application })
 })
 export const result = errorWrapper(async (req, res, next) => {
     const { applicationId, result, note } = req.body
     const application = await productModel.findById(applicationId)
-    if (!application) return next(generateAPIError(`invalid application ID`, 400));
-    if (application.status == result) return next(generateAPIError(`already status updated as ${result}`, 400));
-    if (application.status != "Processing") return next(generateAPIError(`application is not in processing state`, 400));
+    if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
+    if (application.status == result) return {
+        statusCode: 400, data: null, message: `already status updated as ${result}`
+    };
+    if (application.status != "Processing") return {
+        statusCode: 400, data: null, message: `application is not in processing state`
+    };
     const record = {}
     switch (result) {
         case "Accepted":
@@ -142,7 +160,9 @@ export const result = errorWrapper(async (req, res, next) => {
             record.status = result
             break;
         default:
-            return next(generateAPIError("invalid result", 400));
+            return {
+                statusCode: 400, data: null, message: "invalid result"
+            };
     }
     application.log.push(record)
     await application.save()
@@ -154,12 +174,12 @@ export const result = errorWrapper(async (req, res, next) => {
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `shift successful`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `shift successful`, data: application })
 })
 export const revertResult = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body
     const application = await productModel.findById(applicationId)
-    if (!application) return next(generateAPIError(`invalid application ID`, 400));
+    if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
     switch (application.status) {
         case "Accepted":
             application.log = application.log.filter(ele => ele.status != "Accepted")
@@ -180,5 +200,5 @@ export const revertResult = errorWrapper(async (req, res, next) => {
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `revert done`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `revert done`, data: application })
 })

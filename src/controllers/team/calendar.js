@@ -6,7 +6,7 @@ import { google } from "googleapis";
 
 export const generatingAuthUrl = errorWrapper(async (req, res, next) => {
     const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/userinfo.email"] });
-    res.status(200).json({ success: true, message: `auth url`, data: url });
+    ({ statusCode: 200, message: `auth url`, data: url });
 })
 export const googleAuthentication = errorWrapper(async (req, res, next) => {
     const { tokens } = await oauth2Client.getToken(req.query.code)
@@ -17,7 +17,7 @@ export const googleAuthentication = errorWrapper(async (req, res, next) => {
     });
     const { data } = await oauth2.userinfo.get();
     const user = await teamModel.findOne({ email: data.email })
-    if (!user) return next(generateAPIError(`user email mismatch`, 400));
+    if (!user) return { statusCode: 400, data: null, message: `user email mismatch` };
     user.googleTokens = {
         access_token: tokens.access_token,
         token_type: tokens.token_type,
@@ -35,10 +35,10 @@ export const googleAuthentication = errorWrapper(async (req, res, next) => {
         orderBy: 'updated',
     }
     const list = await calendar.events.list(filter);
-    return res.status(200).json({ success: true, message: `${user.role} calendar`, data: { numberOfItems: list.data.items.length, items: list.data.items } })
+    return ({ statusCode: 200, message: `${user.role} calendar`, data: { numberOfItems: list.data.items.length, items: list.data.items } })
 })
 export const calendarEvents = errorWrapper(async (req, res, next) => {
-    if (!req.user.googleTokens.access_token) return next(generateAPIError(`invalid google tokens`, 400));
+    if (!req.user.googleTokens.access_token) return { statusCode: 400, data: null, message: `invalid google tokens` };
     oauth2Client.setCredentials(req.user.googleTokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     const filter = {
@@ -49,5 +49,5 @@ export const calendarEvents = errorWrapper(async (req, res, next) => {
         orderBy: 'updated',
     }
     const { data } = await calendar.events.list(filter);
-    return res.status(200).json({ success: true, message: `${req.user.role} calendar`, data: { numberOfItems: data.items.length, items: data.items }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `${req.user.role} calendar`, data: { numberOfItems: data.items.length, items: data.items } })
 })

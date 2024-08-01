@@ -6,7 +6,7 @@ import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const allStudents = errorWrapper(async (req, res, next) => {
     const students = await studentModel.find({}, "firstName lastName email displayPicSrc recommendation counsellor activity")
-    return res.status(200).json({ success: true, message: `all students`, data: students, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `all students`, data: students };
 });
 
 export const singleStudent = errorWrapper(async (req, res, next) => {
@@ -17,24 +17,24 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
     await student.populate("recommendation")
     await universityModel.populate(student, [{ path: "activity.applied.application.university", select: "name code logoSrc" },]);
     await courseModel.populate(student, [{ path: "activity.applied.application.course", select: "name" },]);
-    if (!student) return next(generateAPIError(`Invalid id`, 400))
-    return res.status(200).json({ success: true, message: `single student details`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null });
+    if (!student) return { statusCode: 400, data: null, message: `Invalid id` }
+    return { statusCode: 200, message: `single student details`, data: student };
 });
 
 
 export const allCounsellors = errorWrapper(async (req, res, next) => {
     const counsellors = await teamModel.find({ role: "counsellor" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName  email displayPicSrc recommendation counsellor activity")
-    return res.status(200).json({ success: true, message: `all counsellors`, data: counsellors, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `all counsellors`, data: counsellors };
 });
 
 export const allprocessCoordinators = errorWrapper(async (req, res, next) => {
     const processCoordinators = await teamModel.find({ role: "processCoordinator" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName email displayPicSrc recommendation counsellor activity")
-    return res.status(200).json({ success: true, message: `all processCoordinators`, data: processCoordinators, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `all processCoordinators`, data: processCoordinators };
 });
 
 export const allDevelopers = errorWrapper(async (req, res, next) => {
     const developers = await teamModel.find({ role: "developer" }, "firstName lastName email displayPicSrc")
-    return res.status(200).json({ success: true, message: `all developers`, data: developers, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `all developers`, data: developers };
 });
 
 
@@ -43,29 +43,35 @@ export const allDevelopers = errorWrapper(async (req, res, next) => {
 //         const {id}=req.params
 //         const employee = await teamModel.findById(id)
 
-//         return res.status(200).json({ success: true, message: `deleted`, data: null })
+//         return { statusCode: 200, message: `deleted`, data: null }
 //     } catch (error) {
 //         console.log(error);
-// return next(generateAPIError(`${error.name}:${error.message}`, 500));
+// return { statusCode: 400, data: student , message:    `${error.name}:${error.message}`};
 // }
 // }
-export const search = errorWrapper(async (req, res, next) => {  
-    const keyword = req.query.search ? { $and: [{ role: req.query.role }, { $or: [{ firstName: { $regex: req.query.search, $options: "i" } }, { lastName: { $regex: req.query.search, $options: "i" } },{ email: { $regex: req.query.search, $options: "i" } }] }] } : {};
+export const search = errorWrapper(async (req, res, next) => {
+    const keyword = req.query.search ? { $and: [{ role: req.query.role }, { $or: [{ firstName: { $regex: req.query.search, $options: "i" } }, { lastName: { $regex: req.query.search, $options: "i" } }, { email: { $regex: req.query.search, $options: "i" } }] }] } : {};
     const searchResults = await teamModel.find(keyword, "firstName lastName displayPicSrc email")
-    return res.status(200).json({ success: true, message: `uname`, data: searchResults, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `uname`, data: searchResults };
 });
 
 export const student_transfer = errorWrapper(async (req, res, next) => {
     const { studentId, fromId, toId, role } = req.body
     const student = await studentModel.findById(studentId)
-    if (!student) return next(generateAPIError(`Invalid StudentId`, 400));
+    if (!student) return { statusCode: 400, data: null, message: `Invalid StudentId` };
     console.log(student[role].toString(), fromId);
-    if (student[role].toString() != fromId) return next(generateAPIError(`${role} mismatch from student side`, 400));
+    if (student[role].toString() != fromId) return {
+        statusCode: 400, data: null, message: `${role} mismatch from student side`
+    };
     const from = await teamModel.findById(fromId)
-    if (!from || from.role != role) return next(generateAPIError(`Invalid fromId`, 400));
+    if (!from || from.role != role) return {
+        statusCode: 400, data: null, message: `Invalid fromId`
+    };
     from.students = from.students.filter(ele => ele.profile.toString() == studentId)
     const to = await teamModel.findById(toId)
-    if (!to || to.role != role) return next(generateAPIError(`Invalid toId`, 400));
+    if (!to || to.role != role) return {
+        statusCode: 400, data: null, message: `Invalid toId`
+    };
     to.students.push({ profile: studentId, stage: "Fresh Lead" })
     student[role] = toId
     from.logs.push({
@@ -83,5 +89,5 @@ export const student_transfer = errorWrapper(async (req, res, next) => {
     await from.save()
     await to.save()
     await student.save()
-    return res.status(200).json({ success: true, message: `Shift Successful`, data: to.students, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { success: true, message: `Shift Successful`, data: to.students };
 })

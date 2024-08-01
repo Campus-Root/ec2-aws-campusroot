@@ -7,7 +7,6 @@ import Document from "../../models/Uploads.js";
 import { teamModel } from "../../models/Team.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import 'dotenv/config';
 import exchangeModel from "../../models/ExchangeRates.js";
@@ -18,49 +17,51 @@ import { packageModel } from "../../models/Package.js";
 import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
 import { priceModel } from "../../models/prices.js";
-import { CartSchema } from "../../schemas/student.js";
+import { CartSchema, CheckoutSchema } from "../../schemas/student.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next) => {
     const { error, value } = CartSchema.validate(req.body)
-    if (error) return next(generateAPIError(error.details[0].message, 400, [value]));
-    const { action, category, data, itemId } = value;
-    let found = req.user.activity.cart.filter(ele => (ele.data.course.toString() == data.course && new Date(ele.data.intake) == new Date(data.intake)) || ele._id.toString() == itemId)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { action, category, courseId, intake, itemId } = value;
+    let found = req.user.activity.cart.filter(ele => (ele.courseId.toString() == courseId && new Date(ele.intake) == new Date(intake)) || ele._id.toString() == itemId)
     let course, intakeExists;
     switch (action) {
         case 'add':
-            course = await courseModel.findById(data.course, "startDate elite");
-            if (!course) return next(generateAPIError(`Invalid courseId`, 400, [value]));
-            if (!category) return next(generateAPIError(`category required`, 400, [value]));
-            if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return next(generateAPIError(`category mismatch`, 400, [value]));
-            intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(data.intake).getUTCMonth());
-            if (intakeExists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400, [value]));
-            if (found.length > 0) return next(generateAPIError(`item already exists`, 400, [value]));
-            req.user.activity.cart.push({ category: category, data: data });
+            course = await courseModel.findById(courseId, "startDate elite");
+            if (!course) return { statusCode: 400, message: `Invalid courseId`, data: [value] };
+            if (!category) return { statusCode: 400, message: `category required`, data: [value] };
+            if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return { statusCode: 400, message: `category mismatch`, data: [value] };
+            intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(intake).getUTCMonth());
+            if (intakeExists.length <= 0) return { statusCode: 400, message: `intake doesn't exist`, data: [value] };
+            if (found.length > 0) return { statusCode: 400, message: `item already exists`, data: [value] };
+            req.user.activity.cart.push({ category: category, course: courseId, intake: intake });
             break;
         case 'remove':
-            if (found.length == 0) return next(generateAPIError(`item doesn't exists`, 400, [value]));
+            if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
             req.user.activity.cart = req.user.activity.cart.filter(ele => ele._id.toString() != itemId)
             break;
         case 'update':
-            if (found.length == 0) return next(generateAPIError(`item doesn't exists`, 400, [value]));
-            course = await courseModel.findById(data.course, "startDate elite");
-            if (!course) return next(generateAPIError(`Invalid courseId`, 400, [value]));
-            if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return next(generateAPIError(`category mismatch`, 400, [value]));
-            intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(data.intake).getUTCMonth());
-            if (intakeExists.length <= 0) return next(generateAPIError(`intake doesn't exist`, 400, [value]));
-            found[0].category = category;
-            found[0].data = data;
+            if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
+            course = await courseModel.findById(courseId, "startDate elite");
+            if (!course) return { statusCode: 400, message: `Invalid courseId`, data: [value] };
+            if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return { statusCode: 400, message: `category mismatch`, data: [value] };
+            intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(intake).getUTCMonth());
+            if (intakeExists.length <= 0) return { statusCode: 400, message: `intake doesn't exist`, data: [value] };
+            found[0].category = category ? category : found[0].category;
+            found[0].course = courseId ? courseId : found[0].course;
+            found[0].intake = intake ? intake : found[0].intake;
             break;
     }
     await req.user.save();
-    await courseModel.populate(req.user, { path: "activity.cart.data.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },)
-    await universityModel.populate(req.user, { path: "activity.cart.data.course.university", select: "name logoSrc location type establishedYear ", })
-    return res.status(200).json({ success: true, message: `cart updated successfully`, data: req.user.activity.cart, AccessToken: req.AccessToken ? req.AccessToken : null });
+    await courseModel.populate(req.user, { path: "activity.cart.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },)
+    await universityModel.populate(req.user, { path: "activity.cart.course.university", select: "name logoSrc location type establishedYear ", })
+    return { statusCode: 200, message: `cart updated successfully`, data: req.user.activity.cart }
 })
 export const wishList = errorWrapper(async (req, res, next) => {
-    const { action, courseId } = req.body;
-    if (!(await courseModel.findById(courseId))) return next(generateAPIError(`invalid courseId`, 400, [{ action, courseId }]));
-    if (!["push", "pull"].includes(action)) return next(generateAPIError(`invalid action`, 400, [{ action, courseId }]));
+    const { error, value } = Joi.object({ courseId: Joi.string().required(), action: Joi.string().valid('push', 'pull') }).validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { action, courseId } = value;
+    if (!(await courseModel.findById(courseId))) return { statusCode: 400, message: `invalid courseId`, data: [value] };
     let student
     switch (action) {
         case "push":
@@ -70,25 +71,28 @@ export const wishList = errorWrapper(async (req, res, next) => {
             student = await studentModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.wishList": courseId } }, { new: true });
             break;
     }
-
     await Promise.all([
         await courseModel.populate(student, { path: "activity.wishList", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },),
         await universityModel.populate(student, { path: "activity.wishList.university", select: "name logoSrc location type establishedYear ", })
     ])
-    res.status(200).json({ success: true, message: `wish-list successfully`, data: student.activity.wishList, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `${action} successful`, data: student.activity.wishList };
 });
 export const checkout = errorWrapper(async (req, res, next) => {
-    const { packageId, products, userCurrency } = req.body;
+    const { error, value } = CheckoutSchema.validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { packageId, products, userCurrency } = value;
     const hasPackageId = Boolean(packageId);
     const hasProducts = Array.isArray(products) && products.length > 0;
     let newProductIds = [], course, Package, errorStack = [], newProducts, intakeExists, insertedProducts, totalPrice = 0, currency = "INR";
+    if (hasPackageId) {
+        Package = await packageModel.findById(packageId);
+        if (!Package) return { statusCode: 400, message: `invalid packageId`, data: { packageId: packageId } };
+        if (!Package.active) return { statusCode: 400, message: `inactive package selected`, data: { packageId: packageId } };
+    }
     switch (true) {
         case !hasPackageId && !hasProducts:
-            return next(generateAPIError(`either add packageId or products to checkout`, 400));
+            return { statusCode: 400, message: `either add packageId or products to checkout`, data: null };
         case hasPackageId && !hasProducts:
-            Package = await packageModel.findById(packageId);
-            if (!Package) return next(generateAPIError(`invalid packageId`, 400, { packageId: packageId }));
-            if (!Package.active) return next(generateAPIError(`inactive package selected`, 400, { packageId: packageId }));
             totalPrice = Package.priceDetails.totalPrice;
             currency = Package.priceDetails.currency;
             break;
@@ -97,70 +101,61 @@ export const checkout = errorWrapper(async (req, res, next) => {
             for (const product of products) {
                 let newProductDetails = {
                     user: req.user._id,
-                    course: product.data.course ? product.data.course : null,
-                    intake: new Date(product.data.intake) ? new Date(product.data.intake) : null,
+                    course: product.course,
+                    intake: new Date(product.intake),
+                    category: product.category
                 }
                 course = await courseModel.findById(newProductDetails.course, "elite startDate university")
                 if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });  //product course check
-                if (!newProductDetails.intake || new Date(newProductDetails.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
                 if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` }); //product intake check
                 if (intakeExists.length > 0 && intakeExists[0].deadlineMonth && !isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
-                if (course && course.university) newProductDetails.university = course.university // adding university
-                let priceObject = await priceModel.findOne({ productCategory: product.category }, "price currency")
+                let priceObject = await priceModel.findOne({ productCategory: newProductDetails.category }, "price currency")
                 totalPrice += Number(priceObject.price)
                 let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: new Date(newProductDetails.intake), category: product.category }, "_id")
                 if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // duplicates check
-                if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
-                if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
-                if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
-                newProductDetails.category = product.category // adding category
+                if (newProductDetails.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${newProductDetails.category} mismatch` }); // product elite or premium check
+                if (newProductDetails.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${newProductDetails.category} mismatch` }); // product elite or premium check
                 newProducts.push(newProductDetails)
             }
-            if (errorStack.length > 0) return next(generateAPIError(`Invalid products`, 400, errorStack));
+            if (errorStack.length > 0) return { statusCode: 400, message: `Invalid products`, data: errorStack };
             insertedProducts = await productModel.insertMany(newProducts);
             newProductIds = insertedProducts.map(product => product._id);
             break;
         case hasPackageId && hasProducts:
-            Package = await packageModel.findById(packageId);
-            if (!Package) return next(generateAPIError(`invalid packageId`, 400, { packageId: packageId }));
-            if (!Package.active) return next(generateAPIError(`inactive package selected`, 400, { packageId: packageId }));
             totalPrice = Package.priceDetails.totalPrice;
             currency = Package.priceDetails.currency;
             const rules = new Map();
             Package.products.forEach(ele => { rules.set(ele.category, ele.quantity) });
-            let productsCanBeAdded = new Map(rules)
+            let productsAdded = new Map(rules)
             newProducts = [];
             for (const product of products) {
                 let newProductDetails = {
                     user: req.user._id,
-                    course: product.data.course ? product.data.course : null,
-                    intake: new Date(product.data.intake) ? new Date(product.data.intake) : null
+                    course: product.course,
+                    intake: new Date(product.intake),
+                    category: product.category
                 }
-                const availableQuantity = productsCanBeAdded.get(product.category) || 0;
+                const availableQuantity = productsAdded.get(newProductDetails.category) || 0;
                 if (availableQuantity <= 0) errorStack.push({ ...product, errorMessage: `limit exceeded` })       // quantity check based on category
-                productsCanBeAdded.set(product.category, availableQuantity - 1);
+                productsAdded.set(newProductDetails.category, availableQuantity - 1);
                 course = await courseModel.findById(newProductDetails.course, "location elite startDate university")
                 if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });             // product course check
                 if (!Package.country.includes(course.location.country)) errorStack.push({ ...product, errorMessage: `country mismatched` }); // product country check
-                if (!newProductDetails.intake || new Date(newProductDetails.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
                 if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` });   // product intake check
                 if (intakeExists.length > 0 && intakeExists[0].deadlineMonth && !isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
-                if (course && course.university) newProductDetails.university = course.university // adding university
                 let alreadyExists = await productModel.find({ course: newProductDetails.course, user: req.user._id, intake: new Date(newProductDetails.intake), category: product.category }, "_id")
                 if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // product duplicate check
-                if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
-                if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
-                if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
-                newProductDetails.category = product.category // adding category
+                if (newProductDetails.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${newProductDetails.category} mismatch` }); // product elite or premium check
+                if (newProductDetails.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${newProductDetails.category} mismatch` }); // product elite or premium check
                 newProducts.push(newProductDetails)
             }
-            if (errorStack.length > 0) return next(generateAPIError(`Invalid products`, 400, errorStack));
+            if (errorStack.length > 0) return { statusCode: 400, message: `Invalid products`, data: errorStack };
             insertedProducts = await productModel.insertMany(newProducts);
             newProductIds = insertedProducts.map(product => product._id);
             break;
-        default: return next(generateAPIError(`some internal server error`, 500));
+        default: return { statusCode: 500, message: `some internal server error`, data: null };
     }
     if (totalPrice == 0) {
         const order = await orderModel.create({
@@ -177,8 +172,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
             status: "paid",
         })
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
-        return res.status(200).json({ success: true, message: 'order placed', data: { order, razorPay: null }, AccessToken: req.AccessToken ? req.AccessToken : null });
-
+        return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
     }
     const orderOptions = {
         currency: "INR",
@@ -198,14 +192,43 @@ export const checkout = errorWrapper(async (req, res, next) => {
             razorpay_order_id: razorPay.id,
             amount: razorPay.amount,
             amount_due: razorPay.amount_due,
-            created_at: 1721380929,
+            created_at: razorPay.created_at,
             currency: razorPay.currency,
             misc: razorPay
         },
         status: "pending",
+        logs: [{ action: "new Order Created", details: orderOptions.notes }],
     })
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
-    return res.status(200).json({ success: true, message: 'order placed', data: { razorPay, order }, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
+})
+export const reCheckout = errorWrapper(async (req, res, next) => {
+    const { error, value } = Joi.object({ orderId: Joi.string().required() }).validate(req.query)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { orderId } = value;
+    const order = await orderModel.findOne({ _id: orderId, student: req.user._id });
+    if (!order) return { statusCode: 400, message: `invalid orderId or you might not have permission`, data: { orderId: orderId } };
+    if (order.paymentDetails.paymentStatus === "paid") return { statusCode: 400, message: `already paid, no need for reCheckout`, data: { order: order } };
+    const orderOptions = {
+        currency: order.paymentDetails.currency,
+        amount: Number(order.paymentDetails.amount),
+        notes: {
+            "note_key": `purchase initiated by ${req.user.firstName} ${req.user.lastName}`,
+            "item_ids": { "package": order.Package ? order.Package : null, "products": order.products }
+        }
+    }
+    const razorPay = await RazorpayInstance.orders.create(orderOptions);
+    order.paymentDetails.paymentStatus = "pending"
+    order.paymentDetails.razorpay_order_id = razorPay.id
+    order.paymentDetails.amount = razorPay.amount
+    order.paymentDetails.amount_due = razorPay.amount_due
+    order.paymentDetails.created_at = razorPay.created_at
+    order.paymentDetails.currency = razorPay.currency
+    order.paymentDetails.misc = razorPay
+    order.logs.push({ action: "re-checkout initiated", details: orderOptions.notes })
+    await order.save()
+    await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { logs: { action: `order attempted for re-Checkout`, details: `orderId:${order._id}` } } })
+    return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 })
 export const paymentVerification = errorWrapper(async (req, res, next) => {
     const { razorpay_order_id } = req.body;
@@ -257,9 +280,9 @@ export const orderInfo = errorWrapper(async (req, res, next) => {
     const { orderId } = req.query;
     // https://campusroot.com/paymentsuccess?reference=669fa190dc22145b5fadc789
     const order = await orderModel.findOne({ _id: orderId, student: req.user._id });
+    if (!order) return { statusCode: 400, message: `invalid orderId or you might not have permission`, data: { orderId: orderId } };
     await packageModel.populate(order, { path: "Package", select: "-logs" })
-    if (!order) return next(generateAPIError("invalid orderId or you might not have permission", 400, orderId));
-    return res.status(200).json({ success: true, message: 'order info', data: order, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: 'order info', data: order };
 })
 export const order = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
@@ -268,18 +291,18 @@ export const order = errorWrapper(async (req, res, next) => {
     for (const product of products) {
         let newProductDetails = {
             user: req.user._id,
-            course: product.data.course ? product.data.course : null,
-            intake: product.data.intake ? product.data.intake : null,
+            course: product.course ? product.course : null,
+            intake: product.intake ? product.intake : null,
             advisors: [],
-            order: req.order._id
+            order: req.order._id,
+            category: product.category
         }, intakeExists
         switch (product.category) {
             case ProductCategoryEnum.PREMIUM || ProductCategoryEnum.ELITE:
                 newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
                 newProductDetails.status = "Processing"
                 newProductDetails.stage = "Waiting For Counsellor's Approval"
-                course = await courseModel.findById(newProductDetails.course, "location startDate university")
-                if (course.university) newProductDetails.university = course.university  // adding university
+                course = await courseModel.findById(newProductDetails.course, "location startDate")
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
                 if (!isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
                 country = course.location.country
@@ -326,11 +349,11 @@ export const order = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await packageModel.populate(req.user, { path: "orders.Package" })
     await productModel.populate(req.user, { path: "orders.products", path: "activity.products" })
-    return res.status(200).json({ success: true, message: 'order', data: req.order, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: 'order', data: req.order };
 });
 export const requestCancellation = errorWrapper(async (req, res, next) => {
     const updatedApplication = await productModel.findOneAndUpdate({ _id: req.params.applicationId }, { $set: { cancellationRequest: true } }, { new: true });
-    if (!updatedApplication) return next(generateAPIError(`Invalid application ID`, 400));
+    if (!updatedApplication) return { statusCode: 400, message: `Invalid application ID`, data: { applicationId: req.params.applicationId } };
     await Document.populate(updatedApplication, { path: "docChecklist.doc", select: "name contentType createdAt", })
     await userModel.populate(updatedApplication, [
         { path: "user", select: "firstName lastName email displayPicSrc" },
@@ -343,15 +366,15 @@ export const requestCancellation = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await universityModel.populate(updatedApplication, { path: "university", select: "name logoSrc location type establishedYear " });
     await courseModel.populate(updatedApplication, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    res.status(200).json({ success: true, message: 'Application cancellation Request sent to processCoordinator', data: updatedApplication, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: 'Application cancellation Request sent to processCoordinator', data: updatedApplication };
 })
 // ..............applications documents...................
 export const uploadInApplication = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId } = req.body;
     const application = await productModel.findById(applicationId);
-    if (!application) return next(generateAPIError(`invalid application ID`, 400));
+    if (!application) return { statusCode: 400, message: `invalid application ID`, data: { applicationId: applicationId } };
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
-    if (!checklistItem) return next(generateAPIError(`invalid checklist ID`, 400));
+    if (!checklistItem) return { statusCode: 400, message: `invalid checklist ID`, data: { checklistItemId: checklistItemId } };
     const { originalname, path, mimetype } = req.file;
     const data = fs.readFileSync(path);
     const upload = { name: originalname, data: data, contentType: mimetype, user: req.user._id, viewers: [req.user._id, application.processCoordinator], type: "Application" }
@@ -374,31 +397,26 @@ export const uploadInApplication = errorWrapper(async (req, res, next) => {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
 
         if (application.course.currency.code !== req.user.preference.currency) {
-            if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) {
-                next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
-            }
+            if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) return { statusCode: 400, message: `Exchange rates for the specified currencies are not available`, data: { currency: req.user.preference.currency } };
             application.course.tuitionFee.tuitionFee = costConversion(application.course.tuitionFee.tuitionFee, application.course.currency.code, req.user.preference.currency, rates[application.course.currency.code], rates[req.user.preference.currency]);
             application.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
         }
     }
-    res.status(200).json({ success: true, message: 'Application checklist updated', data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: 'Application checklist updated', data: application };
 })
 export const deleteUploadedFromApplication = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId, documentId } = req.body;
     const doc = await Document.findById(documentId)
-    if (!doc) return next(generateAPIError(`invalid document ID`, 400));
+    if (!doc) return { statusCode: 400, message: `invalid document ID`, data: { documentId: documentId } };
     const application = await productModel.findById(applicationId);
-    if (!application) return next(generateAPIError(`invalid application ID`, 400));
+    if (!application) return { statusCode: 400, message: `invalid application ID`, data: { applicationId: applicationId } };
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
-    if (!checklistItem) return next(generateAPIError(`invalid checklist ID`, 400));
-    if (doc.user.toString() != req.user._id.toString()) return next(generateAPIError(`you don't have access to delete or modify this content`, 400));
-    if (checklistItem.doc.toString() != documentId) return next(generateAPIError(`list item docId doesn't match with documentId`, 400));
+    if (!checklistItem) return { statusCode: 400, message: `invalid checklist ID`, data: { checklistItemId: checklistItemId } };
+    if (doc.user.toString() != req.user._id.toString()) return { statusCode: 400, message: `you don't have access to delete or modify this content`, data: { applicationId, checklistItemId, documentId } };
+    if (checklistItem.doc.toString() != documentId) return { statusCode: 400, message: `list item docId doesn't match with documentId`, data: { applicationId, checklistItemId, documentId } };
     checklistItem.doc = null
     checklistItem.isChecked = false
-    req.user.logs.push({
-        action: `document deleted in application`,
-        details: `applicationId:${applicationId}`
-    })
+    req.user.logs.push({ action: `document deleted in application`, details: `applicationId:${applicationId}` })
     await req.user.save()
     await Promise.all([
         await application.save(),
@@ -409,45 +427,37 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
     ])
     if (req.user.preference.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-
         if (application.course.currency.code !== req.user.preference.currency) {
             if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) {
-                next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+                return { statusCode: 400, message: `Exchange rates for the specified currencies are not available`, data: { currency: req.user.preference.currency } };
             }
             application.course.tuitionFee.tuitionFee = costConversion(application.course.tuitionFee.tuitionFee, application.course.currency.code, req.user.preference.currency, rates[application.course.currency.code], rates[req.user.preference.currency]);
             application.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
         }
     }
-    return res.status(200).json({ success: true, message: `doc deleted`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `doc deleted`, data: application };
 })
 export const forceForwardApply = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body;
     const application = await productModel.findById(applicationId)
-    if (!application) return next(generateAPIError("invalid ApplicationId"))
-    if (application.user.toString() != req.user._id.toString()) return next(generateAPIError("invalid Access"))
-    if (application.approval.counsellorApproval !== false) return next(generateAPIError("Wait for Counsellors Response"))
+    if (!application) return { statusCode: 400, message: `invalid ApplicationId`, data: { applicationId: applicationId } };
+    if (application.user.toString() != req.user._id.toString()) return { statusCode: 400, message: `invalid Access`, data: { applicationId: applicationId } };
+    if (application.approval.counsellorApproval !== false) return { statusCode: 400, message: `Wait for Counsellors Response`, data: { applicationId: applicationId } };
     application.approval.userConsent = true
     await application.save()
-    req.user.logs.push({
-        action: `Application forwarded forcefully`,
-        details: `applicationId:${applicationId}`
-    })
+    req.user.logs.push({ action: `Application forwarded forcefully`, details: `applicationId:${applicationId}` })
     await req.user.save()
-    return res.status(200).json({ success: true, message: `Applied Forcefully`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return { statusCode: 200, message: `Applied Forcefully`, data: application };
 })
 export const removeForceApply = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body;
     const application = await productModel.findById(applicationId)
-    if (!application) return next(generateAPIError("invalid ApplicationId"))
-    if (application.user.toString() != req.user._id.toString()) return next(generateAPIError("invalid Access"))
-    if (application.approval.counsellorApproval !== false) return next(generateAPIError("Wait for Counsellors Response"))
+    if (!application) return { statusCode: 400, message: `invalid ApplicationId`, data: { applicationId: applicationId } };
+    if (application.user.toString() != req.user._id.toString()) return { statusCode: 400, message: `invalid Access`, data: { applicationId: applicationId } };
+    if (application.approval.counsellorApproval !== false) return { statusCode: 400, message: `Wait for Counsellors Response`, data: { applicationId: applicationId } };
     application.approval.userConsent = false
     await application.save()
-    req.user.logs.push({
-        action: `Removed forceful apply`,
-        details: `applicationId:${applicationId}`
-    })
+    req.user.logs.push({ action: `Removed forceful apply`, details: `applicationId:${applicationId}` })
     await req.user.save()
-    return res.status(200).json({ success: true, message: `removed forced apply`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null });
-
+    return { statusCode: 200, message: `removed forced apply`, data: application };
 })

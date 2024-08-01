@@ -9,12 +9,18 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 
 export const postMessages = errorWrapper(async (req, res, next) => {
     const { content, chatId, repliedTo } = req.body
-    if (!chatId) return next(generateAPIError(`incomplete chatID`, 400));
-    if (!content && !req.file) return next(generateAPIError(`incomplete content or attachment`, 400));
+    if (!chatId) return { statusCode: 400, data: null, message: `incomplete chatID` };
+    if (!content && !req.file) return {
+        statusCode: 400, data: null, message: `incomplete content or attachment`
+    };
     const user = await userModel.findById(req.decoded.id)
     const chat = await chatModel.findById(chatId)
-    if (!chat) return next(generateAPIError(`invalid chatID`, 400));
-    if (!chat.participants.includes(req.decoded.id)) return next(generateAPIError(`invalid sender`, 400));
+    if (!chat) return {
+        statusCode: 400, data: null, message: `invalid chatID`
+    };
+    if (!chat.participants.includes(req.decoded.id)) return {
+        statusCode: 400, data: null, message: `invalid sender`
+    };
     const { encryptedData, key } = encrypt(content)
     let message = await messageModel.create({ sender: user._id, content: encryptedData, iv: key, chat: chatId })
     if (req.file) {
@@ -41,13 +47,13 @@ export const postMessages = errorWrapper(async (req, res, next) => {
     await chat.populate("lastMessage")
     chat.unSeenMessages.forEach(ele => { ele.message.content = decrypt(ele.message.iv, ele.message.content); });
     if (chat.lastMessage) chat.lastMessage.content = decrypt(chat.lastMessage.iv, chat.lastMessage.content)
-    return res.status(200).json({ success: true, message: `messages`, data: { message: message, chat }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `messages`, data: { message: message, chat } })
 })
 export const fetchMessages = errorWrapper(async (req, res, next) => {
     const { chatId } = req.params
     const { page = 1, pageSize = 20 } = req.query;
     const chat = await chatModel.findById(chatId)
-    if (!chat) return next(generateAPIError(`invalid chat id`, 400));
+    if (!chat) return { statusCode: 400, data: null, message: `invalid chat id` };
     const messagesCount = await messageModel.countDocuments({ chat: chatId });
     const totalPages = Math.ceil(messagesCount / pageSize);
     const messages = await messageModel
@@ -63,20 +69,22 @@ export const fetchMessages = errorWrapper(async (req, res, next) => {
         if (decryptedMessage.repliedTo) decryptedMessage.repliedTo.decoded = decrypt(message.repliedTo.iv, message.repliedTo.content);
         return decryptedMessage;
     });
-    return res.status(200).json({ success: true, message: `messages`, data: decryptedMessages, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize }, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `messages`, data: decryptedMessages, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
 export const downloadSharedDocument = errorWrapper(async (req, res, next) => {
     const { id } = req.params
     const document = await Document.findById(id)
-    if (!document) return next(generateAPIError(`invalid Document Id`, 401));
-    // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return next(generateAPIError(`access denied`, 401));
+    if (!document) return { statusCode: 400, data: null, message: `invalid Document Id` };
+    // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return { statusCode: 400, data: student , message:    `access denied`};
     return res.contentType(document.contentType).send(document.data);
 })
 export const seeMessages = errorWrapper(async (req, res, next) => {
     const { chatId } = req.params
     const chat = await chatModel.findById(chatId).populate("unSeenMessages")
-    if (!chat) return next(generateAPIError(`invalid chat id`, 400));
-    if (!chat.participants.includes(req.decoded.id)) return next(generateAPIError(`invalid access to private chats`, 400));
+    if (!chat) return { statusCode: 400, data: null, message: `invalid chat id` };
+    if (!chat.participants.includes(req.decoded.id)) return {
+        statusCode: 400, data: null, message: `invalid access to private chats`
+    };
     let newUnSeenMessages = []
     chat.unSeenMessages.forEach(ele => {
         if (!ele.seen.includes(req.decoded.id.toString())) ele.seen.push(req.decoded.id.toString())
@@ -88,5 +96,5 @@ export const seeMessages = errorWrapper(async (req, res, next) => {
     await messageModel.populate(chat, [{ path: "unSeenMessages.message", }, { path: "lastMessage" }])
     if (chat.unSeenMessages) chat.unSeenMessages.forEach(ele => ele.message.content = decrypt(ele.message.iv, ele.message.content));
     if (chat.lastMessage) chat.lastMessage.content = decrypt(chat.lastMessage.iv, chat.lastMessage.content);
-    return res.status(200).json({ success: true, message: `seen successfully`, data: chat, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `seen successfully`, data: chat })
 })

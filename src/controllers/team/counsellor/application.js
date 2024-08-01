@@ -8,8 +8,10 @@ import { productModel } from "../../../models/Product.js";
 export const approval = errorWrapper(async (req, res, next) => {
     const { applicationId, action, justification } = req.body
     const application = await productModel.findById(applicationId);
-    if (application.counsellor.toString() != req.user._id) return next(generateAPIError(`invalid access`, 400));
-    if (!justification) return next(generateAPIError(`justification necessary`, 400));
+    if (application.counsellor.toString() != req.user._id) return { statusCode: 400, data: null, message: `invalid access` };
+    if (!justification) return {
+        statusCode: 400, data: null, message: `justification necessary`
+    };
     const historyLog = application.log.find(ele => ele.status == "Processing")
     switch (action) {
         case "approve":
@@ -24,7 +26,9 @@ export const approval = errorWrapper(async (req, res, next) => {
             application.stage = "Counsellor Disapproved"
             historyLog.stages.push({ name: "Counsellor Disapproved", });
             break;
-        default: return next(generateAPIError(`invalid action`, 400));
+        default: return {
+            statusCode: 400, data: null, message: `invalid action`
+        };
     }
     await application.save()
     req.user.logs.push({
@@ -35,5 +39,5 @@ export const approval = errorWrapper(async (req, res, next) => {
     await teamModel.updateOne({ _id: req.user._id }, { $pull: { newApplications: applicationId } });
     await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear" });
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
-    return res.status(200).json({ success: true, message: `${action} successful`, data: application, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `${action} successful`, data: application })
 })

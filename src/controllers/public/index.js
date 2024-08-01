@@ -31,7 +31,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort({ uni_rating: -1, courses: -1 }).skip(skip).limit(perPage);
             for (const university of listOfUniversities) {
                 if (req.body.currency && university.currency.code !== req.body.currency) {
-                    if (!rates[university.currency.code] || !rates[req.body.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+                    if (!rates[university.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
                     university.cost = university.cost.map(ele => {
                         return {
                             name: ele.name,
@@ -44,7 +44,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             }
             totalDocs = await universityModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
-            return res.status(200).json({ success: true, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
+            return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
@@ -120,7 +120,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, elite: 1, "AdmissionsRequirements.LanguageRequirements": 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
-                    if (!rates[ele.currency.code] || !rates[req.body.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+                    if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
                     if (ele.currency.code != req.body.currency) {
                         ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.body.currency, rates[ele.currency.code], rates[req.body.currency])
                         ele.currency = { code: req.body.currency, symbol: currencySymbols[req.body.currency] }
@@ -131,20 +131,20 @@ export const listings = errorWrapper(async (req, res, next) => {
             totalDocs = await courseModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.filterData.length > 0) courses = courses.sort(() => Math.random() - 0.5)
-            return res.status(200).json({ success: true, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
+            return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "destinations":
             const destinations = await destinationModel.find({})
-            return res.status(200).json({ success: true, message: `all destinations`, data: { list: destinations } })
+            return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
     }
 })
 export const oneUniversity = errorWrapper(async (req, res, next) => {
     let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 })
-    if (!university) return res.status(400).json({ success: true, message: `university ID invalid`, data: null })
+    if (!university) return res.status(400).json({ statusCode: 200, message: `university ID invalid`, data: null })
     university = await university.populate("userReviews", "rating user comment")
     university = await university.populate("userReviews.user", "firstName lastName displayPicSrc")
     if (req.query.currency && university.currency.code !== req.query.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
-        if (!rates[university.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+        if (!rates[university.currency.code] || !rates[req.query.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
         university.cost = university.cost.map(ele => {
             return {
                 name: ele.name,
@@ -154,7 +154,7 @@ export const oneUniversity = errorWrapper(async (req, res, next) => {
         });
         university.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
         // university.courses = university.courses.map(ele => {
-        //     if (!rates[ele.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+        //     if (!rates[ele.currency.code] || !rates[req.query.currency]) { statusCode: 400, data: student , message:    'Exchange rates for the specified currencies are not available'};
         //     if (ele.currency.code != req.query.currency) {
         //         ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.query.currency, rates[ele.currency.code], rates[req.query.currency])
         //         ele.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
@@ -162,7 +162,7 @@ export const oneUniversity = errorWrapper(async (req, res, next) => {
         //     return ele;
         // });
     }
-    return res.status(200).json({ success: true, message: `single university`, data: university })
+    return ({ statusCode: 200, message: `single university`, data: university })
 })
 export const oneCourse = errorWrapper(async (req, res, next) => {
     let course = await courseModel
@@ -181,14 +181,14 @@ export const oneCourse = errorWrapper(async (req, res, next) => {
             "stemDetails.stemLink": 0
         })
         .populate("university", "name location ranking cost currency type logoSrc pictureSrc establishedYear")
-    if (!course) return res.status(400).json({ success: true, message: `course ID invalid`, data: null })
+    if (!course) return res.status(400).json({ statusCode: 200, message: `course ID invalid`, data: null })
     if (req.query.currency && course.currency.code !== req.query.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
-        if (!rates[course.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+        if (!rates[course.currency.code] || !rates[req.query.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
         course.tuitionFee.tuitionFee = costConversion(course.tuitionFee.tuitionFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
         course.applicationDetails.applicationFee = costConversion(course.applicationDetails.applicationFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
         course.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
-        if (!rates[course.university.currency.code] || !rates[req.query.currency]) next(generateAPIError('Exchange rates for the specified currencies are not available', 400));
+        if (!rates[course.university.currency.code] || !rates[req.query.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
         course.university.cost = course.university.cost.map(ele => {
             return {
                 name: ele.name,
@@ -198,23 +198,23 @@ export const oneCourse = errorWrapper(async (req, res, next) => {
         });
         course.university.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
     }
-    return res.status(200).json({ success: true, message: `single course`, data: course })
+    return ({ statusCode: 200, message: `single course`, data: course })
 })
 export const PublicProfile = errorWrapper(async (req, res, next) => {
     const { id } = req.params
     if (!id) return res.status(400).json({ success: false, message: "no id provided", data: null })
     const profile = await studentModel.findById(id, "firstName lastName displayPicSrc activity")
     if (!profile) return res.status(400).json({ success: false, message: "invalid id", data: null })
-    return res.status(200).json({ success: true, message: "public profile", data: profile, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: "public profile", data: profile })
 })
 export const CommunityProfiles = errorWrapper(async (req, res, next) => {
     const { limit } = req.query
     const profiles = await studentModel.aggregate([{ $sample: { size: +limit || 10 } }, { $project: { _id: 1, displayPicSrc: 1, firstName: 1, lastName: 1, activity: 1 } }]);
-    return res.status(200).json({ success: true, message: "public profiles", data: profiles, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: "public profiles", data: profiles })
 })
 export const counsellors = errorWrapper(async (req, res, next) => {
     const counsellors = await teamModel.find({ role: "counsellor" }, { firstName: 1, lastName: 1, numberOfStudentsAssisted: 1, displayPicSrc: 1 })
-    return res.status(200).json({ success: true, message: `all counsellors`, data: counsellors })
+    return ({ statusCode: 200, message: `all counsellors`, data: counsellors })
 })
 export const uniNameRegex = errorWrapper(async (req, res, next) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
@@ -261,7 +261,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
                 location: 1,
                 community: 1,
                 logoSrc: 1,
-                code:1
+                code: 1
             }
         }
     ]);
@@ -279,18 +279,18 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     // };
     // if (req.query.country) uniKeyword["location.country"] = req.query.country
     // const uniSearchResults = await universityModel.find(uniKeyword, "name location community logoSrc").limit(5)
-    return res.status(200).json({ success: true, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
+    return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
 })
 export const requestCallBack = errorWrapper(async (req, res, next) => {
     const { name, email, phone, studentID, queryDescription } = req.body
     let student, leadData, existingLead
     if (studentID) {
         existingLead = await leadsModel.find({ student: studentID })
-        if (existingLead && existingLead.length > 0) return res.status(200).json({ success: true, message: 'We have already received your request, we will reach out to you shortly', data: null });
+        if (existingLead && existingLead.length > 0) return ({ statusCode: 200, message: 'We have already received your request, we will reach out to you shortly', data: null });
         student = await studentModel.findById(studentID)
-        if (!student) return next(generateAPIError('invalid studentId', 400));
-        // if (!student.verification[0].status && !email) return next(generateAPIError('please do verify your email before requesting a call', 400));
-        // if (!student.verification[1].status && !phone) return next(generateAPIError('please do verify your phone number before requesting a call', 400));
+        if (!student) return { statusCode: 400, data: null, message: 'invalid studentId' };
+        // if (!student.verification[0].status && !email) return { statusCode: 400, data: student , message:    'please do verify your email before requesting a call'};
+        // if (!student.verification[1].status && !phone) return { statusCode: 400, data: student , message:    'please do verify your phone number before requesting a call'};
         leadData = {
             student: studentID,
             queryDescription,
@@ -304,14 +304,18 @@ export const requestCallBack = errorWrapper(async (req, res, next) => {
         newLead.remoteStudentAdvisor = rsa[0]._id;
         const accessToken = await refreshToken()
         let crmData = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
-        if (crmData[0].code != "SUCCESS") return next(generateAPIError(crmData[0].code, 400));
+        if (crmData[0].code != "SUCCESS") return {
+            statusCode: 400, data: null, message: crmData[0].code
+        };
         newLead.crmId = crmData[0].details.id
         await newLead.save()
-        return res.status(200).json({ success: true, message: 'We have received your request, we will reach out to you shortly', data: null });
+        return ({ statusCode: 200, message: 'We have received your request, we will reach out to you shortly', data: null });
     }
-    if (!email || !phone.number || !phone.countryCode || !name || !queryDescription) return next(generateAPIError('Incomplete details', 400));
+    if (!email || !phone.number || !phone.countryCode || !name || !queryDescription) return {
+        statusCode: 400, data: null, message: 'Incomplete details'
+    };
     existingLead = await leadsModel.find({ "phone.countryCode": phone.countryCode, "phone.number": phone.number })
-    if (existingLead.length > 0) return res.status(200).json({ success: true, message: 'We have already received your request, we will reach out to you shortly', data: null });
+    if (existingLead.length > 0) return ({ statusCode: 200, message: 'We have already received your request, we will reach out to you shortly', data: null });
     if (!leadData) leadData = { queryDescription, name, email, phone }
     let newLead = await leadsModel.create(leadData);
     const rsa = await teamModel.aggregate([{ $match: { role: "remoteStudentAdvisor" } }, { $project: { _id: 1, leads: 1, leads: { $size: "$leads" } } }, { $sort: { leads: 1 } }, { $limit: 1 }]);
@@ -319,8 +323,10 @@ export const requestCallBack = errorWrapper(async (req, res, next) => {
     newLead.remoteStudentAdvisor = rsa[0]._id;
     const accessToken = await refreshToken()
     let crmData = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
-    if (crmData[0].code != "SUCCESS") return next(generateAPIError(crmData[0].code, 400));
+    if (crmData[0].code != "SUCCESS") return {
+        statusCode: 400, data: null, message: crmData[0].code
+    };
     newLead.crmId = crmData[0].details.id
     await newLead.save()
-    return res.status(200).json({ success: true, message: 'We have received your request, we will reach out to you shortly', data: null });
+    return ({ statusCode: 200, message: 'We have received your request, we will reach out to you shortly', data: null });
 })

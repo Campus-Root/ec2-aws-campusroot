@@ -9,11 +9,17 @@ import { packageModel } from "../../../models/Package.js";
 
 export const switchStage = errorWrapper(async (req, res, next) => {
     const { studentId, stage, nextActionDate, note } = req.body
-    if (!await studentModel.findById(studentId)) return next(generateAPIError(`invalid StudentId`, 400));
+    if (!await studentModel.findById(studentId)) return { statusCode: 400, data: null, message: `invalid StudentId` };
     const student = req.user.students.find(ele => ele.profile.toString() == studentId)
-    if (!student) return next(generateAPIError(`invalid access`, 400));
-    if (!Object.values(studentCounsellingStagesEnum).includes(stage)) return next(generateAPIError(`invalid stage`, 400));
-    if (!new Date(nextActionDate) || new Date(nextActionDate) <= new Date()) return next(generateAPIError(`invalid nextActionDate`, 400));
+    if (!student) return {
+        statusCode: 400, data: null, message: `invalid access`
+    };
+    if (!Object.values(studentCounsellingStagesEnum).includes(stage)) return {
+        statusCode: 400, data: null, message: `invalid stage`
+    };
+    if (!new Date(nextActionDate) || new Date(nextActionDate) <= new Date()) return {
+        statusCode: 400, data: null, message: `invalid nextActionDate`
+    };
     student.nextActionDate = nextActionDate
     student.stage = stage
     req.user.logs.push({
@@ -22,18 +28,26 @@ export const switchStage = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await studentModel.populate(student, { path: "profile", select: "firstName lastName email displayPicSrc" },)
-    return res.status(200).json({ success: true, message: `activity success`, data: student, AccessToken: req.AccessToken ? req.AccessToken : null })
+    return ({ statusCode: 200, message: `activity success`, data: student })
 })
 export const recommend = errorWrapper(async (req, res, next) => {
     const { studentId, universityId, courseId, possibilityOfAdmit } = req.body
     const university = await universityModel.findById(universityId)
-    if (!university) return next(generateAPIError(`Invalid UniversityId`, 400));
+    if (!university) return { statusCode: 400, data: null, message: `Invalid UniversityId` };
     const course = await courseModel.findById(courseId)
-    if (!course) return next(generateAPIError(`Invalid courseId`, 400));
+    if (!course) return {
+        statusCode: 400, data: null, message: `Invalid courseId`
+    };
     const student = await studentModel.findById(studentId)
-    if (!student) return next(generateAPIError(`invalid StudentId`, 400));
-    if (!Object.values(possibilityOfAdmitEnum).includes(possibilityOfAdmit)) return next(generateAPIError(`invalid possibilityOfAdmit`, 400));
-    if (student.recommendations.data.find(ele => ele.course == courseId)) return next(generateAPIError(`course Already recommended`, 400));
+    if (!student) return {
+        statusCode: 400, data: null, message: `invalid StudentId`
+    };
+    if (!Object.values(possibilityOfAdmitEnum).includes(possibilityOfAdmit)) return {
+        statusCode: 400, data: null, message: `invalid possibilityOfAdmit`
+    };
+    if (student.recommendations.data.find(ele => ele.course == courseId)) return {
+        statusCode: 400, data: null, message: `course Already recommended`
+    };
     student.recommendations.data.push({ university: universityId, course: courseId, possibilityOfAdmit: possibilityOfAdmit, counsellorRecommended: true });
     student.recommendations.data = student.recommendations.data.sort((a, b) => a.possibilityOfAdmit - b.possibilityOfAdmit)
     await student.save();
@@ -45,39 +59,55 @@ export const recommend = errorWrapper(async (req, res, next) => {
     const newRecommend = student.recommendations.data.find(ele => ele.course == courseId)
     await universityModel.populate(newRecommend, { path: "university", select: "name logoSrc location type establishedYear " },)
     await courseModel.populate(newRecommend, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails", },)
-    return res.status(200).json({ success: true, message: "Recommendations Generated", data: newRecommend, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return ({ statusCode: 200, message: "Recommendations Generated", data: newRecommend });
 })
-export const deleteRecommend =  errorWrapper(async (req, res, next) => {
+export const deleteRecommend = errorWrapper(async (req, res, next) => {
     const { studentId, recommendId } = req.body
     const student = await studentModel.findById(studentId)
-    if (!student) return next(generateAPIError(`invalid StudentId`, 400));
+    if (!student) return { statusCode: 400, data: null, message: `invalid StudentId` };
     const recommendationToBeDeleted = student.recommendations.data.find(ele => ele._id.toString() == recommendId)
-    if (!recommendationToBeDeleted) return next(generateAPIError(`invalid recommendId`, 400));
+    if (!recommendationToBeDeleted) return {
+        statusCode: 400, data: null, message: `invalid recommendId`
+    };
     await studentModel.findByIdAndUpdate(studentId, { $pull: { "recommendations.data": { _id: recommendId } } })
     req.user.logs.push({
         action: "course recommended to student",
         details: `UniversityId:${recommendationToBeDeleted.university}&CourseId:${recommendationToBeDeleted.course}&studentId=${studentId}`
     })
     await req.user.save()
-    return res.status(200).json({ success: true, message: "recommendations deleted", data: null, AccessToken: req.AccessToken ? req.AccessToken : null });
+    return ({ statusCode: 200, message: "recommendations deleted", data: null });
 })
 export const Package = errorWrapper(async (req, res, next) => {
     const { studentId, action, data } = req.body
     const student = await studentModel.findById(studentId, "advisors suggestedPackages")
-    if (!student) return next(generateAPIError(`invalid StudentId`, 400));
-    if (!student.advisors.find(ele => ele.info.toString() == req.user._id.toString())) return next(generateAPIError(`invalid access rights`, 400));
+    if (!student) return { statusCode: 400, data: null, message: `invalid StudentId` };
+    if (!student.advisors.find(ele => ele.info.toString() == req.user._id.toString())) return {
+        statusCode: 400, data: null, message: `invalid access rights`
+    };
     let Package, Org
     switch (action) {
         case "suggest":
             Org = new Set(Object.values(DestinationTypeEnum));
-            if (data.country.length > 0 && !data.country.every(element => Org.has(element))) return next(generateAPIError(`invalid country list`, 400));
+            if (data.country.length > 0 && !data.country.every(element => Org.has(element))) return {
+                statusCode: 400, data: null, message: `invalid country list`
+            };
             Org = new Set(Object.keys(CurrencySymbolEnum));
-            if (!Org.has(data.currency.code)) return next(generateAPIError(`invalid currency code`, 400));
-            if (data.currency.symbol !== CurrencySymbolEnum[data.currency.code]) return next(generateAPIError(`invalid currency symbol`, 400));
-            if (isNaN(data.totalPrice)) return next(generateAPIError(`invalid totalPrice`, 400));
+            if (!Org.has(data.currency.code)) return {
+                statusCode: 400, data: null, message: `invalid currency code`
+            };
+            if (data.currency.symbol !== CurrencySymbolEnum[data.currency.code]) return {
+                statusCode: 400, data: null, message: `invalid currency symbol`
+            };
+            if (isNaN(data.totalPrice)) return {
+                statusCode: 400, data: null, message: `invalid totalPrice`
+            };
             Org = new Set(Object.values(ProductCategoryEnum));
-            if (data.products.length > 0 && !data.products.every(element => Org.has(element.category) && !isNaN(element.quantity) && Number(element.quantity) > 0)) return next(generateAPIError(`invalid product list`, 400));
-            if (!data.name || !data.description || !data.totalPrice || !data.benefits || !data.name || !data.termsAndConditions) return next(generateAPIError(`incomplete form data`, 400));
+            if (data.products.length > 0 && !data.products.every(element => Org.has(element.category) && !isNaN(element.quantity) && Number(element.quantity) > 0)) return {
+                statusCode: 400, data: null, message: `invalid product list`
+            };
+            if (!data.name || !data.description || !data.totalPrice || !data.benefits || !data.name || !data.termsAndConditions) return {
+                statusCode: 400, data: null, message: `incomplete form data`
+            };
             Package = await packageModel.create({
                 variety: "Custom",
                 active: true,
@@ -106,25 +136,41 @@ export const Package = errorWrapper(async (req, res, next) => {
                 path: "designer",
                 select: "firstName lastName email displayPicSrc"
             })
-            return res.status(200).json({ success: true, message: "Package suggested", data: Package, AccessToken: req.AccessToken ? req.AccessToken : null });
+            return ({ statusCode: 200, message: "Package suggested", data: Package });
         case "edit":
-            if (!data.packageId) return next(generateAPIError(`invalid package Id`, 400));
+            if (!data.packageId) return {
+                statusCode: 400, data: null, message: `invalid package Id`
+            };
             Package = await packageModel.findById(data.packageId)
-            if (!Package) return next(generateAPIError(`invalid PackageId`, 400));
-            if (Package.designer.toString() !== req.user._id.toString()) return next(generateAPIError(`invalid access rights`, 400));
+            if (!Package) return {
+                statusCode: 400, data: null, message: `invalid PackageId`
+            };
+            if (Package.designer.toString() !== req.user._id.toString()) return {
+                statusCode: 400, data: null, message: `invalid access rights`
+            };
             if (data.country.length > 0) {
                 Org = new Set(Object.values(DestinationTypeEnum));
-                if (!data.country.every(element => Org.has(element))) return next(generateAPIError(`invalid country list`, 400));
+                if (!data.country.every(element => Org.has(element))) return {
+                    statusCode: 400, data: null, message: `invalid country list`
+                };
             }
             if (data.currency.code || data.currency.symbol) {
                 Org = new Set(Object.keys(CurrencySymbolEnum));
-                if (!Org.has(data.currency.code)) return next(generateAPIError(`invalid currency code`, 400));
-                if (data.currency.symbol !== CurrencySymbolEnum[data.currency.code]) return next(generateAPIError(`invalid currency symbol`, 400));
+                if (!Org.has(data.currency.code)) return {
+                    statusCode: 400, data: null, message: `invalid currency code`
+                };
+                if (data.currency.symbol !== CurrencySymbolEnum[data.currency.code]) return {
+                    statusCode: 400, data: null, message: `invalid currency symbol`
+                };
             }
-            if (isNaN(data.totalPrice)) return next(generateAPIError(`invalid totalPrice`, 400));
+            if (isNaN(data.totalPrice)) return {
+                statusCode: 400, data: null, message: `invalid totalPrice`
+            };
             if (data.products.length > 0) {
                 Org = new Set(Object.values(ProductCategoryEnum));
-                if (!data.products.every(element => Org.has(element.category) && !isNaN(element.quantity) && Number(element.quantity) > 0)) return next(generateAPIError(`invalid product list`, 400));
+                if (!data.products.every(element => Org.has(element.category) && !isNaN(element.quantity) && Number(element.quantity) > 0)) return {
+                    statusCode: 400, data: null, message: `invalid product list`
+                };
             }
             let logStack = []
             if (data.name && Package.name !== data.name) {
@@ -177,7 +223,9 @@ export const Package = errorWrapper(async (req, res, next) => {
                 path: "designer",
                 select: "firstName lastName email displayPicSrc"
             })
-            return res.status(200).json({ success: true, message: "Package edited", data: Package, AccessToken: req.AccessToken ? req.AccessToken : null });
-        default: return next(generateAPIError(`invalid action`, 400));
+            return ({ statusCode: 200, message: "Package edited", data: Package });
+        default: return {
+            statusCode: 400, data: null, message: `invalid action`
+        };
     }
 })

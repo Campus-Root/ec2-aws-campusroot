@@ -7,7 +7,7 @@ import { generateAPIError } from "../../errors/apiError.js";
 import { packageModel } from "../../models/Package.js";
 export const devDetails = async (req, res) => {
     try {
-        return res.status(200).json({ success: true, message: `all Details of Developer`, data: req.user })
+        return ({ statusCode: 200, message: `all Details of Developer`, data: req.user })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -17,8 +17,8 @@ export const allUniversities = async (req, res) => {
     try {
         const { page } = req.query
         const listOfUniversities = await universityModel.find({}).populate("courses")
-        if (page) return res.status(200).json({ success: true, message: "list of all universities (paginated)", data: listOfUniversities.slice(10 * (page - 1), 10 * page) });
-        return res.status(200).json({ success: true, message: `list of all universities`, data: listOfUniversities })
+        if (page) return ({ statusCode: 200, message: "list of all universities (paginated)", data: listOfUniversities.slice(10 * (page - 1), 10 * page) });
+        return ({ statusCode: 200, message: `list of all universities`, data: listOfUniversities })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -31,7 +31,7 @@ export const addDestination = async (req, res) => {
         if (!destinationName) return res.status(400).json({ success: false, message: `destination not added`, data: null })
         if (await destinationModel.findOne({ destinationName: destinationName })) return res.status(400).json({ success: false, message: `destination already added`, data: null })
         const destination = await destinationModel.create({ destinationName, flagSrc, capitalCity, climate, currency, about, popularPrograms })
-        return res.status(200).json({ success: true, message: `new destination added`, data: destination })
+        return ({ statusCode: 200, message: `new destination added`, data: destination })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -42,7 +42,7 @@ export const addDestination = async (req, res) => {
 export const addPackage = async (req, res) => {
     try {
         const packages = await packageModel.insertMany(req.body)
-        return res.status(200).json({ success: true, message: `new packages added`, data: packages })
+        return ({ statusCode: 200, message: `new packages added`, data: packages })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -53,7 +53,7 @@ export const addPackage = async (req, res) => {
 export const allDestinations = async (req, res) => {
     try {
         const destinations = await destinationModel.find({})
-        return res.status(200).json({ success: true, message: `all destinations`, data: destinations })
+        return ({ statusCode: 200, message: `all destinations`, data: destinations })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name}--${error.message}`, data: null })
@@ -77,7 +77,7 @@ export const editDestination = async (req, res) => {
         if (InternationalStudentsCount) destination.InternationalStudentsCount = InternationalStudentsCount
         if (callingCode) destination.callingCode = callingCode
         await destination.save()
-        return res.status(200).json({ success: true, message: `destination updated`, data: destination })
+        return ({ statusCode: 200, message: `destination updated`, data: destination })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -111,7 +111,7 @@ export const editCourse = async (req, res) => {
         if (scholarship) course.scholarship = scholarship
         if (contactInfo) course.contactInfo = contactInfo
         await course.save()
-        return res.status(200).json({ success: true, message: `course updated`, data: course })
+        return ({ statusCode: 200, message: `course updated`, data: course })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -122,7 +122,7 @@ export const deleteDestination = async (req, res) => {
         const { id } = req.params
         if (!id) return res.status(400).json({ success: false, message: `invalid destination ID`, data: null })
         await destinationModel.findByIdAndDelete(id)
-        return res.status(200).json({ success: true, message: `destination deleted`, data: null })
+        return ({ statusCode: 200, message: `destination deleted`, data: null })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name}--${error.message}`, data: null })
@@ -137,7 +137,7 @@ export const uniDescriptionCreate = async (req, res) => {
         if (alreadyExists) return res.status(400).json({ success: false, message: `university with same code already exists`, data: alreadyExists })
         const university = await new universityModel(req.body)
         await university.save()
-        return res.status(200).json({ success: true, message: `university details saved in the DB`, data: university })
+        return ({ statusCode: 200, message: `university details saved in the DB`, data: university })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -171,7 +171,7 @@ export const uniDescriptionUpdate = async (req, res) => {
         if (loanDetails) university.loanDetails = loanDetails
         if (contact) university.contact = contact
         await university.save()
-        return res.status(200).json({ success: true, message: `university details updated in the DB`, data: null })
+        return ({ statusCode: 200, message: `university details updated in the DB`, data: null })
 
     } catch (error) {
         console.log(error)
@@ -206,7 +206,7 @@ export const courseDescriptionCreation = async (req, res) => {
         const university = await universityModel.findById(req.params.id)
         university.courses.push(Course._id)
         await university.save()
-        return res.status(200).json({ success: true, message: `course added to the database`, data: Course })
+        return ({ statusCode: 200, message: `course added to the database`, data: Course })
 
     } catch (error) {
         console.log(error)
@@ -219,7 +219,7 @@ export const courseDescriptionCreation = async (req, res) => {
 export const uniDeletion = async (req, res) => {
     try {
         await universityModel.findByIdAndDelete(req.params.id);
-        return res.status(200).json({ success: true, message: `university deleted successfully`, data: null })
+        return ({ statusCode: 200, message: `university deleted successfully`, data: null })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
@@ -299,7 +299,7 @@ export const injectionCourse = async (req, res) => {
                 return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: { key: key, obj } })
             }
         });
-        return res.status(200).json({ success: true, message: `courses added successfully`, data: null })
+        return ({ statusCode: 200, message: `courses added successfully`, data: null })
 
     } catch (error) {
         console.log(error);
@@ -312,7 +312,7 @@ export const test = async (req, res) => {
         const startDate = new Date(data.StartDate1).toLocaleString(undefined, { timeZone: 'Asia/Kolkata' })
         const Deadline = (data.Deadline1_1 || data.Deadline1_2 || data.Deadline1_3)
         const newDeadline = new Date(Deadline).toLocaleString(undefined, { timeZone: 'Asia/Kolkata' })
-        return res.status(200).json({ success: true, message: ` successfully`, data: [data.StartDate1, startDate, new Date(startDate), Deadline, newDeadline, new Date(newDeadline)] })
+        return ({ statusCode: 200, message: ` successfully`, data: [data.StartDate1, startDate, new Date(startDate), Deadline, newDeadline, new Date(newDeadline)] })
         // [
         //     "September 2024",
         //     "9/1/2024, 5:30:00 AM",
@@ -328,7 +328,7 @@ export const test = async (req, res) => {
 export const retrive = async (req, res) => {
     try {
         const result = await universityModel.find({}, "_id name")
-        return res.status(200).json({ success: true, message: `university ids`, data: result })
+        return ({ statusCode: 200, message: `university ids`, data: result })
 
     } catch (error) {
         console.log(error);
@@ -340,27 +340,33 @@ export const retrive = async (req, res) => {
 export const createCommunity = errorWrapper(async (req, res, next) => {
     const { universityId } = req.body
     const university = await universityModel.findById(universityId)
-    if (!university) return next(generateAPIError(`Invalid University Id`, 400));
-    if (university.community) return next(generateAPIError(`Community already exists for this university`, 400));
-    if (await communityModel.findOne({ university: universityId })) return next(generateAPIError(`This university already has a community listed, check community cluster`, 400));
+    if (!university) return { statusCode: 400, data: null, message: `Invalid University Id` };
+    if (university.community) return {
+        statusCode: 400, data: null, message: `Community already exists for this university`
+    };
+    if (await communityModel.findOne({ university: universityId })) return {
+        statusCode: 400, data: null, message: `This university already has a community listed, check community cluster`
+    };
     const community = await communityModel.create({ participants: [req.user._id], university: universityId, })
     university.community = community._id
     req.user.communities.push(community._id)
     await Promise.all([req.user.save(), university.save()]);
-    return res.status(200).json({ success: true, message: `Community created`, data: community })
+    return ({ statusCode: 200, message: `Community created`, data: community })
 })
 export const deleteCommunity = errorWrapper(async (req, res, next) => {
     const { communityId } = req.params
     const community = await communityModel.findById(communityId)
-    if (!community) return next(generateAPIError(`Community Doesn't Exist`, 400));
-    if (!community.participants.includes(req.user._id)) return next(generateAPIError(`you don't belong to this community`, 400));
+    if (!community) return { statusCode: 400, data: null, message: `Community Doesn't Exist` };
+    if (!community.participants.includes(req.user._id)) return {
+        statusCode: 400, data: null, message: `you don't belong to this community`
+    };
     await universityModel.findOneAndUpdate({ _id: community.university }, { $pull: { community: communityId } },)
     await communityModel.findByIdAndDelete(communityId)
-    return res.status(200).json({ success: true, message: `community deleted`, data: null })
+    return ({ statusCode: 200, message: `community deleted`, data: null })
 })
 export const getallunis = errorWrapper(async (req, res, next) => {
     const universites = await universityModel.find({})
-    return res.status(200).json({ success: true, message: `all unis`, data: universites })
+    return ({ statusCode: 200, message: `all unis`, data: universites })
 
 })
 export const pushunis = errorWrapper(async (req, res, next) => {
@@ -401,5 +407,5 @@ export const pushunis = errorWrapper(async (req, res, next) => {
         }
 
     }
-    return res.status(200).json({ success: true, message: `unis data saved in db`, data: ret })
+    return ({ statusCode: 200, message: `unis data saved in db`, data: ret })
 })
