@@ -20,7 +20,7 @@ export const CheckoutSchema = Joi.object({
     packageId: Joi.string().allow(''),
     products: Joi.array().items(Joi.object({
         category: Joi.string().valid(...Object.values(ProductCategoryEnum)).required(),
-        course: Joi.string().required(),
+        courseId: Joi.string().required(),
         intake: Joi.date().greater('now').required()
     })).min(0),
     userCurrency: Joi.string()

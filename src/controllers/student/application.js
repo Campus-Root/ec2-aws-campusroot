@@ -88,6 +88,10 @@ export const checkout = errorWrapper(async (req, res, next) => {
         Package = await packageModel.findById(packageId);
         if (!Package) return { statusCode: 400, message: `invalid packageId`, data: { packageId: packageId } };
         if (!Package.active) return { statusCode: 400, message: `inactive package selected`, data: { packageId: packageId } };
+        if (Package.MutuallyExclusivePackages.length > 0) {
+            let mutuallyExclusivePackages = req.user.purchasedPackages.filter(ele => Package.MutuallyExclusivePackages.includes(ele.toString()));
+            if (mutuallyExclusivePackages.length > 0) return { statusCode: 400, message: `mutually exclusive package already purchased`, data: mutuallyExclusivePackages };
+        }
     }
     switch (true) {
         case !hasPackageId && !hasProducts:
@@ -101,7 +105,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
             for (const product of products) {
                 let newProductDetails = {
                     user: req.user._id,
-                    course: product.course,
+                    course: product.courseId,
                     intake: new Date(product.intake),
                     category: product.category
                 }
@@ -132,7 +136,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
             for (const product of products) {
                 let newProductDetails = {
                     user: req.user._id,
-                    course: product.course,
+                    course: product.courseId,
                     intake: new Date(product.intake),
                     category: product.category
                 }
@@ -169,8 +173,9 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 created_at: 1721380929,
                 currency: "INR",
             },
-            status: "paid",
+            status: "pending",
         })
+        await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } })
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
     }
@@ -197,8 +202,9 @@ export const checkout = errorWrapper(async (req, res, next) => {
             misc: razorPay
         },
         status: "pending",
-        logs: [{ action: "new Order Created", details: orderOptions.notes }],
+        logs: [{ action: "new Order Created", details: JSON.stringify(orderOptions.notes) }],
     })
+    await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } })
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 })

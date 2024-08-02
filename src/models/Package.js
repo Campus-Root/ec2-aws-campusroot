@@ -30,6 +30,7 @@ const packageSchema = mongoose.Schema({
     termsAndConditions: { type: String },
     active: { type: Boolean },
     designer: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
+    MutuallyExclusivePackages: [{ type: mongoose.Schema.Types.ObjectId, ref: "package" }],
     logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
 },
     { timestamps: true }
