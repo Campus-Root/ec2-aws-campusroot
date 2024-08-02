@@ -23,7 +23,7 @@ export const Cart = errorWrapper(async (req, res, next) => {
     const { error, value } = CartSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { action, category, courseId, intake, itemId } = value;
-    let found = req.user.activity.cart.filter(ele => (ele.course.toString() == courseId && new Date(ele.intake) == new Date(intake)) || ele._id.toString() == itemId)
+    let found = req.user.activity.cart.filter(ele => (ele.course.toString() == courseId && new Date(ele.intake) == new Date(intake) && ele.category == category) || ele._id.toString() == itemId)
     let course, intakeExists;
     switch (action) {
         case 'add':
