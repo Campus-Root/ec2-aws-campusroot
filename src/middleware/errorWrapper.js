@@ -11,7 +11,9 @@ export const errorWrapper = (fn) => {
       const { statusCode, message, data } = await fn(req, res, next);
       switch (statusCode) {
         case 200:
-          return res.status(statusCode).json({ success: true, message: message, data: data, AccessToken: req.AccessToken ? req.AccessToken : null })
+          let obj = { success: true, message: message, data: data }
+          if (req.AccessToken) obj.AccessToken = req.AccessToken
+          return res.status(statusCode).json(obj)
         case 400:
 
           return next(generateAPIError(message, statusCode, data));
