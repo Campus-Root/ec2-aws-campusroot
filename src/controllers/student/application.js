@@ -248,6 +248,7 @@ export const paymentVerification = async (req, res, next) => {
                 "paymentDetails.currency": req.razorPay.currency,
                 "paymentDetails.misc": req.razorPay,
             },
+            $push: { "logs": { action: "payment made", details: razorpay_order_id } }
         },
         { new: true }
     );
@@ -335,6 +336,7 @@ export const paymentVerification = async (req, res, next) => {
         await studentModel.findByIdAndUpdate(order.student, { $addToSet: { "activity.products": order.products } });
     }
     if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } });
+    await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } });
     await student.save();
     return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
 };
