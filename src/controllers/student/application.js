@@ -272,11 +272,10 @@ export const paymentVerification = async (req, res, next) => {
                             { $sort: { studentsCount: 1 } },
                             { $limit: 1 }
                         ]);
-                        if (Counsellors.length > 0) {
-                            await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-                            student.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] });
-                            Product.advisors.push(Counsellors[0]._id);
-                        }
+                        await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                        await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
+                        student.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] });
+                        Product.advisors.push(Counsellors[0]._id);
                     }
                     let processCoordinators = student.advisors.filter(ele => ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country)));
                     if (processCoordinators.length > 0) {
@@ -349,42 +348,62 @@ export const orderInfo = errorWrapper(async (req, res, next) => {
     await packageModel.populate(order, { path: "Package", select: "-logs" })
     return { statusCode: 200, message: 'order info', data: order };
 })
+
+// {
+//     "cancellationRequest": false,
+//     "advisors": [],
+//     "info": {
+//         "notes": []
+//     },
+//     "_id": "66ae22f2571fcae5c4b3236b",
+//     "docChecklist": [],
+//     "log": []
+// }
+
 export const order = errorWrapper(async (req, res, next) => {
-    await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
+    await userModel.populate(req.user, { path: "advisors.info", select: "role expertiseCountry" })
     const { products } = req.body
-    let productIds = [], course, counsellor, processCoordinator, country
+    let productIds = [], counsellor, processCoordinator
     for (const product of products) {
-        let newProductDetails = {
+        const newProductDetails = await productModel.create({
             user: req.user._id,
-            course: product.course ? product.course : null,
-            intake: product.intake ? product.intake : null,
+            course: product.courseId,
+            intake: product.intake,
             advisors: [],
             order: req.order._id,
             category: product.category
-        }, intakeExists
+        })
+        let intakeExists
+        let course = await courseModel.findById(newProductDetails.course, "location startDate")
+        let country = course.location.country
+        let counsellors = req.user.advisors.filter(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country));
+
         switch (product.category) {
-            case ProductCategoryEnum.PREMIUM || ProductCategoryEnum.ELITE:
+            case ProductCategoryEnum.PREMIUM:
+            case ProductCategoryEnum.ELITE:
                 newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }]
                 newProductDetails.status = "Processing"
                 newProductDetails.stage = "Waiting For Counsellor's Approval"
-                course = await courseModel.findById(newProductDetails.course, "location startDate")
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
-                if (!isNaN(intakeExists[0].deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
-                country = course.location.country
-                counsellor = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
-                if (counsellor) newProductDetails.advisors.push(counsellor._id)
+                if (!isNaN(intakeExists[0]?.deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
+                if (counsellors.length > 0) newProductDetails.advisors.push(counsellors[0]._id);
                 else {
-                    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
+                    const Counsellors = await teamModel.aggregate([
+                        { $match: { role: "counsellor", expertiseCountry: country } },
+                        { $project: { _id: 1, students: 1, studentsCount: { $size: "$students" } } },
+                        { $sort: { studentsCount: 1 } },
+                        { $limit: 1 }
+                    ]);
                     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
                     await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
                     req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
                     newProductDetails.advisors.push(Counsellors[0]._id)
                 } // adding counsellor
-                processCoordinator = req.user.advisors.find(ele => ele.info.role === "processCoordinator" && (assignedCountries.includes(country) || info.expertiseCountry.includes(country)))
-                if (processCoordinator) {
-                    if (!processCoordinator.assignedCountries.includes(country)) processCoordinator.assignedCountries.push(country)
-                    newProductDetails.advisors.push(processCoordinator.info._id)
-                    await teamModel.findByIdAndUpdate(processCoordinator.info._id, { $push: { applications: newProductDetails._id } })
+                let processCoordinators = req.user.advisors.filter(ele => ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country)));
+                if (processCoordinators.length > 0) {
+                    if (!processCoordinators[0].assignedCountries.includes(country)) processCoordinators[0].assignedCountries.push(country);
+                    newProductDetails.advisors.push(processCoordinators[0].info._id)
+                    await teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: newProductDetails._id } })
                 }
                 else {
                     const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
@@ -395,14 +414,36 @@ export const order = errorWrapper(async (req, res, next) => {
                 }// adding processCoordinator
                 break;
             case ProductCategoryEnum.SOP_LOR:
+                if (counsellors.length > 0) newProductDetails.advisors.push(counsellors[0]._id);
+                else {
+                    const Counsellors = await teamModel.aggregate([
+                        { $match: { role: "counsellor", expertiseCountry: country } },
+                        { $project: { _id: 1, students: 1, studentsCount: { $size: "$students" } } },
+                        { $sort: { studentsCount: 1 } },
+                        { $limit: 1 }
+                    ]);
+                    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
+                    req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
+                    newProductDetails.advisors.push(Counsellors[0]._id)
+                } // adding counsellor
+                newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Connection" }] }];
+                newProductDetails.status = "Processing";
+                newProductDetails.stage = "Waiting For Counsellor's Connection";
                 break;
             case ProductCategoryEnum.VISA:
+                newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Visa expert Connection" }] }];
+                newProductDetails.status = "Processing";
+                newProductDetails.stage = "Waiting For Visa expert Connection";
                 break;
             case ProductCategoryEnum.LOAN:
+                newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For loan expert Connection" }] }];
+                newProductDetails.status = "Processing";
+                newProductDetails.stage = "Waiting For loan expert Connection";
                 break;
         }
-        const newProduct = await productModel.create(newProductDetails)
-        productIds.push(newProduct._id)
+        await newProductDetails.save();
+        productIds.push(newProductDetails._id)
     }
     req.order.products.push(...productIds)
     req.user.activity.products.push(...productIds)
@@ -412,8 +453,8 @@ export const order = errorWrapper(async (req, res, next) => {
     })
     await req.order.save()
     await req.user.save()
-    await packageModel.populate(req.user, { path: "orders.Package" })
-    await productModel.populate(req.user, { path: "orders.products", path: "activity.products" })
+    await packageModel.populate(req.order, { path: "Package" })
+    await productModel.populate(req.order, { path: "products"})
     return { statusCode: 200, message: 'order', data: req.order };
 });
 export const requestCancellation = errorWrapper(async (req, res, next) => {

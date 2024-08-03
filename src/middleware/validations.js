@@ -8,6 +8,8 @@ import { RazorpayInstance } from '../utils/razorpay.js';
 import 'dotenv/config';
 import crypto from "crypto";
 import { ProductCategoryEnum } from '../utils/enum.js';
+import Joi from 'joi';
+import { ProductSchema } from '../schemas/student.js';
 export const validateCredentials = [
     body('email')
         .isEmail()
@@ -36,7 +38,7 @@ export const checkDisposableEmail = errorWrapper(async (req, res, next) => {
 });
 export const validatePayment = errorWrapper(async (req, res, next) => {
     const { orderId } = req.body;
-    if (!req.user.orders.includes(orderId)) return { statusCode: 400, data: null, message: `invalid orderId` };
+    if (!req.user.orders.includes(orderId)) return { statusCode: 400, data: orderId, message: `invalid orderId` };
     let order = await orderModel.findById(orderId).populate("products").populate("Package");
     req.order = order
     if (order.paymentDetails.paymentStatus != "paid") return {
@@ -45,7 +47,9 @@ export const validatePayment = errorWrapper(async (req, res, next) => {
     next();
 })
 export const validateProducts = errorWrapper(async (req, res, next) => {
-    const { products } = req.body;
+    const { error, value } = Joi.object({ orderId: Joi.string(), products: Joi.array().items(ProductSchema).min(1) }).validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { products } = value;
     const rules = new Map();
     req.order.Package.products.forEach(ele => { rules.set(ele.category, ele.quantity) });
     let productsCanBeAdded = new Map(rules), errorStack = [];
@@ -56,19 +60,17 @@ export const validateProducts = errorWrapper(async (req, res, next) => {
         const availableQuantity = productsCanBeAdded.get(product.category) || 0;
         if (availableQuantity <= 0) errorStack.push({ ...product, errorMessage: `limit exceeded` })       // quantity check based on category
         productsCanBeAdded.set(product.category, availableQuantity - 1);
-        let course = await courseModel.findById(product.data.course, "location elite startDate")
+        let course = await courseModel.findById(product.courseId, "location elite startDate")
         if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });             // product course check
         if (!req.order.Package.country.includes(course.location.country)) errorStack.push({ ...product, errorMessage: `country mismatched` }); // product country check
-        if (!product.data.intake || new Date(product.data.intake) <= new Date()) errorStack.push({ ...product, errorMessage: `invalid intake` });
-        let intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(product.data.intake).getUTCMonth())
-        if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` });   // product intake check
+        let intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(product.intake).getUTCMonth())
+        if (intakeExists.length = 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` });   // product intake check
         if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
         if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
-        let alreadyExists = await productModel.find({ course: product.data.course, user: req.user._id, intake: product.data.intake, category: product.category }, "_id")
+        let alreadyExists = await productModel.find({ course: product.courseId, user: req.user._id, intake: product.intake, category: product.category }, "_id")
         if (alreadyExists.length > 0) errorStack.push({ ...product, errorMessage: `this product already taken` }); // product duplicate check
-        if (!Object.values(ProductCategoryEnum).includes(product.category)) errorStack.push({ ...product, errorMessage: `invalid category: ${product.category}` });
     }
-    if (errorStack.length > 0) return { statusCode: 400, data: errorStack, message: `Invalid products` };
+    if (errorStack.length > 0) return { statusCode: 400, message: `Invalid products`, data: errorStack };
     next();
 })
 export const isPaid = async (req, res, next) => {

@@ -15,13 +15,13 @@ export const CartSchema = Joi.object({
     itemId: Joi.string().allow('')
 }).required();
 
-
+export const ProductSchema = Joi.object({
+    category: Joi.string().valid(...Object.values(ProductCategoryEnum)).required(),
+    courseId: Joi.string().required(),
+    intake: Joi.date().greater('now').required()
+})
 export const CheckoutSchema = Joi.object({
     packageId: Joi.string().allow(''),
-    products: Joi.array().items(Joi.object({
-        category: Joi.string().valid(...Object.values(ProductCategoryEnum)).required(),
-        courseId: Joi.string().required(),
-        intake: Joi.date().greater('now').required()
-    })).min(0),
+    products: Joi.array().items(ProductSchema).min(0),
     userCurrency: Joi.string()
 }).required();
