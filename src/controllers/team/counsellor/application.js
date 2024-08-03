@@ -37,7 +37,7 @@ export const approval = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await teamModel.updateOne({ _id: req.user._id }, { $pull: { newApplications: applicationId } });
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear" });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear" });
     return ({ statusCode: 200, message: `${action} successful`, data: application })
 })

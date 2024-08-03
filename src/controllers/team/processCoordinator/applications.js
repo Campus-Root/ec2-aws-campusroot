@@ -31,8 +31,8 @@ export const switchStage = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `stage shift success`, data: application })
 })
 export const addToChecklist = errorWrapper(async (req, res, next) => {
@@ -67,8 +67,8 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
         { path: "user", select: "firstName lastName email displayPicSrc" },
         { path: "counsellor", select: "firstName lastName email displayPicSrc" }
     ])
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return { statusCode: 200, message: `item added to checklist`, data: application }
 })
 export const editItemInChecklist = errorWrapper(async (req, res, next) => {
@@ -107,8 +107,8 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
         details: `applicationId:${applicationId}`
     })
     await req.user.save()
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `checklist updated successfully`, data: application })
 })
 export const cancellation = errorWrapper(async (req, res, next) => {
@@ -131,8 +131,8 @@ export const cancellation = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: "cancellation request attended", data: application })
 })
 export const result = errorWrapper(async (req, res, next) => {
@@ -172,8 +172,8 @@ export const result = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `shift successful`, data: application })
 })
 export const revertResult = errorWrapper(async (req, res, next) => {
@@ -198,7 +198,7 @@ export const revertResult = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     await studentModel.populate(application, { path: "user", select: "firstName lastName email displayPicSrc" })
-    await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `revert done`, data: application })
 })

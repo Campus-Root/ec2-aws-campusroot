@@ -42,9 +42,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
   const result = await response.json();
   let recommendations = []
   for (const item of result) {
-    let course = await courseModel.findById(item.CID, "university")
     recommendations.push({
-      university: course.university,
       course: item.CID,
       possibilityOfAdmit: item.Category
     })
@@ -61,8 +59,8 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     details: `recommendations${req.user.recommendations.data.length}`
   })
   await req.user.save();
-  await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration" })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite" })
+  await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear " })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
     const applyCurrencyConversion = (element) => {
@@ -86,8 +84,8 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
   if (!recommendation) return { statusCode: 400, data: null, message: `invalid recommendationId` };
   recommendation.notInterested = true;
   await req.user.save();
-  await universityModel.populate(req.user, { path: "recommendations.data.university", select: "name logoSrc location type establishedYear " })
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration startDate" })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite" })
+  await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear " })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
     const applyCurrencyConversion = (element) => {
@@ -112,10 +110,10 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       { path: "activity.products" }
     ]),
     await courseModel.populate(req.user, [
-      { path: "recommendations.data.course activity.cart.data.course activity.wishList activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university" },
+      { path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },
     ]),
     await universityModel.populate(req.user, [
-      { path: "activity.cart.data.course.university activity.wishList.university recommendations.data.university activity.products.university", select: "name logoSrc location type establishedYear " },
+      { path: "activity.cart.data.course.university activity.wishList.university recommendations.data.course.university activity.products.course.university", select: "name logoSrc location type establishedYear " },
     ]),
     await Document.populate(req.user, [
       { path: "activity.products.docChecklist.doc", select: "name contentType createdAt" },
@@ -137,7 +135,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
         }
       };
       if (req.user.recommendations.data.length > 0) req.user.recommendations.data.forEach(applyCurrencyConversion);
-      // if (req.user.activity.cart.data.length > 0) req.user.activity.cart.data.forEach(applyCurrencyConversion);
+      if (req.user.activity.cart.length > 0) req.user.activity.cart.data.forEach(applyCurrencyConversion);
       if (req.user.activity.products.length > 0) req.user.activity.products.forEach(applyCurrencyConversion);
     }
     applications = req.user.activity.products.filter((ele) => ele.stage === "Processing" || ele.stage === "Accepted");
@@ -176,12 +174,12 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
   await productModel.populate(student, [
     { path: "activity.products", select: "university course intake status stage" },
   ])
-  await universityModel.populate(student, [
-    { path: "activity.products.university", select: "name logoSrc location type establishedYear" },
-    { path: "communities.university", select: "name logoSrc location type establishedYear", }
-  ])
   await courseModel.populate(student, [
-    { path: "activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency", },
+    { path: "activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName studyLevel duration currency university elite", },
+  ])
+  await universityModel.populate(student, [
+    { path: "activity.products.course.university", select: "name logoSrc location type establishedYear" },
+    { path: "communities.university", select: "name logoSrc location type establishedYear", }
   ])
   await userModel.populate(student, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
   return ({ statusCode: 200, message: `student details`, data: student });

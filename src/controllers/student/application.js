@@ -53,7 +53,7 @@ export const Cart = errorWrapper(async (req, res, next) => {
             break;
     }
     await req.user.save();
-    await courseModel.populate(req.user, { path: "activity.cart.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },)
+    await courseModel.populate(req.user, { path: "activity.cart.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university elite", },)
     await universityModel.populate(req.user, { path: "activity.cart.course.university", select: "name logoSrc location type establishedYear ", })
     return { statusCode: 200, message: `cart updated successfully`, data: req.user.activity.cart }
 })
@@ -72,7 +72,7 @@ export const wishList = errorWrapper(async (req, res, next) => {
             break;
     }
     await Promise.all([
-        await courseModel.populate(student, { path: "activity.wishList", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university", },),
+        await courseModel.populate(student, { path: "activity.wishList", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university elite", },),
         await universityModel.populate(student, { path: "activity.wishList.university", select: "name logoSrc location type establishedYear ", })
     ])
     return { statusCode: 200, message: `${action} successful`, data: student.activity.wishList };
@@ -339,7 +339,6 @@ export const paymentVerification = async (req, res, next) => {
     await student.save();
     return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
 };
-
 export const orderInfo = errorWrapper(async (req, res, next) => {
     const { orderId } = req.query;
     // https://campusroot.com/paymentsuccess?reference=669fa190dc22145b5fadc789
@@ -348,18 +347,6 @@ export const orderInfo = errorWrapper(async (req, res, next) => {
     await packageModel.populate(order, { path: "Package", select: "-logs" })
     return { statusCode: 200, message: 'order info', data: order };
 })
-
-// {
-//     "cancellationRequest": false,
-//     "advisors": [],
-//     "info": {
-//         "notes": []
-//     },
-//     "_id": "66ae22f2571fcae5c4b3236b",
-//     "docChecklist": [],
-//     "log": []
-// }
-
 export const order = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "role expertiseCountry" })
     const { products } = req.body
@@ -470,8 +457,8 @@ export const requestCancellation = errorWrapper(async (req, res, next) => {
         details: `applicationId:${req.params.applicationId}`
     })
     await req.user.save()
-    await universityModel.populate(updatedApplication, { path: "university", select: "name logoSrc location type establishedYear " });
-    await courseModel.populate(updatedApplication, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails" });
+    await courseModel.populate(updatedApplication, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await universityModel.populate(updatedApplication, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return { statusCode: 200, message: 'Application cancellation Request sent to processCoordinator', data: updatedApplication };
 })
 // ..............applications documents...................
@@ -495,8 +482,8 @@ export const uploadInApplication = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await Promise.all([
         await application.save(),
-        await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " }),
-        await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration", }),
+        await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
+        await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
         Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
     ])
     if (req.user.preference.currency) {
@@ -527,8 +514,8 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
     await Promise.all([
         await application.save(),
         await Document.findByIdAndDelete(documentId),
-        await universityModel.populate(application, { path: "university", select: "name logoSrc location type establishedYear " }),
-        await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration", }),
+        await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
+        await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
         await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
     ])
     if (req.user.preference.currency) {
