@@ -43,7 +43,7 @@ router.get("/download/:documentId", authMiddleware, isStudent, downloadDocument)
 
 router.post("/checkout", authMiddleware, isStudent, checkout)
 router.get("/re-checkout", authMiddleware, isStudent, reCheckout)
-router.post("/paymentVerification", isPaid, paymentVerification)
+router.post("/payment-verification", isPaid, paymentVerification)
 router.post("/order", authMiddleware, isStudent, validatePayment, validateProducts, order)
 router.get('/order', authMiddleware, isStudent, orderInfo)
 router.post("/apply-force", authMiddleware, isStudent, forceForwardApply)

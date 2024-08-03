@@ -11,12 +11,9 @@ export const errorWrapper = (fn) => {
       const { statusCode, message, data } = await fn(req, res, next);
       switch (statusCode) {
         case 200:
-          if (data.redirectUrl) return res.redirect(data.redirectUrl);
-          else {
-            let obj = { success: true, message: message, data: data };
-            if (req.AccessToken) obj.AccessToken = req.AccessToken;
-            return res.status(statusCode).json(obj);
-          }
+          let obj = { success: true, message: message, data: data };
+          if (req.AccessToken) obj.AccessToken = req.AccessToken;
+          return res.status(statusCode).json(obj);
         case 400: return next(generateAPIError(message, statusCode, data));
       }
     } catch (error) {

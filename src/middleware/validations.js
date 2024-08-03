@@ -71,13 +71,13 @@ export const validateProducts = errorWrapper(async (req, res, next) => {
     if (errorStack.length > 0) return { statusCode: 400, data: errorStack, message: `Invalid products` };
     next();
 })
-export const isPaid = errorWrapper(async (req, res, next) => {
+export const isPaid = async (req, res, next) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET).update(body.toString()).digest("hex");
-    if (expectedSignature !== razorpay_signature) return { statusCode: 400, message: "payment verification failed, contact for support" };
+    if (expectedSignature !== razorpay_signature) return next(generateAPIError("payment verification failed, contact for support", 400));
     const razorPay = await RazorpayInstance.orders.fetch(razorpay_order_id)
-    if (razorPay.status !== "paid") return { statusCode: 400, message: "payment status is not paid" };
+    if (razorPay.status !== "paid") return next(generateAPIError("payment status is not paid", 400));
     req.razorPay = razorPay
     next()
-})
+}

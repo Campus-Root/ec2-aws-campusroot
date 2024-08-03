@@ -236,7 +236,7 @@ export const reCheckout = errorWrapper(async (req, res, next) => {
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { logs: { action: `order attempted for re-Checkout`, details: `orderId:${order._id}` } } })
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 })
-export const paymentVerification = errorWrapper(async (req, res, next) => {
+export const paymentVerification = async (req, res, next) => {
     const { razorpay_order_id } = req.body;
     const order = await orderModel.findOneAndUpdate(
         { "paymentDetails.razorpay_order_id": razorpay_order_id },
@@ -336,8 +336,8 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
     }
     if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } });
     await student.save();
-    return { statusCode: 200, message: 'Order processed successfully', data: { reference: order._id, redirectUrl: `${process.env.SERVER_URL}paymentsuccess?reference=${order._id}` } };
-});
+    return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
+};
 
 export const orderInfo = errorWrapper(async (req, res, next) => {
     const { orderId } = req.query;
