@@ -7,7 +7,7 @@ import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js
 import { editReview, postReview } from "../controllers/student/review.js";
 import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation } from "../controllers/student/index.js";
 import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, requestCounsellor, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
-import { wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, requestCancellation, checkout, uploadInApplication, paymentVerification, order, orderInfo, Cart } from "../controllers/student/application.js";
+import { wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, requestCancellation, checkout, uploadInApplication, paymentVerification, order, orderInfo, Cart, reCheckout } from "../controllers/student/application.js";
 const router = express.Router();
 //        {{base}}/api/v1/student
 
@@ -42,6 +42,7 @@ router.get("/download/:documentId", authMiddleware, isStudent, downloadDocument)
 
 
 router.post("/checkout", authMiddleware, isStudent, checkout)
+router.get("/re-checkout", authMiddleware, isStudent, reCheckout)
 router.post("/paymentVerification", isPaid, paymentVerification)
 router.post("/order", authMiddleware, isStudent, validatePayment, validateProducts, order)
 router.get('/order', authMiddleware, isStudent, orderInfo)
