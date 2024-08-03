@@ -113,7 +113,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
       { path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },
     ]),
     await universityModel.populate(req.user, [
-      { path: "activity.cart.data.course.university activity.wishList.university recommendations.data.course.university activity.products.course.university", select: "name logoSrc location type establishedYear " },
+      { path: "activity.cart.course.university activity.wishList.university recommendations.data.course.university activity.products.course.university", select: "name logoSrc location type establishedYear " },
     ]),
     await Document.populate(req.user, [
       { path: "activity.products.docChecklist.doc", select: "name contentType createdAt" },
