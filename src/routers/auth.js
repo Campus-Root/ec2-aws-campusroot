@@ -1,6 +1,6 @@
 import express from "express";
 import { Login, forgotPassword, Logout, verifyOtp } from "../controllers/auth/login.js";
-import { StudentRegister, TeamRegister, googleLogin, verifyEmail } from "../controllers/auth/register.js";
+import { StudentRegister, TeamRegister, googleLogin, linkedLogin, verifyEmail } from "../controllers/auth/register.js";
 import { authMiddleware, isAdmin } from "../middleware/auth.js";
 import { checkDisposableEmail, validateCredentials, validationErrorMiddleware } from "../middleware/validations.js";
 
@@ -15,4 +15,5 @@ router.post("/logout",authMiddleware,Logout)
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-otp", verifyOtp);
 router.post("/google/login", googleLogin)
+router.post("/linkedin/login", linkedLogin)
 export default router;

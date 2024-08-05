@@ -14,6 +14,8 @@ import { fileURLToPath } from "url";
 import { jwtDecode } from "jwt-decode";
 import { cookieOptions } from "../../index.js";
 import { DestinationTypeEnum, LanguageTypeEnum } from "../../utils/enum.js";
+import axios from "axios";
+import qs from "qs";
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 
@@ -211,3 +213,56 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         }
     }
 })
+export const linkedLogin = errorWrapper(async (req, res, next) => {
+    const { code, redirectUri } = req.body;
+    try {
+        const response = await axios.post(`https://www.linkedin.com/oauth/v2/accessToken`,
+            qs.stringify({
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: redirectUri,
+                client_id: process.env.LINKEDIN_CLIENT_ID,
+                client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+            }),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            }
+        );
+
+        const accessToken = response.data.access_token;
+        console.log({ accessToken });
+    } catch (error) {
+        return { statusCode: 500, message: `auth token not granted, change code`, data: error };
+    }
+
+    try {
+        const profileResponse = await axios.get(`https://api.linkedin.com/v2/me`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        console.log({ profileResponse });
+    } catch (error) {
+        return { statusCode: 500, message: `profile response not granted, change code`, data: error };
+    }
+
+    try {
+        const emailResponse = await axios.get(`https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        console.log({ emailResponse });
+    } catch (error) {
+        return { statusCode: 500, message: `email response not granted, change code`, data: error };
+    }
+
+
+
+    return { statusCode: 200, message: `success`, data: { accessToken, profileResponse, emailResponse } };
+
+
+});
+// {
+//     accessToken: 'AQWUiyihfTg6eBaDLh7QiaqnMadaudxO_r1I-alkVQ-FElT_nc0F6gtI87IZFks0120pC19ggEf33koOV-U0C4zYoHVXA7_GF9NxiNi35hmQ6JlNwo3A7wLiuiBHqIvh6Kpu6w6QD8abvDbmAI6qU6tcSc82kGGtWr2jG8vWQYgsUhyzBK4t4pgkCwNGN4uqpDqkCdHifo0OoFcPoEWCvk-TmRr0zTIlMVReyacIAIxY7nFonU9_dY2_er8LvZiVk8eL7VscqSgr-TZVlfVCO3-y3kuxp1c7AUVGl8BqenHLrp7gMkA9oIMMH-tEHxDkXdfFMMq8wWmVo581_Ob342dylVNJDg'
+//   }
+  
