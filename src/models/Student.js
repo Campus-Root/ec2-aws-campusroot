@@ -16,6 +16,7 @@ const Student = mongoose.Schema(
         LeadSource: { type: String },
         IEH: {
             institutionName: { type: String },
+            campus: { type: String },
             verificationCode: { type: String },
             verifiedAccess: { type: Boolean, default: false },
             verificationMethod: { type: String }

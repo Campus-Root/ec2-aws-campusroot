@@ -17,9 +17,10 @@ const Team = mongoose.Schema({
     language: [{ type: String }],
     leads: [{ type: mongoose.Types.ObjectId, ref: "leads" }],// for remoteStudentAdvisor
     applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],// for Process Coordinators
-
-
-
+    IEH:{
+        institutionName: { type: String },
+        campus: { type: String },
+    },
     updates: [{ type: Object }]
 }
 );

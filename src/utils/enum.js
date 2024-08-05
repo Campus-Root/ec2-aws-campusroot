@@ -124,7 +124,10 @@ export const TeamRoleEnum = {
     DEVELOPER: "developer",
     ADMIN: "admin",
     COUNSELLOR: "counsellor",
-    REMOTE_STUDENT_ADVISOR: "remoteStudentAdvisor"
+    // COUNSELLOR_UG: "Counsellor_UG",
+    // COUNSELLOR_PG: "Counsellor_PG",
+    REMOTE_STUDENT_ADVISOR: "remoteStudentAdvisor",
+    IEH: "IEH_MEMBER"
 };
 export const UniversityTypeEnum = {
     PUBLIC: "public",
@@ -164,9 +167,9 @@ export const PaymentStatusEnum = {
     REFUNDED: "refunded",
     REFUND_INITIALIZED: "refund initiated",
 }
-export const ListEnum={
-    SHORTLIST:"shortlist",
-    CART:"cart"
+export const ListEnum = {
+    SHORTLIST: "shortlist",
+    CART: "cart"
 }
 export const ProductCategoryEnum = {
     PREMIUM: "premium application",
