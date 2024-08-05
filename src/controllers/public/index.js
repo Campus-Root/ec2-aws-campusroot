@@ -14,12 +14,13 @@ import { leadCreation, refreshToken } from "../../utils/CRMintegrations.js";
 import 'dotenv/config';
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
-    const { page } = req.body, filter = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
+    const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
     switch (req.params.name) {
         case "universities":
             filter.courses = { "$gt": 0 }
+            sort.courses = -1
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
@@ -27,8 +28,13 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "type") filter.type = ele.data[0];
                 else if (ele.type === "rating") filter.uni_rating = { $gte: ele.data[0] };
                 else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]
+                else if (ele.type === "popular") {
+                    filter[`rank.${ele.data[0]}`] = { $exists: true, $ne: 0 };
+                    sort[`rank.${ele.data[0]}`] = 1;
+                }
             });
-            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort({ uni_rating: -1, courses: -1 }).skip(skip).limit(perPage);
+            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort(sort).skip(skip).limit(perPage);
+            totalDocs = await universityModel.countDocuments(filter)
             for (const university of listOfUniversities) {
                 if (req.body.currency && university.currency.code !== req.body.currency) {
                     if (!rates[university.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
@@ -42,7 +48,7 @@ export const listings = errorWrapper(async (req, res, next) => {
                     university.currency = { code: req.body.currency, symbol: currencySymbols[req.body.currency] }
                 }
             }
-            totalDocs = await universityModel.countDocuments(filter)
+
             totalPages = Math.ceil(totalDocs / perPage);
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
@@ -130,7 +136,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             }
             totalDocs = await courseModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
-            if (req.body.filterData.length > 0) courses = courses.sort(() => Math.random() - 0.5)
+            if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
             return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "destinations":
             const destinations = await destinationModel.find({})
