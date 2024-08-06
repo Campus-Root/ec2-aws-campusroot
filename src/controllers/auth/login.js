@@ -1,7 +1,5 @@
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import bcrypt from "bcrypt"
-import jwt from "jsonwebtoken";
 import 'dotenv/config'
 import fs from "fs";
 import Handlebars from "handlebars";
@@ -12,10 +10,7 @@ import { fileURLToPath } from 'url';
 import { cookieOptions } from "../../index.js";
 import Joi from "joi";
 import { loginSchema } from "../../schemas/student.js";
-const ACCESS_SECRET = process.env.ACCESS_SECRET
-const REFRESH_SECRET = process.env.REFRESH_SECRET
-
-
+import { generateTokens } from "../../utils/redisTokens.js";
 export const Login = errorWrapper(async (req, res, next) => {
     const { error, value } = loginSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
@@ -38,29 +33,13 @@ export const Login = errorWrapper(async (req, res, next) => {
         await user.save();
         return { statusCode: 401, message: `Invalid credentials. Please try again`, data: null }
     }
-    let AccessToken = jwt.sign({ id: user._id }, ACCESS_SECRET, { expiresIn: "1h" })
-    let RefreshToken = jwt.sign({ id: user._id }, REFRESH_SECRET, { expiresIn: "30d" })
-    const source = req.headers['user-agent'];
-    let token = user.tokens.find(token => token.source === source);
-    let newToken = {
-        AccessToken: AccessToken,
-        RefreshToken: RefreshToken,
-        source: source
-    }
-    if (token) {
-        token.AccessToken = AccessToken;
-        token.RefreshToken = RefreshToken;
-    } else {
-        if (DeviceToken) newToken.DeviceToken = DeviceToken;
-        user.tokens.push(newToken);
-    }
+    const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
     await user.save()
-    res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions)
-    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: AccessToken, role: user.role || user.userType } }
+    res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions)
+    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
 });
-
 export const forgotPassword = errorWrapper(async (req, res, next) => {
     const { error, value } = Joi.object({ email: Joi.string().required() }).validate(req.body);
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
@@ -106,27 +85,9 @@ export const verifyOtp = errorWrapper(async (req, res, next) => {
     await user.save()
     return { statusCode: 200, message: `Password Updated Successfully`, data: null }
 });
-
-
 export const Logout = errorWrapper(async (req, res, next) => {
-    const user = await userModel.findById(req.user._id, "logs tokens")
     const source = req.headers['user-agent'];
-    const logoutAll = req.body.logoutAll
-    if (logoutAll) {
-        user.tokens = []; // Clear all tokens
-        user.logs.push({
-            action: "logged out",
-            details: "All devices"
-        });
-        await user.save();
-        return { statusCode: 200, message: `Logged Out from All Devices Successfully`, data: null };
-    } else {
-        user.tokens = user.tokens.filter(token => token.source !== source);
-        user.logs.push({
-            action: "logged out",
-            details: `Device: ${source}`
-        });
-        await user.save();
-        return { statusCode: 200, message: `Logged Out Successfully`, data: null };
-    }
+    const logoutAll = req.body.logoutAll;
+    (logoutAll) ? await deleteTokens(req.user._id,false) : await deleteTokens(req.user._id, source)
+    return { statusCode: 200, message: `Logged Out Successfully`, data: null };
 })

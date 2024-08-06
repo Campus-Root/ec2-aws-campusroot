@@ -16,12 +16,6 @@ const userSchema = mongoose.Schema({
   failedLoginAttempts: { type: Number },
   nextLoginTime: { type: Date },
   lastActive: { type: Date },
-  tokens: [{
-    source: { type: String },
-    AccessToken: { type: String },
-    RefreshToken: { type: String },
-    DeviceToken: { type: String },
-  }]
 },
   { discriminatorKey: 'userType' },
   { timestamps: true }

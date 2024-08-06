@@ -1,10 +1,8 @@
 import { studentModel } from "../../models/Student.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import 'dotenv/config';
 import { teamModel } from "../../models/Team.js";
 import sendMail from "../../utils/sendEMAIL.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 // import chatModel from "../../models/Chat.js";
 import fs from "fs"
@@ -16,9 +14,6 @@ import { cookieOptions } from "../../index.js";
 import { DestinationTypeEnum, LanguageTypeEnum } from "../../utils/enum.js";
 import axios from "axios";
 import qs from "qs";
-const ACCESS_SECRET = process.env.ACCESS_SECRET
-const REFRESH_SECRET = process.env.REFRESH_SECRET
-
 export const StudentRegister = errorWrapper(async (req, res, next) => {
     const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
     if (!password || !email || !firstName || !lastName) return { statusCode: 400, data: null, message: `Incomplete details` };
@@ -60,23 +55,12 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         action: "Registration Done",
         details: "traditional registration done"
     })
-    let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" })
-    let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" })
-    student.tokens.push({
-        AccessToken: AccessToken,
-        RefreshToken: RefreshToken,
-        source: req.headers['user-agent'],
-        DeviceToken: DeviceToken || null,
-    })
+    const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'], DeviceToken)
     await student.save();
     // await Counsellor.save();
     // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
-    res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-    return ({
-        statusCode: 200, message: `student registration successful`, data: {
-            AccessToken, role: student.role || student.userType
-        }
-    });
+    res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+    return ({ statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } });
 });
 export const verifyEmail = errorWrapper(async (req, res, next) => {
     const { email, emailVerificationString } = req.params;
@@ -141,18 +125,11 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         }]
         if (student) {
             if (student.socialAuth?.google?.id) {
-                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" });
+                const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 student.logs.push({ action: `Logged in using Google auth` });
-                student.tokens.push({
-                    AccessToken: AccessToken,
-                    RefreshToken: RefreshToken,
-                    source: req.headers['user-agent'],
-                    // DeviceToken: DeviceToken
-                })
                 await student.save();
-                res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
+                res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
             } else {
                 student.firstName = student.firstName || given_name || null;
                 student.lastName = student.lastName || family_name || null;
@@ -160,17 +137,10 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 student.socialAuth.google = { id: sub };
                 if (email_verified) student.verification[0].status = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
-                let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-                let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" });
-                student.tokens.push({
-                    AccessToken: AccessToken,
-                    RefreshToken: RefreshToken,
-                    source: req.headers['user-agent'],
-                    // DeviceToken: DeviceToken
-                })
+                const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 await student.save();
-                res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken, role: student.userType } });
+                res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
             }
         } else {
             student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { language: "English" } });
@@ -192,18 +162,11 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             // Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
             // await Counsellor.save();
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
-            let AccessToken = jwt.sign({ id: student._id }, ACCESS_SECRET, { expiresIn: "1h" });
-            let RefreshToken = jwt.sign({ id: student._id }, REFRESH_SECRET, { expiresIn: "30d" });
-            student.tokens.push({
-                AccessToken: AccessToken,
-                RefreshToken: RefreshToken,
-                source: req.headers['user-agent'],
-                // DeviceToken: DeviceToken
-            })
+            const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
             await student.save();
             // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
-            res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
-            return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken, role: student.userType } });
+            res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+            return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
         }
     }
     catch (error) {
@@ -265,4 +228,3 @@ export const linkedLogin = errorWrapper(async (req, res, next) => {
 // {
 //     accessToken: 'AQWUiyihfTg6eBaDLh7QiaqnMadaudxO_r1I-alkVQ-FElT_nc0F6gtI87IZFks0120pC19ggEf33koOV-U0C4zYoHVXA7_GF9NxiNi35hmQ6JlNwo3A7wLiuiBHqIvh6Kpu6w6QD8abvDbmAI6qU6tcSc82kGGtWr2jG8vWQYgsUhyzBK4t4pgkCwNGN4uqpDqkCdHifo0OoFcPoEWCvk-TmRr0zTIlMVReyacIAIxY7nFonU9_dY2_er8LvZiVk8eL7VscqSgr-TZVlfVCO3-y3kuxp1c7AUVGl8BqenHLrp7gMkA9oIMMH-tEHxDkXdfFMMq8wWmVo581_Ob342dylVNJDg'
 //   }
-  

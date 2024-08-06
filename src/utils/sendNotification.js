@@ -1,17 +1,18 @@
 
 import 'dotenv/config'
 import axios from 'axios';
-import userModel from '../models/User.js';
 export const getTokens = async (ids) => {
     try {
-        const users = await userModel.find({ _id: { $in: ids }, "tokens.DeviceToken": { $exists: true } }, "tokens.DeviceToken");
-        let tokens = [];
-        for (const user of users) for (let token of user.tokens) if (token.DeviceToken) tokens.push(token.DeviceToken);
-        return (tokens);
+        const tokens = [];
+        for (const userId of ids) {
+            const keys = await redisClient.keys(`DeviceToken:${userId}:*`);
+            const values = await Promise.all(keys.map(key => redisClient.get(key)));
+            tokens.push(...values);
+        }
+        return tokens;
     } catch (err) {
         console.error(err);
     }
-
 }
 
 export const sendPushNotification = async ({ tokens, notification }) => {

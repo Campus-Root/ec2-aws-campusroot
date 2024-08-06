@@ -1,46 +1,24 @@
-import jwt from "jsonwebtoken";
-import 'dotenv/config';
 import userModel from "../models/User.js";
 import { TeamRoleEnum } from "../utils/enum.js";
 import { cookieOptions } from "../index.js";
-const REFRESH_SECRET = process.env.REFRESH_SECRET
-const ACCESS_SECRET = process.env.ACCESS_SECRET
+import { verifyTokens } from "../utils/redisTokens.js";
 export const authMiddleware = async (req, res, next) => {
     try {
-        if (!req.headers.authorization) return res.status(401).json({ success: false, message: 'No token provided', data: null });
+        if (!req.headers.authorization) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
         const token = req.headers.authorization.split(" ")[1];
-        if (!token) return res.status(401).json({ success: false, message: 'Token missing', data: null });
-        try {
-            const decoded = jwt.verify(token, ACCESS_SECRET);
-            req.decoded = decoded;
-            let user = await userModel.findOne({ _id: decoded.id, "tokens.AccessToken": token }).select("-password -failedLoginAttempts -nextLoginTime -socialAuth -tokens")
-            if (!user) return res.status(401).json({ success: false, message: `login again`, data: null });
-            req.user = user
-            return next();
-        } catch (error) {
-            if (error.message !== "jwt expired") return res.status(401).json({ success: false, message: error.message, data: null });
+        if (!token) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
+        const source = req.headers['user-agent']; // Use device token or user-agent string as the identifier
+        const { success, message, decoded, accessToken, refreshToken } = await verifyTokens(source, token, req.cookies.CampusRoot_Refresh)
+        if (!success) return res.status(401).json({ success: false, message: 'Token Verification Failed', data: message });
+        let user = await userModel.findOne({ _id: decoded.id }).select("-password -failedLoginAttempts -nextLoginTime -socialAuth");
+        if (!user) return res.status(401).json({ success: false, message: `Invalid Tokens`, data: null });
+        req.decoded = decoded;
+        req.user = user;
+        if (accessToken && refreshToken) {
+            res.cookie("CampusRoot_Refresh", refreshToken, cookieOptions);
+            req.AccessToken = accessToken;
         }
-        const refreshToken = req.cookies.CampusRoot_Refresh;
-        if (!refreshToken) return res.status(401).json({ success: false, message: 'login again', data: null });
-        try {
-            let decodedNew = jwt.verify(refreshToken, REFRESH_SECRET);
-            req.decoded = decodedNew
-            let user = await userModel.findOne({ _id: decodedNew.id, "tokens.RefreshToken": refreshToken }).select("tokens")
-            if (!user) return res.status(401).json({ success: false, message: `login again`, data: null });
-            let token = user.tokens.find(token => token.RefreshToken === refreshToken);
-            if (!token || token.source !== req.headers['user-agent']) return res.status(401).json({ success: false, message: `login again`, data: null });
-            let AccessToken = jwt.sign({ id: decodedNew.id }, ACCESS_SECRET, { expiresIn: "1h" })
-            let RefreshToken = jwt.sign({ id: decodedNew.id }, REFRESH_SECRET, { expiresIn: "30d" })
-            res.cookie("CampusRoot_Refresh", RefreshToken, cookieOptions)
-            req.AccessToken = AccessToken
-            token.AccessToken = AccessToken;
-            token.RefreshToken = RefreshToken;
-            await user.save()
-            req.user = await userModel.findOne({ _id: decodedNew.id}).select("-password -failedLoginAttempts -nextLoginTime -socialAuth -tokens")
-            return next();
-        } catch (error) {
-            return res.status(401).json({ success: false, message: `login again`, data: null });
-        }
+        return next();
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Internal server error', data: null });
     }

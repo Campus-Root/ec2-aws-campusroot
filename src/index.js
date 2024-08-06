@@ -4,7 +4,7 @@ import { Server } from "socket.io";
 import bodyParser from 'body-parser';
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { connect as dbConnect } from "./utils/dbConnection.js";
+import { initialize } from "./utils/dbConnection.js";
 import morgan from "morgan";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
@@ -32,7 +32,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 
 
 startCronJob();
-dbConnect();
+initialize();
 export const cookieOptions = {
 	secure: true,
 	httpOnly: true,
@@ -137,7 +137,7 @@ io.on('connection', function (socket) {
 				},
 				tokens: getTokens(offlineUsers)
 			};
-			if(sendPushNotification(message))console.log("push notifications sent");;
+			if (sendPushNotification(message)) console.log("push notifications sent");;
 		}
 		if (triggerObject.action == "ping") {
 			socket.emit('trigger', { sender: null, action: "activityList", data: activityList });
