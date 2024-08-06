@@ -1,9 +1,12 @@
 
 import 'dotenv/config'
 import axios from 'axios';
+import { getRedisClient } from "./dbConnection.js";
+
 export const getTokens = async (ids) => {
     try {
         const tokens = [];
+        const redisClient = getRedisClient();
         for (const userId of ids) {
             const keys = await redisClient.keys(`DeviceToken:${userId}:*`);
             const values = await Promise.all(keys.map(key => redisClient.get(key)));
