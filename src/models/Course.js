@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { subDisciplineEnum, disciplineEnum, UniversityTypeEnum, TernaryEnum, courseTypeEnum, studyLevelEnum, studyModeEnum, CurrencySymbolEnum, DestinationTypeEnum } from "../utils/enum.js";
-import { describe } from "pm2";
+
 
 const courseSchema = mongoose.Schema(
     {
