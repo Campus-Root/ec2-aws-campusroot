@@ -65,8 +65,8 @@ export const listings = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "type") filter.type = ele.data;
                 else if (ele.type === "name") {
                     if (!filter["$or"]) filter["$or"] = []
-                    filter["$or"].push({ "location.country": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.city": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.state": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { unisName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { schoolName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } })
-                    // filter.$text = { $search: ele.data[0] };
+                    // filter["$or"].push({ "location.country": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.city": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.state": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { unisName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { schoolName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } })
+                    filter.$text = { $search: ele.data[0] };
                 }
                 else if (ele.type === "AcademicTestName") {
                     if (!filter["$and"]) filter["$and"] = []

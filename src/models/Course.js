@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { subDisciplineEnum, disciplineEnum, UniversityTypeEnum, TernaryEnum, courseTypeEnum, studyLevelEnum, studyModeEnum, CurrencySymbolEnum, DestinationTypeEnum } from "../utils/enum.js";
+import { describe } from "pm2";
 
 const courseSchema = mongoose.Schema(
     {
@@ -13,6 +14,7 @@ const courseSchema = mongoose.Schema(
         elite: { type: Boolean },
         type: { type: String },
         about: { type: String },
+        description: { type: String },
         language: { type: String },
         discipline: { type: String, },
         subDiscipline: { type: String, },
@@ -94,7 +96,7 @@ const courseSchema = mongoose.Schema(
     },
     { timestamps: true }
 );
-courseSchema.index({ name: "text", unisName: "text", schoolName: "text", "location.country": "text", "location.city": "text", "location.state": "text" });
+courseSchema.index({ description: "text", unisName: "text", schoolName: "text", "location.country": "text", "location.city": "text", "location.state": "text" });
 const courseModel = mongoose.model("course", courseSchema);
 export default courseModel
 
