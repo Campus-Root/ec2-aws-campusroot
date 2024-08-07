@@ -135,7 +135,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
         }
       };
       if (req.user.recommendations.data.length > 0) req.user.recommendations.data.forEach(applyCurrencyConversion);
-      if (req.user.activity.cart.length > 0) req.user.activity.cart.data.forEach(applyCurrencyConversion);
+      if (req.user.activity.cart.length > 0) req.user.activity.cart.forEach(applyCurrencyConversion);
       if (req.user.activity.products.length > 0) req.user.activity.products.forEach(applyCurrencyConversion);
     }
     applications = req.user.activity.products.filter((ele) => ele.stage === "Processing" || ele.stage === "Accepted");
