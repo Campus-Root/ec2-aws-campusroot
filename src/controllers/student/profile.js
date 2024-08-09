@@ -41,9 +41,6 @@ export const profile = errorWrapper(async (req, res, next) => {
             { path: "documents.test.general", select: "name contentType createdAt", },
             { path: "documents.test.languageProf", select: "name contentType createdAt", },
             { path: "documents.workExperiences", select: "name contentType createdAt", },]),
-        await orderModel.populate(req.user, { path: "orders", select: "paymentDetails Package status priceDetails cancellationReason cancellationDate logs" }),
-        await packageModel.populate(req.user, { path: "suggestedPackages purchasedPackages orders.Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
-
     ])
     const profile = { ...req.user._doc }
     delete profile.logs;

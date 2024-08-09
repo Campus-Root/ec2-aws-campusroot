@@ -13,6 +13,8 @@ import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
 import { currencySymbols } from "../../utils/enum.js";
 import { productModel } from "../../models/Product.js";
+import { orderModel } from "../../models/Order.js";
+import { packageModel } from "../../models/Package.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
   // if (!req.user.verification[0].status) return { statusCode: 400, data: student , message:    `do verify your email to generate recommendations`};
@@ -106,20 +108,14 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
 })
 export const dashboard = errorWrapper(async (req, res, next) => {
   await Promise.all([
-    await productModel.populate(req.user, [
-      { path: "activity.products" }
-    ]),
-    await courseModel.populate(req.user, [
-      { path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },
-    ]),
-    await universityModel.populate(req.user, [
-      { path: "activity.cart.course.university activity.wishList.university recommendations.data.course.university activity.products.course.university", select: "name logoSrc location type establishedYear " },
-    ]),
-    await Document.populate(req.user, [
-      { path: "activity.products.docChecklist.doc", select: "name contentType createdAt" },
-    ]),
+    await orderModel.populate(req.user, { path: "orders", select: "paymentDetails Package status priceDetails cancellationReason cancellationDate logs products" }),
+    await packageModel.populate(req.user, { path: "suggestedPackages purchasedPackages orders.Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" }),
+    await productModel.populate(req.user, [{ path: "activity.products orders.products" }]),
+    await courseModel.populate(req.user, [{ path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course orders.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },]),
+    await universityModel.populate(req.user, [{ path: "activity.cart.course.university activity.wishList.university recommendations.data.course.university activity.products.course.university orders.products.course.university", select: "name logoSrc location type establishedYear " },]),
+    await Document.populate(req.user, [{ path: "activity.products.docChecklist.doc orders.products.docChecklist", select: "name contentType createdAt" },]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
-    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.products.processCoordinator activity.products.counsellor", select: "firstName displayPicSrc lastName email role" })
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.advisors orders.products.advisors", select: "firstName displayPicSrc lastName email role" }),
   ]);
   let applications, checklist
   if (req.user.activity.products.length > 0) {
@@ -149,7 +145,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
         applicationId: application._id
       })));
   }
-  return ({ statusCode: 200, message: `activity of user`, data: { activity: req.user.activity, counsellor: req.user.counsellor, processCoordinator: req.user.processCoordinator, recommendations: req.user.recommendations, checklist: checklist } });
+  return ({ statusCode: 200, message: `activity of user`, data: { activity: req.user.activity, orders: req.user.orders, suggestedPackages: req.user.suggestedPackages, purchasedPackages: req.user.purchasedPackages, recommendations: req.user.recommendations, checklist: checklist } });
 });
 //................download any user related Document...........
 export const downloadDocument = errorWrapper(async (req, res, next) => {
