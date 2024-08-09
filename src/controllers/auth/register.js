@@ -14,6 +14,7 @@ import { cookieOptions } from "../../index.js";
 import { DestinationTypeEnum, LanguageTypeEnum } from "../../utils/enum.js";
 import axios from "axios";
 import qs from "qs";
+import { generateTokens } from "../../utils/redisTokens.js";
 export const StudentRegister = errorWrapper(async (req, res, next) => {
     const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
     if (!password || !email || !firstName || !lastName) return { statusCode: 400, data: null, message: `Incomplete details` };
