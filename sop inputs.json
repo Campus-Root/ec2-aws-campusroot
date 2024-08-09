@@ -1,0 +1,62 @@
+[
+    {
+        "Types of Activities": "Academic Background",
+        "Description Examples": "Degree i.e., UG, PG"
+    },
+    {
+        "Types of Activities": "Work Experience",
+        "Description Examples": "Job description & Designation"
+    },
+    {
+        "Types of Activities": "Internships",
+        "Description Examples": "Practical Work Experiences i.e., summer internships virtual internships"
+    },
+    {
+        "Types of Activities": "Technical skills",
+        "Description Examples": "Software, Programming, Tools i.e., Python, SQL, AWS"
+    },
+    {
+        "Types of Activities": "Projects Portfolio",
+        "Description Examples": "Showcasing your Skillet "
+    },
+    {
+        "Types of Activities": "Publications  Patents",
+        "Description Examples": "Research paper, Prototypes, Feature"
+    },
+    {
+        "Types of Activities": "Academic & Technical Accomplishments",
+        "Description Examples": "Achievements which stand out i.e., University rank, Hackathons"
+    },
+    {
+        "Types of Activities": "Licenses & Certifications",
+        "Description Examples": "Value addition to pursuing degree keeping yourself updated i.e., Google ads, Analytics"
+    },
+    {
+        "Types of Activities": "Online courses Workshops",
+        "Description Examples": "Related to Academic background or Different than academic background i.e., Design, Finance"
+    },
+    {
+        "Types of Activities": "Short term & Long-term Goals",
+        "Description Examples": "5years down the line and revolutionary"
+    },
+    {
+        "Types of Activities": "Leadership Experiences",
+        "Description Examples": "Leading Events, Clubs or Committee or MUN "
+    },
+    {
+        "Types of Activities": "Sports activity count",
+        "Description Examples": "Active sports participation or achievements"
+    },
+    {
+        "Types of Activities": "Cultural & Arts involvements",
+        "Description Examples": "Artistic skills i.e., Dance, Music, Drama, etc."
+    },
+    {
+        "Types of Activities": "Volunteering and Community service",
+        "Description Examples": "Active Participation in a Social Work Volunteering i.e., Isha foundation"
+    },
+    {
+        "Types of Activities": "Others",
+        "Description Examples": "Any other Particulars"
+    }
+]

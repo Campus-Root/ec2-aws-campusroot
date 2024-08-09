@@ -7,6 +7,22 @@ export const TestNamesEnum = {
     PTE: "Pearson Test of English",
     ACT: "American College Testing"
 };
+export const SOPQuestionnaireEnum = {
+    ACADEMIC_BACKGROUND: "Degree i.e., UG, PG",
+    WORK_EXPERIENCE: "Job description & Designation",
+    INTERNSHIPS: "Practical Work Experiences i.e., summer internships virtual internships",
+    TECHNICAL_SKILLS: "Software, Programming, Tools i.e., Python, SQL, AWS",
+    PROJECTS_PORTFOLIO: "Showcasing your Skillset",
+    PUBLICATIONS_PATENTS: "Research paper, Prototypes, Feature",
+    ACADEMIC_TECHNICAL_ACCOMPLISHMENTS: "Achievements which stand out i.e., University rank, Hackathons",
+    LICENSES_CERTIFICATIONS: "Value addition to pursuing degree keeping yourself updated i.e., Google ads, Analytics",
+    ONLINE_COURSES_WORKSHOPS: "Related to Academic background or Different than academic background i.e., Design, Finance",
+    SHORT_TERM_LONG_TERM_GOALS: "5 years down the line and revolutionary",
+    LEADERSHIP_EXPERIENCES: "Leading Events, Clubs or Committee or MUN",
+    SPORTS_ACTIVITY_COUNT: "Active sports participation or achievements",
+    CULTURAL_ARTS_INVOLVEMENTS: "Artistic skills i.e., Dance, Music, Drama, etc.",
+    VOLUNTEERING_COMMUNITY_SERVICE: "Active Participation in a Social Work Volunteering i.e., Isha foundation"
+}
 export const studentCounsellingStagesEnum = {
     FRESH_LEAD: "Fresh Lead",
     COUNSELLING: "Counselling",

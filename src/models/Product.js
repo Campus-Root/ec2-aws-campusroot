@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { applicationStagesEnum, applicationStateEnum, ProductCategoryEnum } from "../utils/enum.js";
+import { applicationStagesEnum, applicationStateEnum, ProductCategoryEnum, SOPQuestionnaireEnum } from "../utils/enum.js";
 
 const productSchema = mongoose.Schema({
     course: { type: mongoose.Types.ObjectId, ref: "course" },
@@ -17,10 +17,15 @@ const productSchema = mongoose.Schema({
     cancellationRequest: { type: Boolean, default: false },
     status: { type: String, enum: { values: Object.values(applicationStateEnum), message: "Invalid Status" }, },
     stage: { type: String, enum: { values: Object.values(applicationStagesEnum), message: "Invalid Stage Name" } },
-    advisors:[{ type: mongoose.Types.ObjectId, ref: "user" }],
+    advisors: [{ type: mongoose.Types.ObjectId, ref: "user" }],
     info: {
-
-        
+        questionnaire: [
+            {
+                "Types of Activities": { type: String },
+                "Instructions": { type: String },
+                "Response": { type: String }
+            }
+        ],
         approval: {
             counsellorApproval: { type: Boolean },
             justification: { type: String },
