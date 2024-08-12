@@ -44,6 +44,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         token: { data: null, expiry: new Date() }
     }]
     student.verification = verification
+    student.suggestedPackages = ["66b8414fcfe5abb913e9b1bd"]  // adding suggested package by default
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
@@ -146,6 +147,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         } else {
             student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { language: "English" } });
             student.verification = verification
+            student.suggestedPackages = ["66b8414fcfe5abb913e9b1bd"]  // adding suggested package by default
             student.verification[0].status = email_verified;
             if (!email_verified) {
                 let subject = "Confirm Your Email to Activate Your CampusRoot Account";
