@@ -4,7 +4,6 @@ import Document from "../../models/Uploads.js";
 import userModel from "../../models/User.js";
 import fs from "fs"
 import { decrypt, encrypt } from "../../utils/crypto.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 
 export const postMessages = errorWrapper(async (req, res, next) => {

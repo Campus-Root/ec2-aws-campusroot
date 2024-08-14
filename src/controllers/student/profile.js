@@ -3,7 +3,6 @@ import Document from "../../models/Uploads.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import sendMail from "../../utils/sendEMAIL.js"
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { sendOTP } from "../../utils/sendSMS.js";
 import 'dotenv/config';
@@ -13,9 +12,6 @@ import { fileURLToPath } from "url";
 import { isValidObjectId } from "mongoose";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
-import { DestinationTypeEnum } from "../../utils/enum.js";
-import { packageModel } from "../../models/Package.js";
-import { orderModel } from "../../models/Order.js";
 export const profile = errorWrapper(async (req, res, next) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),

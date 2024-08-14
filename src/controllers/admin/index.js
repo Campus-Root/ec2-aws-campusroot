@@ -2,7 +2,6 @@ import courseModel from "../../models/Course.js";
 import { studentModel } from "../../models/Student.js";
 import { teamModel } from "../../models/Team.js";
 import universityModel from "../../models/University.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const allStudents = errorWrapper(async (req, res, next) => {
     const students = await studentModel.find({}, "firstName lastName email displayPicSrc recommendation counsellor activity")

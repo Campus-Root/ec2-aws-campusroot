@@ -1,7 +1,6 @@
 import reviewsModel from "../../models/Reviews.js";
 import universityModel from "../../models/University.js";
 import userModel from "../../models/User.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import 'dotenv/config';
 export const postReview = errorWrapper(async (req, res, next) => {

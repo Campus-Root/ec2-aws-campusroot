@@ -1,5 +1,4 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js"
-import { generateAPIError } from "../../errors/apiError.js";
 import communityModel from "../../models/Community.js";
 import userModel from "../../models/User.js";
 import universityModel from "../../models/University.js"

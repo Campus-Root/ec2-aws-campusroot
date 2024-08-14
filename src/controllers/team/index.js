@@ -2,7 +2,6 @@ import courseModel from "../../models/Course.js";
 import universityModel from "../../models/University.js";
 import { studentModel } from "../../models/Student.js";
 import Document from "../../models/Uploads.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import userModel from "../../models/User.js";
 import meetingModel from "../../models/meetings.js";

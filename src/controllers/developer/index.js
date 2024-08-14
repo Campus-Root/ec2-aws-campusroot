@@ -3,7 +3,6 @@ import destinationModel from "../../models/Destination.js"
 import universityModel from "../../models/University.js"
 import communityModel from "../../models/Community.js"
 import { errorWrapper } from "../../middleware/errorWrapper.js";
-import { generateAPIError } from "../../errors/apiError.js";
 import { packageModel } from "../../models/Package.js";
 export const devDetails = async (req, res) => {
     try {

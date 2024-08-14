@@ -1,4 +1,3 @@
-import { generateAPIError } from "../../errors/apiError.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { teamModel } from "../../models/Team.js";
 import { oauth2Client } from "../../utils/oAuthClient.js";
