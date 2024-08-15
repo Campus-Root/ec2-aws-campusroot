@@ -62,6 +62,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     // await Counsellor.save();
     // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+    req.AccessToken = newAccessToken;
     return ({ statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } });
 });
 export const verifyEmail = errorWrapper(async (req, res, next) => {
@@ -131,6 +132,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 student.logs.push({ action: `Logged in using Google auth` });
                 await student.save();
                 res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+                req.AccessToken = newAccessToken;
                 return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
             } else {
                 student.firstName = student.firstName || given_name || null;
@@ -142,6 +144,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 await student.save();
                 res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+                req.AccessToken = newAccessToken;
                 return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
             }
         } else {
@@ -169,6 +172,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             await student.save();
             // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
             res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
+            req.AccessToken = newAccessToken;
             return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
         }
     }

@@ -38,6 +38,7 @@ export const Login = errorWrapper(async (req, res, next) => {
     user.logs.push({ action: "Logged In" })
     await user.save()
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions)
+    req.AccessToken = newAccessToken;
     return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
 });
 export const forgotPassword = errorWrapper(async (req, res, next) => {
