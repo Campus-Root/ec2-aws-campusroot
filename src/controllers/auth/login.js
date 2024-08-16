@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url';
 import { cookieOptions } from "../../index.js";
 import Joi from "joi";
 import { loginSchema } from "../../schemas/student.js";
-import { generateTokens } from "../../utils/redisTokens.js";
+import { deleteTokens, generateTokens } from "../../utils/redisTokens.js";
 export const Login = errorWrapper(async (req, res, next) => {
     const { error, value } = loginSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
