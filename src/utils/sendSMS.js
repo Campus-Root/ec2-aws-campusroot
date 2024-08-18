@@ -1,5 +1,5 @@
 import twilio from 'twilio';
-import unirest from 'unirest';
+
 import 'dotenv/config';
 let { SMS_TWILIO_SID, SMS_TWILIO_TOKEN, SMS_TWILIO_NUMBER, SMS_FAST2SMS_API_KEY } = process.env;
 export const sendSMS = async (data) => {
@@ -20,10 +20,10 @@ export const sendOTP = async (data) => {
         const { to, otp, region } = data
         switch (region) {
             case "Indian":
-                const uniRestResponse = await unirest.post("https://www.fast2sms.com/dev/bulkV2")
-                    .headers({ "authorization": SMS_FAST2SMS_API_KEY })
-                    .form({ "variables_values": `${otp}`, "route": "otp", "numbers": `${to}` });
-                return uniRestResponse.body
+                // const uniRestResponse = await unirest.post("https://www.fast2sms.com/dev/bulkV2")
+                //     .headers({ "authorization": SMS_FAST2SMS_API_KEY })
+                //     .form({ "variables_values": `${otp}`, "route": "otp", "numbers": `${to}` });
+                // return uniRestResponse.body
             case "International":
                 const accountSid = SMS_TWILIO_SID;
                 const authToken = SMS_TWILIO_TOKEN;

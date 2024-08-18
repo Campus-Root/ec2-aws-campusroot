@@ -81,7 +81,8 @@ export const editPhone = errorWrapper(async (req, res, next) => {
     };
     req.user.phone = phone
     req.user.verification[1].token = { data: Math.floor(100000 + Math.random() * 900000), expiry: new Date(new Date().getTime() + 5 * 60000) }
-    var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: req.user.verification[1].token.data, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
+    var smsResponse = await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
+    // var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: req.user.verification[1].token.data, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
     if (!smsResponse.return) {
         console.log(smsResponse); return { statusCode: 400, data: null, message: "Otp not sent" }
     }
@@ -435,7 +436,7 @@ export const sendUserOTP = errorWrapper(async (req, res, next) => {
     const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
     if (req.user.phone.number && req.user.verification[1].status) return { statusCode: 400, data: null, message: "already verified" };
     req.user.verification[1].token = { data: otp, expiry: expiry, }
-    var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: otp, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
+    var smsResponse = await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
     if (!smsResponse.return) {
         console.log(smsResponse);
         return { statusCode: 500, data: student, message: "Otp not sent" }
