@@ -23,6 +23,7 @@ const server = createServer(app);
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getTokens, sendPushNotification } from "./utils/sendNotification.js";
+import xssReqSanitizer from "xss-req-sanitizer";
 const __filename = fileURLToPath(import.meta.url);
 
 
@@ -73,6 +74,7 @@ app.use(helmet.noSniff());
 app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
 app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(mongoSanitize());
+app.use(xssReqSanitizer())
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use("/api/v1", indexRouter);
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));

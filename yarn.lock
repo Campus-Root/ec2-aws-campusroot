@@ -4846,10 +4846,17 @@ xmlbuilder@^13.0.2:
   resolved "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-13.0.2.tgz"
   integrity sha512-Eux0i2QdDYKbdbA6AM6xE4m6ZTZr4G4xF9kahI2ukSEMCzwce2eX9WlTI5J3s+NU7hpasFsr8hWIONae7LluAQ==
 
-xss@^1.0.14:
-  version "1.0.15"
-  resolved "https://registry.npmjs.org/xss/-/xss-1.0.15.tgz"
-  integrity sha512-FVdlVVC67WOIPvfOwhoMETV72f6GbW7aOabBC3WxN/oUdoEMDyLz4OgRv5/gck2ZeNqEQu+Tb0kloovXOfpYVg==
+xss-req-sanitizer@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.npmjs.org/xss-req-sanitizer/-/xss-req-sanitizer-1.0.4.tgz"
+  integrity sha512-Z7joM/4FvnmTNm3XBZTMQlC/Kv0rCxJT7tr+Yw5CVqy+ZjBX2xdV2uDiuHAJnM6IPMsfv6UgPr53scywF4o05A==
+  dependencies:
+    xss "1.0.10"
+
+xss@1.0.10:
+  version "1.0.10"
+  resolved "https://registry.npmjs.org/xss/-/xss-1.0.10.tgz"
+  integrity sha512-qmoqrRksmzqSKvgqzN0055UFWY7OKx1/9JWeRswwEVX9fCG5jcYRxa/A2DHcmZX6VJvjzHRQ2STeeVcQkrmLSw==
   dependencies:
     commander "^2.20.3"
     cssfilter "0.0.10"

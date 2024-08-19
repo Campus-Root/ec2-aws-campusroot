@@ -57,7 +57,7 @@
     "twilio": "^4.11.1",
     "url": "^0.11.3",
     "uuid": "^9.0.1",
-    "xss": "^1.0.14"
+    "xss-req-sanitizer": "^1.0.4"
   },
   "devDependencies": {
     "chai": "^4.3.10",
