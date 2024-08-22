@@ -12,6 +12,7 @@ import { fileURLToPath } from "url";
 import { isValidObjectId } from "mongoose";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
+import institutionModel from "../../models/IndianColleges.js";
 export const profile = errorWrapper(async (req, res, next) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
@@ -280,7 +281,9 @@ export const uploadInProfile = errorWrapper(async (req, res, next) => {
         "academic.masters.OD",
         "test.languageProf",
         "test.general",
-        "workExperiences",];
+        "workExperiences",
+        "IEH"
+    ];
     if (!allowedFieldPaths.includes(fieldPath)) return {
         statusCode: 400, data: null, message: `Invalid fieldPath`
     };
@@ -490,5 +493,35 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     await userModel.populate(chat, { path: "participants", select: "firstName lastName displayPicSrc email userType role" });
-    return ({ statusCode: 200, message: `counsellor assigned`, data: { advisors: req.user.advisors, chat: chat } });
+    return { statusCode: 200, message: `counsellor assigned`, data: { advisors: req.user.advisors, chat: chat } };
+})
+export const IEH = errorWrapper(async (req, res, next) => {
+    const { error, value } = Joi.object({ institutionId: Joi.string(), verificationDocName: Joi.string() }).validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { institutionId, verificationDocName } = value;
+    const institution = await institutionModel.findById(institutionId)
+    if (!institution) return { statusCode: 400, message: `invalid institutionId`, data: { institutionId: institutionId } }
+    if (req.user.IEH.verifiedAccess) return { statusCode: 400, message: `already verified`, data: { institutionId: institutionId } }
+    // if (req.user.IEH.verificationStatus === "Verification Request Initiated") return { statusCode: 400, message: `already verified`, data: { institutionId: institutionId } }
+    let IEH = {
+        institution: institutionId,
+        verificationStatus: "Verification Request Initiated",
+        verificationDocName: verificationDocName,
+        verificationDocument: ""
+    }
+    if (req.file) {
+        const { originalname, path, mimetype } = req.file;
+        const data = fs.readFileSync(path);
+        const newDoc = await Document.create({ name: originalname, data: data, contentType: mimetype, viewers: [], user: req.decoded.id });
+        IEH.verificationDocument = newDoc._id
+        fs.unlinkSync(path);
+    }
+    req.user.IEH = IEH
+    req.user.logs.push({
+        action: `IEH updated`,
+        details: `institutionId:${institutionId}`
+    })
+    await req.user.save()
+    await userModel.populate(req.user, { path: "IEH.institution", select: "InstitutionName IEH.logoSrc IEH.members InstitutionType university" })
+    return { statusCode: 200, message: `IEH updated`, data: { IEH: req.user.IEH } };
 })

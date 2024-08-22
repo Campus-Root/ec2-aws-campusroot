@@ -15,11 +15,11 @@ const Student = mongoose.Schema(
         phone: { countryCode: { type: String }, number: { type: String } },
         LeadSource: { type: String },
         IEH: {
-            institutionName: { type: String },
-            campus: { type: String },
-            verificationCode: { type: String },
+            institution: { type: mongoose.Types.ObjectId, ref: 'institution' },
+            verificationStatus: { type: String },
             verifiedAccess: { type: Boolean, default: false },
-            verificationMethod: { type: String }
+            verificationDocName: { type: String },
+            verificationDocument: { type: mongoose.Types.ObjectId, ref: "document" },
         },
         personalDetails: {
             DOB: { type: Date },
@@ -96,6 +96,7 @@ const Student = mongoose.Schema(
                 isCompleted: { type: Boolean }
             },
             underGraduation: {
+                custom: { type: Boolean, default: false },
                 instituteName: { type: String, },
                 city: { type: String },
                 state: { type: String },
@@ -108,7 +109,7 @@ const Student = mongoose.Schema(
                 startDate: { type: Date },
                 endDate: { type: Date, },
                 backlogs: { type: Number },
-                isCompleted: { type: Boolean }
+                isCompleted: { type: Boolean },
             },
             postGraduation: {
                 instituteName: { type: String, },

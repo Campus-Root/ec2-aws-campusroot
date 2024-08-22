@@ -6,11 +6,11 @@ import { checkDisposableEmail, isPaid, validatePayment, validateProducts } from 
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
 import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation } from "../controllers/student/index.js";
-import { deleteUploadedInProfile, editEmail, editPhone, editProfile, profile, requestCounsellor, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
+import { deleteUploadedInProfile, editEmail, editPhone, editProfile, IEH, profile, requestCounsellor, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
 import { wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, requestCancellation, checkout, uploadInApplication, paymentVerification, order, orderInfo, Cart, reCheckout } from "../controllers/student/application.js";
 const router = express.Router();
 //        {{base}}/api/v1/student
-
+router.post("/ieh", authMiddleware, isStudent, handleFile, IEH);
 router.post("/post-review", authMiddleware, isStudent, postReview);
 router.put("/edit-review", authMiddleware, isStudent, editReview);
 
