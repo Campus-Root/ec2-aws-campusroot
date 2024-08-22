@@ -11,6 +11,7 @@ import { disciplineRegexMatch, subDisciplineRegexMatch } from "../../utils/regex
 import leadsModel from "../../models/leads.js";
 import { leadCreation, refreshToken } from "../../utils/CRMintegrations.js";
 import 'dotenv/config';
+import institutionModel from "../../models/IndianColleges.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next) => {
     const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
@@ -222,55 +223,58 @@ export const counsellors = errorWrapper(async (req, res, next) => {
 })
 export const uniNameRegex = errorWrapper(async (req, res, next) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
-    const searchPattern = req.query.search.replace(" ", "|");
-    const countryFilter = req.query.country ? { "location.country": req.query.country } : {};
-    const uniKeyword = {
-        $or: [
-            { name: { $regex: searchPattern, $options: "i" } },
-            { code: { $regex: searchPattern, $options: "i" } },
-            { "location.country": { $regex: searchPattern, $options: "i" } },
-            { "location.state": { $regex: searchPattern, $options: "i" } },
-            { "location.city": { $regex: searchPattern, $options: "i" } }
-        ],
-        courses: { $gt: 0 },
-        ...countryFilter
-    };
-
-    const uniSearchResults = await universityModel.aggregate([
-        { $match: uniKeyword },
-        {
-            $addFields: {
-                isStartMatch: {
-                    $cond: {
-                        if: {
-                            $or: [
-                                { $regexMatch: { input: "$name", regex: "^" + req.query.search, options: "i" } },
-                                { $regexMatch: { input: "$code", regex: "^" + req.query.search, options: "i" } },
-                                { $regexMatch: { input: "$location.country", regex: "^" + req.query.search, options: "i" } },
-                                { $regexMatch: { input: "$location.state", regex: "^" + req.query.search, options: "i" } },
-                                { $regexMatch: { input: "$location.city", regex: "^" + req.query.search, options: "i" } }
-                            ]
-                        },
-                        then: 1,
-                        else: 0
+    let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = []
+    if (req.query.institutions == 1) institutionSearchResults = await institutionModel.find({ $or: [{ InstitutionName: { $regex: req.query.search, $options: "i" } }, { university: { $regex: req.query.search, $options: "i" } }, { Address: { $regex: req.query.search, $options: "i" } }, { State: { $regex: req.query.search, $options: "i" } }, { District: { $regex: req.query.search, $options: "i" } }] }, "InstitutionName State District university IEH").sort({ isStartMatch: -1, InstitutionName: 1 }).limit(5);
+    if (req.query.universities == 1) {
+        const searchPattern = req.query.search.replace(" ", "|");
+        const countryFilter = req.query.country ? { "location.country": req.query.country } : {};
+        const uniKeyword = {
+            $or: [
+                { name: { $regex: searchPattern, $options: "i" } },
+                { code: { $regex: searchPattern, $options: "i" } },
+                { "location.country": { $regex: searchPattern, $options: "i" } },
+                { "location.state": { $regex: searchPattern, $options: "i" } },
+                { "location.city": { $regex: searchPattern, $options: "i" } }
+            ],
+            courses: { $gt: 0 },
+            ...countryFilter
+        };
+        uniSearchResults = await universityModel.aggregate([
+            { $match: uniKeyword },
+            {
+                $addFields: {
+                    isStartMatch: {
+                        $cond: {
+                            if: {
+                                $or: [
+                                    { $regexMatch: { input: "$name", regex: "^" + req.query.search, options: "i" } },
+                                    { $regexMatch: { input: "$code", regex: "^" + req.query.search, options: "i" } },
+                                    { $regexMatch: { input: "$location.country", regex: "^" + req.query.search, options: "i" } },
+                                    { $regexMatch: { input: "$location.state", regex: "^" + req.query.search, options: "i" } },
+                                    { $regexMatch: { input: "$location.city", regex: "^" + req.query.search, options: "i" } }
+                                ]
+                            },
+                            then: 1,
+                            else: 0
+                        }
                     }
                 }
+            },
+            { $sort: { isStartMatch: -1, name: 1 } },
+            { $limit: 5 },
+            {
+                $project: {
+                    name: 1,
+                    location: 1,
+                    community: 1,
+                    logoSrc: 1,
+                    code: 1
+                }
             }
-        },
-        { $sort: { isStartMatch: -1, name: 1 } },
-        { $limit: 5 },
-        {
-            $project: {
-                name: 1,
-                location: 1,
-                community: 1,
-                logoSrc: 1,
-                code: 1
-            }
-        }
-    ]);
-    const disciplineSearchResults = disciplineRegexMatch(req.query.search)
-    const subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
+        ]);
+    }
+    if (req.query.subDisciplines == 1) disciplineSearchResults = disciplineRegexMatch(req.query.search)
+    if (req.query.disciplines == 1) subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
     // const uniKeyword = {
     //     $or: [
     //         { name: { $regex: req.query.search.replace(" ", "|"), $options: "i" } },
@@ -283,7 +287,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     // };
     // if (req.query.country) uniKeyword["location.country"] = req.query.country
     // const uniSearchResults = await universityModel.find(uniKeyword, "name location community logoSrc").limit(5)
-    return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults } })
+    return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults, institutions: institutionSearchResults } })
 })
 export const requestCallBack = errorWrapper(async (req, res, next) => {
     const { name, email, phone, studentID, queryDescription } = req.body
