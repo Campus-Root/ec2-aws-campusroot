@@ -1,17 +1,18 @@
 {
   "files": {
     "main.css": "/static/css/main.b64f24c1.css",
-    "main.js": "/static/js/main.085c4403.js",
+    "main.js": "/static/js/main.07944775.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
-    "static/media/homepage1.png": "/static/media/homepage1.4d943238aa86e5866c6f.png",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
     "static/media/homepage3.png": "/static/media/homepage3.e608fa12cac2d6c3d971.png",
     "static/media/section1.png": "/static/media/section1.24e1b0da027aba611d17.png",
     "static/media/homepage2.png": "/static/media/homepage2.046126c6ce976c29685d.png",
+    "static/media/Maskgroup.png": "/static/media/Maskgroup.c195e3e145f54285ab51.png",
     "static/media/section2.png": "/static/media/section2.97560adabd86f2040c36.png",
     "static/media/calendar.gif": "/static/media/calendar.15b8535a4830419c950f.gif",
     "static/media/profilebg.png": "/static/media/profilebg.ca50d65fc96a2ad9b833.png",
     "static/media/instagram-icon.gif": "/static/media/instagram-icon.0d0ede19c0d1daa8f291.gif",
+    "static/media/homepage1.png": "/static/media/homepage1.6cca2ceb8b8f72a7822f.png",
     "static/media/NeutrifStudio-Bold.ttf": "/static/media/NeutrifStudio-Bold.2df9cdd5912b23269fd1.ttf",
     "static/media/NeutrifStudio-Medium.ttf": "/static/media/NeutrifStudio-Medium.e9e8d6187d3c4dcda3fa.ttf",
     "static/media/NeutrifStudio-Regular.ttf": "/static/media/NeutrifStudio-Regular.a1c7408999f60377a856.ttf",
@@ -29,11 +30,11 @@
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
     "main.b64f24c1.css.map": "/static/css/main.b64f24c1.css.map",
-    "main.085c4403.js.map": "/static/js/main.085c4403.js.map",
+    "main.07944775.js.map": "/static/js/main.07944775.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.b64f24c1.css",
-    "static/js/main.085c4403.js"
+    "static/js/main.07944775.js"
   ]
 }
