@@ -8,6 +8,7 @@ const institutionSchema = mongoose.Schema({
     Aicte_ID: { type: String },
     university: [{ type: String }],
     IEH: {
+        exists: { type: Boolean, default: false },
         logoSrc: { type: String },
         members: [{ type: mongoose.Types.ObjectId, ref: "user" }],
     }

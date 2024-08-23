@@ -5,7 +5,7 @@ import userModel from "./User.js";
 const Team = mongoose.Schema({
     role: { type: String, enum: { values: Object.values(TeamRoleEnum), message: "Invalid role" } },
     students: [{ profile: { type: mongoose.Types.ObjectId, ref: "user", }, stage: { type: String, enum: { values: Object.values(studentCounsellingStagesEnum), message: "Invalid stage" } }, nextActionDate: { type: String, } }], // for counsellors
-    expertiseCountry: [{ type: String, enum: { values: Object.values(DestinationTypeEnum), message: "Invalid country" }}],
+    expertiseCountry: [{ type: String, enum: { values: Object.values(DestinationTypeEnum), message: "Invalid country" } }],
     numberOfStudentsAssisted: { type: Number, default: 0 }, // for counsellors
     linkedIn: { type: String }, // for all team
     googleTokens: {
@@ -17,10 +17,7 @@ const Team = mongoose.Schema({
     language: [{ type: String }],
     leads: [{ type: mongoose.Types.ObjectId, ref: "leads" }],// for remoteStudentAdvisor
     applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],// for Process Coordinators
-    IEH:{
-        institutionName: { type: String },
-        campus: { type: String },
-    },
+    institution: { type: mongoose.Types.ObjectId, ref: 'institution' }, // for IEM member
     updates: [{ type: Object }]
 }
 );
