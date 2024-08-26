@@ -38,6 +38,7 @@ export const profile = errorWrapper(async (req, res, next) => {
             { path: "documents.test.general", select: "name contentType createdAt", },
             { path: "documents.test.languageProf", select: "name contentType createdAt", },
             { path: "documents.workExperiences", select: "name contentType createdAt", },]),
+        await institutionModel.populate(req.user, { path: "IEH.institution", select: "InstitutionName IEH.logoSrc IEH.members InstitutionType university" })
     ])
     const profile = { ...req.user._doc }
     delete profile.logs;
@@ -522,6 +523,6 @@ export const IEH = errorWrapper(async (req, res, next) => {
         details: `institutionId:${institutionId}`
     })
     await req.user.save()
-    await userModel.populate(req.user, { path: "IEH.institution", select: "InstitutionName IEH.logoSrc IEH.members InstitutionType university" })
+    await institutionModel.populate(req.user, { path: "IEH.institution", select: "InstitutionName IEH.logoSrc IEH.members InstitutionType university" })
     return { statusCode: 200, message: `IEH updated`, data: { IEH: req.user.IEH } };
 })
