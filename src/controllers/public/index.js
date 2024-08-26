@@ -273,8 +273,8 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
             }
         ]);
     }
-    if (req.query.subDisciplines == 1) disciplineSearchResults = disciplineRegexMatch(req.query.search)
-    if (req.query.disciplines == 1) subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
+    if (req.query.disciplines == 1) disciplineSearchResults = disciplineRegexMatch(req.query.search)
+    if (req.query.subDisciplines == 1) subDisciplineSearchResults = subDisciplineRegexMatch(req.query.search)
     // const uniKeyword = {
     //     $or: [
     //         { name: { $regex: req.query.search.replace(" ", "|"), $options: "i" } },
