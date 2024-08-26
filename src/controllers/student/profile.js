@@ -13,6 +13,7 @@ import { isValidObjectId } from "mongoose";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
 import institutionModel from "../../models/IndianColleges.js";
+import Joi from "joi";
 export const profile = errorWrapper(async (req, res, next) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
@@ -502,6 +503,7 @@ export const IEH = errorWrapper(async (req, res, next) => {
     const { institutionId, verificationDocName } = value;
     const institution = await institutionModel.findById(institutionId)
     if (!institution) return { statusCode: 400, message: `invalid institutionId`, data: { institutionId: institutionId } }
+    if (!institution.IEH.exists) return { statusCode: 400, message: `this institution doesn't have IEH`, data: { institutionId: institutionId } }
     if (req.user.IEH.verifiedAccess) return { statusCode: 400, message: `already verified`, data: { institutionId: institutionId } }
     // if (req.user.IEH.verificationStatus === "Verification Request Initiated") return { statusCode: 400, message: `already verified`, data: { institutionId: institutionId } }
     let IEH = {
