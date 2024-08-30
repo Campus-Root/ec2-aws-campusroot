@@ -23,10 +23,10 @@ export default router;
 
 
 // Import dependencies
-import { graphqlHTTP } from 'express-graphql';
-import { buildSchema } from 'graphql';
-import { studentModel } from "../models/Student.js";
-import leadsModel from "../models/leads.js";
+// import { graphqlHTTP } from 'express-graphql';
+// import { buildSchema } from 'graphql';
+// import { studentModel } from "../models/Student.js";
+// import leadsModel from "../models/leads.js";
 
 // Define the GraphQL schema
 // const schema = buildSchema(`
