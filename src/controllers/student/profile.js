@@ -345,7 +345,7 @@ export const deleteUploadedInProfile = errorWrapper(async (req, res, next) => {
         fields[2] ? await userModel.findByIdAndUpdate(req.user._id, { $set: { [`documents.${fields[0]}.${fields[1]}.${fields[2]}`]: null }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } }) : await userModel.findByIdAndUpdate(req.user._id, { $set: { [`documents.${fields[0]}.${fields[1]}`]: null }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } })
     }
     await Promise.all([
-        await Document.findByIdAndRemove(documentId),
+        await Document.findByIdAndDelete(documentId),
         await deleteFileInWorkDrive(existingDoc.data.resource_id),
         await Document.populate(req.user,
             [{ path: "tests.docId", select: "data", },
