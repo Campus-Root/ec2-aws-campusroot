@@ -49,9 +49,9 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     })
   }
   req.user.recommendations.criteria = {
-    ug_gpa: ug.totalScore,
-    gre: gre,
-    sub_discipline: req.user.preference.courses
+    ug_gpa: JSON.stringify(ug),
+    gre: JSON.stringify(GRE.scores),
+    sub_discipline: JSON.stringify(req.user.preference.courses)
   }
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
