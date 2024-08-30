@@ -80,6 +80,7 @@ async function getZohoTokens(authorizationCode) {
 
 export const regenerateToken = async () => {
     try {
+        console.log("regenerateToken")
         const clientId = process.env.CRM_CLIENT_ID;
         const clientSecret = process.env.CRM_CLIENT_SECRET;
         const refresh_token = process.env.CRM_REFRESH_TOKEN;
@@ -96,12 +97,14 @@ export const regenerateToken = async () => {
         console.log("zoho access token regenerated");
         return data.access_token
     } catch (error) {
+        console.log("zoho access token not regenerated");
         console.log(error);
     }
 }
 
 export const createFolder = async (name, parent_id) => {
     try {
+        console.log("creating folder")
         const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN")
         const ZOHO_ACCESS_TOKEN = (existingToken && validateAccessToken(existingToken)) ? existingToken : await regenerateToken()
         const { data } = await axios.post(
@@ -122,8 +125,11 @@ export const createFolder = async (name, parent_id) => {
                 }
             }
         );
+        console.log("created folder")
         return data.data;
     } catch (error) {
+        console.log("folder creation error");
+
         console.log(error.response);
     }
 }
