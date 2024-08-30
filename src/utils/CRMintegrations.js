@@ -25,7 +25,7 @@ export const refreshToken = async () => {
         const { access_token } = await response.json();
         return access_token
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return new Error(`error at crm refreshToken`)
     }
 }
@@ -43,10 +43,9 @@ export const leadCreation = async (accessToken, crmData) => {
             })
         });
         const { data } = await response.json();
-        console.log(data);
         return data
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return new Error(`error at crm lead creation`)
     }
 }
@@ -65,8 +64,8 @@ async function getZohoTokens(authorizationCode) {
                 code: authorizationCode,
             },
         });
-        console.log(response.data);
-        console.log("................................");
+        
+        
         const { access_token, refresh_token, expires_in } = response.data;
         console.log('Access Token:', access_token);
         console.log('Refresh Token:', refresh_token);
@@ -80,7 +79,6 @@ async function getZohoTokens(authorizationCode) {
 
 export const regenerateToken = async () => {
     try {
-        console.log("regenerateToken")
         const clientId = process.env.CRM_CLIENT_ID;
         const clientSecret = process.env.CRM_CLIENT_SECRET;
         const refresh_token = process.env.CRM_REFRESH_TOKEN;
@@ -94,17 +92,14 @@ export const regenerateToken = async () => {
                 }
             })
         await storeNewToken("ZOHO_ACCESS_TOKEN", data.access_token)
-        console.log("zoho access token regenerated");
         return data.access_token
     } catch (error) {
-        console.log("zoho access token not regenerated");
-        console.log(error);
+        console.error(error);
     }
 }
 
 export const createFolder = async (name, parent_id) => {
     try {
-        console.log("creating folder")
         const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN")
         const ZOHO_ACCESS_TOKEN = (existingToken && await validateAccessToken(existingToken)) ? existingToken : await regenerateToken()
         const { data } = await axios.post(
@@ -125,12 +120,9 @@ export const createFolder = async (name, parent_id) => {
                 }
             }
         );
-        console.log("created folder")
         return data.data;
     } catch (error) {
-        console.log("folder creation error");
-
-        console.log(error.response);
+        console.error(error);
     }
 }
 
@@ -143,10 +135,9 @@ export const validateAccessToken = async (token) => {
                 Authorization: `Zoho-oauthtoken ${token}`,
             },
         });
-        console.log("zoho access token validity passed");
         return true; // Token is valid
     } catch (error) {
-        console.error("zoho access token validity failed");
+        console.error(error);
         return false;
     }
 }

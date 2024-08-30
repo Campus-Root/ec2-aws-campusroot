@@ -33,7 +33,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         token: { data: null, expiry: new Date() }
     }]
     student.verification = verification
-    student.suggestedPackages = ["66b8414fcfe5abb913e9b1bd"]  // adding suggested package by default
+    student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
@@ -47,7 +47,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         details: "traditional registration done"
     })
     const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'], DeviceToken)
-    const doc = await createFolder(firstName + '-' + lastName + '-' + student._id, "o6kj58892caadca144e6f858734535f222cf2")
+    const doc = await createFolder(firstName + '-' + lastName + '-' + student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
     student.docData = {
         folder: doc.id,
         name: doc.attributes.name,
@@ -95,7 +95,7 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
         action: `${role} Registration done`,
         details: `traditional registration done`
     })
-    const doc = await createFolder(firstName + '-' + lastName + '-' + user._id, "o6kj504b75a33306f4fafa37a6f5d033ca2c1")
+    const doc = await createFolder(firstName + '-' + lastName + '-' + user._id, DEFAULT_MEMBER_PARENTID_FOLDER_ZOHO)
     user.docData = {
         folder: doc.id,
         name: doc.attributes.name,
@@ -167,7 +167,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
             }
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
-            const doc = await createFolder(firstName + '-' + lastName + '-' + student._id, "o6kj58892caadca144e6f858734535f222cf2")
+            const doc = await createFolder(firstName + '-' + lastName + '-' + student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
             student.docData = {
                 folder: doc.id,
                 name: doc.attributes.name,
