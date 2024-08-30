@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.b64f24c1.css",
-    "main.js": "/static/js/main.6c27ce65.js",
+    "main.js": "/static/js/main.9a5a7678.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
     "static/media/homepage3.png": "/static/media/homepage3.e608fa12cac2d6c3d971.png",
@@ -10,7 +10,6 @@
     "static/media/Maskgroup.png": "/static/media/Maskgroup.c195e3e145f54285ab51.png",
     "static/media/section2.png": "/static/media/section2.97560adabd86f2040c36.png",
     "static/media/calendar.gif": "/static/media/calendar.15b8535a4830419c950f.gif",
-    "static/media/profilebg.png": "/static/media/profilebg.ca50d65fc96a2ad9b833.png",
     "static/media/instagram-icon.gif": "/static/media/instagram-icon.0d0ede19c0d1daa8f291.gif",
     "static/media/homepage1.png": "/static/media/homepage1.6cca2ceb8b8f72a7822f.png",
     "static/media/NeutrifStudio-Bold.ttf": "/static/media/NeutrifStudio-Bold.2df9cdd5912b23269fd1.ttf",
@@ -21,20 +20,22 @@
     "static/media/check_list.gif": "/static/media/check_list.9f1e8d67e35dd010962d.gif",
     "static/media/nomeetings.png": "/static/media/nomeetings.ec477ef9ac7ff8074696.png",
     "static/media/norecommend.png": "/static/media/norecommend.db6e2ee5e951d985f887.png",
+    "static/media/profilebg.png": "/static/media/profilebg.357f4785db0462cd3b48.png",
     "static/media/standardLoader.gif": "/static/media/standardLoader.b2a8fa3d8baba9fc720f.gif",
     "static/media/grescore.png": "/static/media/grescore.a3448f96cd8e9910d154.png",
     "static/media/disciplines.png": "/static/media/disciplines.812d6a52ed32887868b7.png",
     "static/media/facebook-icon.gif": "/static/media/facebook-icon.a673d075840558e5b412.gif",
     "static/media/emailVerified.png": "/static/media/emailVerified.ed8f7ae8cf592cff857f.png",
+    "static/media/flight.png": "/static/media/flight.d5d4d255ee1b03cb0f03.png",
     "static/media/CampusrootLogo.png": "/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png",
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
     "main.b64f24c1.css.map": "/static/css/main.b64f24c1.css.map",
-    "main.6c27ce65.js.map": "/static/js/main.6c27ce65.js.map",
+    "main.9a5a7678.js.map": "/static/js/main.9a5a7678.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.b64f24c1.css",
-    "static/js/main.6c27ce65.js"
+    "static/js/main.9a5a7678.js"
   ]
 }
