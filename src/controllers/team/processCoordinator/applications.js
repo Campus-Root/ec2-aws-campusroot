@@ -49,7 +49,7 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
 
 
     if (req.file) {
-        const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+        const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier || "", folder_ID: req.user.docData.folder })
         if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
         if (uploadedFileResponse.data.new) {
             const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data

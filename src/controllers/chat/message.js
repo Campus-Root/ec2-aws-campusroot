@@ -10,12 +10,12 @@ import Joi from "joi";
 
 export const postMessages = errorWrapper(async (req, res, next) => {
 
-    const { error, value } = Joi.object({ chatId: Joi.string().required(), content: Joi.string().allow(""), repliedTo: Joi.string(), fileIdentifier: Jio.string() }).validate(req.body)
+    const { error, value } = Joi.object({ chatId: Joi.string().required(), content: Joi.string().allow(""), repliedTo: Joi.string().allow(""), fileIdentifier: Joi.string().allow("") }).validate(req.body)
     if (error) {
         if (req.file && req.file.path) unlinkSync(req.file.path);
         return { statusCode: 400, message: error.details[0].message, data: [value] };
     }
-    const { content, chatId, repliedTo } = value
+    const { content, chatId, repliedTo, fileIdentifier } = value
     if (!content && !req.file) {
         if (req.file && req.file.path) unlinkSync(req.file.path);
         return { statusCode: 400, data: null, message: `incomplete content or attachment` };
