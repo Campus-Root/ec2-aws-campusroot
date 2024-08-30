@@ -124,7 +124,7 @@ export const createFolder = async (name, parent_id) => {
         );
         return data.data;
     } catch (error) {
-        console.log(error.response.data);
+        console.log(error.response);
     }
 }
 

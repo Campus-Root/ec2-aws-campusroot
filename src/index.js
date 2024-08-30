@@ -32,8 +32,8 @@ app.use(express.static(path.join(__dirname, 'build')));
 
 
 
-startCronJob();
-initialize();
+await startCronJob();
+await initialize();
 export const cookieOptions = {
 	secure: true,
 	httpOnly: true,

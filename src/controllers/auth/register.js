@@ -11,24 +11,17 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { jwtDecode } from "jwt-decode";
 import { cookieOptions } from "../../index.js";
-import { DestinationTypeEnum, LanguageTypeEnum } from "../../utils/enum.js";
 import axios from "axios";
 import qs from "qs";
 import { generateTokens } from "../../utils/redisTokens.js";
 import { createFolder } from "../../utils/CRMintegrations.js";
+import { registerSchema } from "../../schemas/student.js";
 export const StudentRegister = errorWrapper(async (req, res, next) => {
     const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
-    if (!password || !email || !firstName || !lastName) return { statusCode: 400, data: null, message: `Incomplete details` };
+    const { error, value } = registerSchema.validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const alreadyExists = await studentModel.findOne({ email: email });
-    if (alreadyExists) return {
-        statusCode: 400, data: null, message: `Email already registered`
-    };
-    if (!Object.values(DestinationTypeEnum).includes(country)) return {
-        statusCode: 400, data: null, message: `select destination country`
-    };
-    if (!Object.values(LanguageTypeEnum).includes(language)) return {
-        statusCode: 400, data: null, message: `select language communication`
-    };
+    if (alreadyExists) return { statusCode: 400, data: null, message: `Email already registered` };
     const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country, language: language } });
     const verification = [{
         type: "email",
@@ -48,7 +41,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     const template = Handlebars.compile(source)
     const replacement = { userName: `${firstName} ${lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${verification[0].token.data}` }
     const htmlToSend = template(replacement)
-    await sendMail({ to: email, subject: subject, html: htmlToSend });
+    sendMail({ to: email, subject: subject, html: htmlToSend });
     student.logs.push({
         action: "Registration Done",
         details: "traditional registration done"

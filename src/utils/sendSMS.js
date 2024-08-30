@@ -1,7 +1,7 @@
 import twilio from 'twilio';
 
 import 'dotenv/config';
-let { SMS_TWILIO_SID, SMS_TWILIO_TOKEN, SMS_TWILIO_NUMBER, SMS_FAST2SMS_API_KEY } = process.env;
+let { SMS_TWILIO_SID, SMS_TWILIO_TOKEN, SMS_TWILIO_NUMBER } = process.env;
 export const sendSMS = async (data) => {
     try {
         const { to, message } = data

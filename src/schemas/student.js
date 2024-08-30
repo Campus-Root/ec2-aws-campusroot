@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { ProductCategoryEnum } from "../utils/enum.js";
+import { DestinationTypeEnum, LanguageTypeEnum, ProductCategoryEnum } from "../utils/enum.js";
 
 export const loginSchema = Joi.object({
     email: Joi.string().required(),
@@ -25,8 +25,14 @@ export const CheckoutSchema = Joi.object({
     products: Joi.array().items(ProductSchema).min(0),
     userCurrency: Joi.string()
 }).required();
-
-
+export const registerSchema = Joi.object({
+    email: Joi.string().required(),
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    password: Joi.string().required(),
+    country: Joi.string().valid(...Object.values(DestinationTypeEnum)).required(),
+    language: Joi.string().valid(...Object.values(LanguageTypeEnum)).required(),
+});
 
 export const uploadInProfileSchema = Joi.object({
     fieldPath: Joi.string().valid(
