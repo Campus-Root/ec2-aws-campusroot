@@ -51,7 +51,7 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
     await meetingModel.populate(student, [{ path: "activity.meetings", select: "data user member", },])
     await productModel.populate(student, { path: "activity.products", populate: { path: "university course docChecklist.doc", select: "name logoSrc location type establishedYear  contentType createdAt", }, })
     await courseModel.populate(student, [{ path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite", },])
-    await Document.populate(student, [{ path: "documents.personal.resume documents.personal.passportBD documents.personal.passportADD documents.academic.secondarySchool documents.academic.plus2 documents.academic.degree documents.academic.bachelors.transcripts documents.academic.bachelors.bonafide documents.academic.bachelors.CMM documents.academic.bachelors.PCM documents.academic.bachelors.OD documents.academic.masters.transcripts documents.academic.masters.bonafide documents.academic.masters.CMM documents.academic.masters.PCM documents.academic.masters.OD documents.test.general documents.test.languageProf documents.workExperiences workExperience.docId tests.docId", select: "name contentType createdAt", },])
+    await Document.populate(student, [{ path: "documents.personal.resume documents.personal.passportBD documents.personal.passportADD documents.academic.secondarySchool documents.academic.plus2 documents.academic.degree documents.academic.bachelors.transcripts documents.academic.bachelors.bonafide documents.academic.bachelors.CMM documents.academic.bachelors.PCM documents.academic.bachelors.OD documents.academic.masters.transcripts documents.academic.masters.bonafide documents.academic.masters.CMM documents.academic.masters.PCM documents.academic.masters.OD documents.test.general documents.test.languageProf documents.workExperiences workExperience.docId tests.docId", select: "data", },])
     await universityModel.populate(student, [{ path: "recommendations.data.course.university activity.cart.course.university activity.wishList.university activity.products.course.university", select: "name logoSrc location type establishedYear ", },])
     await userModel.populate(student, [{ path: "advisors.info activity.meetings.user activity.meetings.member", select: "firstName lastName email displayPicSrc", },])
     return ({ statusCode: 200, message: `All details of Student`, data: student });
@@ -61,7 +61,7 @@ export const singleApplications = errorWrapper(async (req, res, next) => {
     const application = await productModel.findById(id)
     if (!application) return { statusCode: 400, data: null, message: `invalid applicationId` };
     await userModel.populate(application, { path: "user processCoordinator counsellor", select: "firstName lastName email displayPicSrc" })
-    await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt" })
+    await Document.populate(application, { path: "docChecklist.doc", select: "data" })
     await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `single applications details`, data: application })

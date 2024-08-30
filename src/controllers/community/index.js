@@ -6,6 +6,7 @@ import postModel from "../../models/Post.js";
 import contextModel from "../../models/Context.js"
 import fs from "fs"
 import Document from "../../models/Uploads.js";
+import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 
 export const joinInCommunity = errorWrapper(async (req, res, next) => {
     const { communityId } = req.body
@@ -66,7 +67,7 @@ export const fetchPosts = errorWrapper(async (req, res, next) => {
                 select: "contextType content vote comments creator attachment",
                 populate: {
                     path: "attachment",
-                    select: "name contentType createdAt"
+                    select: "data"
                 },
                 populate: {
                     path: "comments.user",
@@ -119,7 +120,7 @@ export const myActivity = errorWrapper(async (req, res, next) => {
                 path: "query",
                 select: "contextType content vote comments creator attachment createdAt",
                 populate: [
-                    { path: "attachment", select: "name contentType createdAt" },
+                    { path: "attachment", select: "data" },
                     { path: "comments.user", select: "firstName lastName displayPicSrc" },
                     { path: "creator", select: "firstName lastName displayPicSrc" }
                 ]
@@ -166,7 +167,7 @@ export const postsInCommunity = errorWrapper(async (req, res, next) => {
                 path: "query",
                 select: "contextType content vote comments creator attachment",
                 populate: [
-                    { path: "attachment", select: "name contentType createdAt" },
+                    { path: "attachment", select: "data" },
                     { path: "comments.user", select: "firstName lastName displayPicSrc" },
                     { path: "creator", select: "firstName lastName displayPicSrc" }
                 ]
@@ -175,7 +176,7 @@ export const postsInCommunity = errorWrapper(async (req, res, next) => {
                 path: "responses",
                 select: "contextType content vote comments creator attachment",
                 populate: [
-                    { path: "attachment", select: "name contentType createdAt" },
+                    { path: "attachment", select: "data" },
                     { path: "comments.user", select: "firstName lastName displayPicSrc" },
                     { path: "creator", select: "firstName lastName displayPicSrc" }
                 ]
@@ -204,7 +205,7 @@ export const singlePost = errorWrapper(async (req, res, next) => {
             path: "query",
             select: "contextType content vote comments creator attachment",
             populate: [
-                { path: "attachment", select: "name contentType createdAt" },
+                { path: "attachment", select: "data" },
                 { path: "comments.user", select: "firstName lastName displayPicSrc" },
                 { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
@@ -221,7 +222,7 @@ export const singlePost = errorWrapper(async (req, res, next) => {
             path: "responses",
             select: "contextType content vote comments creator attachment",
             populate: [
-                { path: "attachment", select: "name contentType createdAt" },
+                { path: "attachment", select: "data" },
                 { path: "comments.user", select: "firstName lastName displayPicSrc" },
                 { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
@@ -244,7 +245,7 @@ export const feed = errorWrapper(async (req, res, next) => {
             path: "query",
             select: "contextType content vote comments creator attachment",
             populate: [
-                { path: "attachment", select: "name contentType createdAt" },
+                { path: "attachment", select: "data" },
                 { path: "comments.user", select: "firstName lastName displayPicSrc" },
                 { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
@@ -253,7 +254,7 @@ export const feed = errorWrapper(async (req, res, next) => {
             path: "responses",
             select: "contextType content vote comments creator attachment",
             populate: [
-                { path: "attachment", select: "name contentType createdAt" },
+                { path: "attachment", select: "data" },
                 { path: "comments.user", select: "firstName lastName displayPicSrc" },
                 { path: "creator", select: "firstName lastName displayPicSrc" }
             ]
@@ -266,13 +267,17 @@ export const feed = errorWrapper(async (req, res, next) => {
     return ({ statusCode: 200, message: `all your feed`, data: posts, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
 export const query = errorWrapper(async (req, res, next) => {
-    const { action, body, header } = req.body
+    const { action, body, header, fileIdentifier } = req.body
     const user = await userModel.findById(req.decoded.id)
     switch (action) {
         case "create":
             const { communityId } = req.body
             const community = await communityModel.findById(communityId)
-            if ((body === undefined && header === undefined) || !community || !community.participants.includes(req.decoded.id)) return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
+            if ((body === undefined && header === undefined) || !community || !community.participants.includes(req.decoded.id)) {
+                if (req.file && req.file.path) unlinkSync(req.file.path);
+                return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
+            }
+
             const newPost = await postModel.create({ community: communityId })
             const newContext = await contextModel.create({
                 post: newPost._id,
@@ -285,11 +290,15 @@ export const query = errorWrapper(async (req, res, next) => {
             })
             newPost.query = newContext._id
             if (req.file) {
-                const { originalname, path, mimetype } = req.file;
-                const data = fs.readFileSync(path);
-                const newDoc = await Document.create({ name: originalname, data: data, contentType: mimetype, user: req.decoded.id });
-                newContext.attachment = newDoc._id
-                fs.unlink(path, (err) => { err ? console.error("Error deleting file:", err) : console.log("File deleted successfully") });
+                const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+                if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+                if (uploadedFileResponse.data.new) {
+                    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+                    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Post", viewers: [] };
+                    const newDoc = await Document.create(docDetails);
+                    newContext.attachment = newDoc._id
+                }
+
             }
             community.posts.push(newPost._id)
             await Promise.all([community.save(), newPost.save(), newContext.save()])
@@ -305,8 +314,8 @@ export const query = errorWrapper(async (req, res, next) => {
                 { path: "responses", select: "contextType content vote comments creator attachment" }
             ])
             await Document.populate(newPost, [
-                { path: "query.attachment", select: "name contentType createdAt", },
-                { path: "responses.attachment", select: "name contentType createdAt", },
+                { path: "query.attachment", select: "data", },
+                { path: "responses.attachment", select: "data", },
             ])
             await userModel.populate(newPost, [
                 { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
@@ -318,21 +327,29 @@ export const query = errorWrapper(async (req, res, next) => {
         case "update":
             const { contextId, deleteAttachment } = req.body
             const context = await contextModel.findById(contextId)
-            if (!context || context.creator.toString() != req.decoded.id) return {
-                statusCode: 400, data: null, message: `Invalid input for ${action} action`
+            if (!context || context.creator.toString() != req.decoded.id) {
+                if (req.file && req.file.path) unlinkSync(req.file.path);
+                return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
             }
             if (body !== undefined) context.content.body = body
             if (header !== undefined) context.content.header = header
             if (deleteAttachment && context.attachment) {
+                const document = await Document.findById(context.attachment)
+                await deleteFileInWorkDrive(document.data.resource_id)
                 await Document.findByIdAndDelete(context.attachment)
                 context.attachment = null
             }
+
             if (req.file) {
-                const { originalname, path, mimetype } = req.file;
-                const data = fs.readFileSync(path);
-                const newDoc = await Document.create({ name: originalname, data: data, contentType: mimetype, user: req.decoded.id });
-                context.attachment = newDoc._id
-                fs.unlink(path, (err) => { err ? console.error("Error deleting file:", err) : console.log("File deleted successfully") });
+                const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+                if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+                if (uploadedFileResponse.data.new) {
+                    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+                    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Post", viewers: [] };
+                    const newDoc = await Document.create(docDetails);
+                    newContext.attachment = newDoc._id
+                }
+
             }
             await context.save()
             user.logs.push({
@@ -348,8 +365,8 @@ export const query = errorWrapper(async (req, res, next) => {
                 { path: "responses", select: "contextType content vote comments creator attachment" }
             ])
             await Document.populate(post, [
-                { path: "query.attachment", select: "name contentType createdAt", },
-                { path: "responses.attachment", select: "name contentType createdAt", },
+                { path: "query.attachment", select: "data", },
+                { path: "responses.attachment", select: "data", },
             ])
             await userModel.populate(post, [
                 { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
@@ -369,12 +386,20 @@ export const query = errorWrapper(async (req, res, next) => {
             }
             if (postToBeDeleted.query) {
                 const query = await contextModel.findById(postToBeDeleted.query)
-                if (query.attachment) await Document.findByIdAndDelete(query.attachment)
+                if (query.attachment) {
+                    const document = await Document.findById(query.attachment)
+                    await deleteFileInWorkDrive(document.data.resource_id)
+                    await Document.findByIdAndDelete(query.attachment)
+                }
                 await contextModel.findByIdAndDelete(postToBeDeleted.query)
             }
             for (const ele of postToBeDeleted.responses) {
                 const response = await contextModel.findById(ele)
-                if (response.attachment) await Document.findByIdAndDelete(response.attachment)
+                if (response.attachment) {
+                    const document = await Document.findById(query.attachment)
+                    await deleteFileInWorkDrive(document.data.resource_id)
+                    await Document.findByIdAndDelete(response.attachment)
+                }
                 await contextModel.findByIdAndDelete(ele)
             }
             user.logs.push({
@@ -385,19 +410,21 @@ export const query = errorWrapper(async (req, res, next) => {
             await communityModel.findOneAndUpdate({ _id: postToBeDeleted.community }, { $pull: { posts: postId } });
             await postModel.findOneAndDelete({ _id: postId });
             return ({ statusCode: 200, message: `${action} successful`, data: null })
-        default: return {
-            statusCode: 400, data: null, message: `invalid action:${action}`
-        }
+        default: return { statusCode: 400, data: null, message: `invalid action:${action}` }
     }
 })
 export const response = errorWrapper(async (req, res, next) => {
-    const { action, body, header, contextId } = req.body
+    const { action, body, header, contextId, fileIdentifier } = req.body
     const user = await userModel.findById(req.decoded.id)
     switch (action) {
         case "create":
             const { postId } = req.body
             const post = await postModel.findById(postId)
-            if ((body === undefined && header === undefined) || !post) return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
+            if ((body === undefined && header === undefined) || !post) {
+                if (req.file && req.file.path) unlinkSync(req.file.path);
+                return { statusCode: 400, data: null, message: `Invalid input for ${action} action` };
+            }
+
             const newContext = await contextModel.create({
                 post: post._id,
                 contextType: "response",
@@ -409,11 +436,14 @@ export const response = errorWrapper(async (req, res, next) => {
             })
             post.responses.push(newContext._id)
             if (req.file) {
-                const { originalname, path, mimetype } = req.file;
-                const data = fs.readFileSync(path);
-                const newDoc = await Document.create({ name: originalname, data: data, contentType: mimetype, user: req.decoded.id });
-                newContext.attachment = newDoc._id
-                fs.unlink(path, (err) => { err ? console.error("Error deleting file:", err) : console.log("File deleted successfully") });
+                const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+                if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+                if (uploadedFileResponse.data.new) {
+                    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+                    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Chat", viewers: [] };
+                    const newDoc = await Document.create(docDetails);
+                    newContext.attachment = newDoc._id
+                }
             }
             await Promise.all([post.save(), newContext.save()])
             user.logs.push({
@@ -428,8 +458,8 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "responses", select: "contextType content vote comments creator attachment" }
             ])
             await Document.populate(post, [
-                { path: "query.attachment", select: "name contentType createdAt", },
-                { path: "responses.attachment", select: "name contentType createdAt", },
+                { path: "query.attachment", select: "data", },
+                { path: "responses.attachment", select: "data", },
             ])
             await userModel.populate(post, [
                 { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
@@ -447,15 +477,20 @@ export const response = errorWrapper(async (req, res, next) => {
             if (body !== undefined) context.content.body = body
             if (header !== undefined) context.content.header = header
             if (deleteAttachment && context.attachment) {
+                const document = await Document.findById(context.attachment)
+                await deleteFileInWorkDrive(document.data.resource_id)
                 await Document.findByIdAndDelete(context.attachment)
                 context.attachment = null
             }
             if (req.file) {
-                const { originalname, path, mimetype } = req.file;
-                const data = fs.readFileSync(path);
-                const newDoc = await Document.create({ name: originalname, data: data, contentType: mimetype, user: req.decoded.id });
-                context.attachment = newDoc._id
-                fs.unlink(path, (err) => { err ? console.error("Error deleting file:", err) : console.log("File deleted successfully") });
+                const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+                if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+                if (uploadedFileResponse.data.new) {
+                    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+                    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Chat", viewers: [] };
+                    const newDoc = await Document.create(docDetails);
+                    context.attachment = newDoc._id
+                }
             }
             await context.save()
             user.logs.push({
@@ -471,8 +506,8 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "responses", select: "contextType content vote comments creator attachment" }
             ])
             await Document.populate(Post, [
-                { path: "query.attachment", select: "name contentType createdAt", },
-                { path: "responses.attachment", select: "name contentType createdAt", },
+                { path: "query.attachment", select: "data", },
+                { path: "responses.attachment", select: "data", },
             ])
             await userModel.populate(Post, [
                 { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
@@ -486,6 +521,8 @@ export const response = errorWrapper(async (req, res, next) => {
             if (!contextToBeDeleted) return {
                 statusCode: 400, data: null, message: `Invalid contextId`
             }
+            const document = await Document.findById(context.attachment)
+            await deleteFileInWorkDrive(document.data.resource_id)
             await Document.findByIdAndDelete(contextToBeDeleted.attachment)
             const postIs = await postModel.findOneAndUpdate({ _id: contextToBeDeleted.post }, { $pull: { responses: contextId } }, { new: true })
             await communityModel.populate(postIs, { path: "community", select: "university" })
@@ -495,8 +532,8 @@ export const response = errorWrapper(async (req, res, next) => {
                 { path: "responses", select: "contextType content vote comments creator attachment" }
             ])
             await Document.populate(postIs, [
-                { path: "query.attachment", select: "name contentType createdAt", },
-                { path: "responses.attachment", select: "name contentType createdAt", },
+                { path: "query.attachment", select: "data", },
+                { path: "responses.attachment", select: "data", },
             ])
             await userModel.populate(postIs, [
                 { path: "query.comments.user", select: "firstName lastName displayPicSrc" },
@@ -549,7 +586,7 @@ export const comment = errorWrapper(async (req, res, next) => {
         { path: "post.query", select: "contextType content vote comments creator attachment" },
         { path: "post.responses", select: "contextType content vote comments creator attachment" }
     ])
-    await Document.populate(context, { path: "attachment", select: "name contentType createdAt", },)
+    await Document.populate(context, { path: "attachment", select: "data", },)
     await userModel.populate(context, [
         { path: "creator", select: "firstName lastName displayPicSrc" },
         { path: "comments.user", select: "firstName lastName displayPicSrc" },
@@ -592,7 +629,7 @@ export const vote = errorWrapper(async (req, res, next) => {
         { path: "post.query", select: "contextType content vote comments creator attachment" },
         { path: "post.responses", select: "contextType content vote comments creator attachment" }
     ])
-    await Document.populate(context, { path: "attachment", select: "name contentType createdAt", },)
+    await Document.populate(context, { path: "attachment", select: "data", },)
     await userModel.populate(context, [
         { path: "creator", select: "firstName lastName displayPicSrc" },
         { path: "comments.user", select: "firstName lastName displayPicSrc" },

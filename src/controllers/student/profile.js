@@ -1,4 +1,4 @@
-import fs from "fs";
+import { readFileSync, unlinkSync } from "fs";
 import Document from "../../models/Uploads.js";
 import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
@@ -14,31 +14,33 @@ import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
 import institutionModel from "../../models/IndianColleges.js";
 import Joi from "joi";
+import { uploadInProfileSchema } from "../../schemas/student.js";
+import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 export const profile = errorWrapper(async (req, res, next) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
         await Document.populate(req.user,
-            [{ path: "tests.docId", select: "name contentType createdAt", },
-            { path: "workExperience.docId", select: "name contentType createdAt", },
-            { path: "documents.personal.resume", select: "name contentType createdAt", },
-            { path: "documents.personal.passportBD", select: "name contentType createdAt", },
-            { path: "documents.personal.passportADD", select: "name contentType createdAt", },
-            { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
-            { path: "documents.academic.plus2", select: "name contentType createdAt", },
-            { path: "documents.academic.degree", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
-            { path: "documents.test.general", select: "name contentType createdAt", },
-            { path: "documents.test.languageProf", select: "name contentType createdAt", },
-            { path: "documents.workExperiences", select: "name contentType createdAt", },]),
+            [{ path: "tests.docId", select: "data", },
+            { path: "workExperience.docId", select: "data", },
+            { path: "documents.personal.resume", select: "data", },
+            { path: "documents.personal.passportBD", select: "data", },
+            { path: "documents.personal.passportADD", select: "data", },
+            { path: "documents.academic.secondarySchool", select: "data", },
+            { path: "documents.academic.plus2", select: "data", },
+            { path: "documents.academic.degree", select: "data", },
+            { path: "documents.academic.bachelors.transcripts", select: "data", },
+            { path: "documents.academic.bachelors.bonafide", select: "data", },
+            { path: "documents.academic.bachelors.CMM", select: "data", },
+            { path: "documents.academic.bachelors.PCM", select: "data", },
+            { path: "documents.academic.bachelors.OD", select: "data", },
+            { path: "documents.academic.masters.transcripts", select: "data", },
+            { path: "documents.academic.masters.bonafide", select: "data", },
+            { path: "documents.academic.masters.CMM", select: "data", },
+            { path: "documents.academic.masters.PCM", select: "data", },
+            { path: "documents.academic.masters.OD", select: "data", },
+            { path: "documents.test.general", select: "data", },
+            { path: "documents.test.languageProf", select: "data", },
+            { path: "documents.workExperiences", select: "data", },]),
         await institutionModel.populate(req.user, { path: "IEH.institution", select: "InstitutionName IEH.logoSrc IEH.members InstitutionType university" })
     ])
     const profile = { ...req.user._doc }
@@ -61,7 +63,7 @@ export const editEmail = errorWrapper(async (req, res, next) => {
     let subject = "Email verification"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
-    const source = fs.readFileSync(filePath, "utf-8").toString();
+    const source = readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source)
     const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${req.user.verification[0].token.data}` }
     const htmlToSend = template(replacement)
@@ -234,27 +236,27 @@ export const editProfile = errorWrapper(async (req, res, next) => {
         await req.user.save(),
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
         await Document.populate(req.user,
-            [{ path: "tests.docId", select: "name contentType createdAt", },
-            { path: "workExperience.docId", select: "name contentType createdAt", },
-            { path: "documents.personal.resume", select: "name contentType createdAt", },
-            { path: "documents.personal.passportBD", select: "name contentType createdAt", },
-            { path: "documents.personal.passportADD", select: "name contentType createdAt", },
-            { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
-            { path: "documents.academic.plus2", select: "name contentType createdAt", },
-            { path: "documents.academic.degree", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
-            { path: "documents.test.general", select: "name contentType createdAt", },
-            { path: "documents.test.languageProf", select: "name contentType createdAt", },
-            { path: "documents.workExperiences", select: "name contentType createdAt", },])
+            [{ path: "tests.docId", select: "data", },
+            { path: "workExperience.docId", select: "data", },
+            { path: "documents.personal.resume", select: "data", },
+            { path: "documents.personal.passportBD", select: "data", },
+            { path: "documents.personal.passportADD", select: "data", },
+            { path: "documents.academic.secondarySchool", select: "data", },
+            { path: "documents.academic.plus2", select: "data", },
+            { path: "documents.academic.degree", select: "data", },
+            { path: "documents.academic.bachelors.transcripts", select: "data", },
+            { path: "documents.academic.bachelors.bonafide", select: "data", },
+            { path: "documents.academic.bachelors.CMM", select: "data", },
+            { path: "documents.academic.bachelors.PCM", select: "data", },
+            { path: "documents.academic.bachelors.OD", select: "data", },
+            { path: "documents.academic.masters.transcripts", select: "data", },
+            { path: "documents.academic.masters.bonafide", select: "data", },
+            { path: "documents.academic.masters.CMM", select: "data", },
+            { path: "documents.academic.masters.PCM", select: "data", },
+            { path: "documents.academic.masters.OD", select: "data", },
+            { path: "documents.test.general", select: "data", },
+            { path: "documents.test.languageProf", select: "data", },
+            { path: "documents.workExperiences", select: "data", },])
     ])
     const profile = { ...req.user._doc }
     delete profile.logs
@@ -262,161 +264,111 @@ export const editProfile = errorWrapper(async (req, res, next) => {
     return ({ statusCode: 200, message: `profile edited successfully`, data: profile });
 })
 export const uploadInProfile = errorWrapper(async (req, res, next) => {
-    const { fieldPath } = req.body;
-    if (!fieldPath) return { statusCode: 400, data: null, message: `fieldPath is required` };
-    const allowedFieldPaths = [
-        "personal.resume",
-        "personal.passportBD",
-        "personal.passportADD",
-        "academic.secondarySchool",
-        "academic.plus2",
-        "academic.degree",
-        "academic.bachelors.transcripts",
-        "academic.bachelors.bonafide",
-        "academic.bachelors.CMM",
-        "academic.bachelors.PCM",
-        "academic.bachelors.OD",
-        "academic.masters.transcripts",
-        "academic.masters.bonafide",
-        "academic.masters.CMM",
-        "academic.masters.PCM",
-        "academic.masters.OD",
-        "test.languageProf",
-        "test.general",
-        "workExperiences",
-        "IEH"
-    ];
-    if (!allowedFieldPaths.includes(fieldPath)) return {
-        statusCode: 400, data: null, message: `Invalid fieldPath`
-    };
-    if (!req.file) return {
-        statusCode: 400, data: null, message: `file not uploaded`
-    };
-    const { originalname, path, mimetype } = req.file;
-    const data = fs.readFileSync(path);
-    const docDetails = { name: originalname, data: data, contentType: mimetype, user: req.user._id, type: "General", viewers: [req.user._id, req.user.counsellor], };
-    if (req.user.processCoordinator) docDetails.viewers.push(req.user.processCoordinator);
-    const newDoc = await Document.create(docDetails);
-    fs.unlinkSync(path);
+    if (!req.file) return { statusCode: 400, data: null, message: `no file found` };
+    const { error, value } = uploadInProfileSchema.validate(req.body)
+    if (error) {
+        if (req.file && req.file.path) unlinkSync(req.file.path);
+        return { statusCode: 400, data: [value], message: error.details[0].message };
+    }
+    const { fieldPath, fileIdentifier } = value;
     const { ...fields } = fieldPath.split(".")
+    let isArray = false
     switch (fields[0]) {
-        case "personal":
-            req.user.documents[fields[0]][fields[1]] = newDoc._id
-            break;
-        case "academic":
-            fields[2] ? req.user.documents[fields[0]][fields[1]][fields[2]] = newDoc._id : req.user.documents[fields[0]][fields[1]] = newDoc._id
-            break;
         case "test":
-            if (req.user.documents[fields[0]][fields[1]].length >= 5) return {
-                statusCode: 400, data: null, message: `Maximum limit of 5 documents reached`
-            };
-            req.user.documents[fields[0]][fields[1]].push(newDoc._id)
+            if (req.user.documents[fields[0]][fields[1]].length >= 5) {
+                if (req.file && req.file.path) unlinkSync(req.file.path);
+                return { statusCode: 400, data: null, message: `Maximum limit of 5 documents reached` };
+            }
+            isArray = true
             break;
         case "workExperiences":
-            if (req.user.documents[fields[0]].length >= 5) return {
-                statusCode: 400, data: null, message: `Maximum limit of 5 documents reached`
-            };
-            req.user.documents[fields[0]].push(newDoc._id)
+            if (req.user.documents[fields[0]].length >= 5) {
+                if (req.file && req.file.path) unlinkSync(req.file.path);
+                return { statusCode: 400, data: null, message: `Maximum limit of 5 documents reached` };
+            }
+            isArray = true
             break;
-        default: return {
-            statusCode: 400, data: null, message: `Invalid fieldPath`
-        };
+    }
+    const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+    if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+    if (!uploadedFileResponse.data.new) return { statusCode: 200, message: `file updated`, data: null }
+    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "General", viewers: [] };
+    const newDoc = await Document.create(docDetails);
+    if (isArray) {
+        fields[1] ? req.user.documents[fields[0]][fields[1]].push(newDoc._id) : req.user.documents[fields[0]].push(newDoc._id)
+    } else {
+        fields[2] ? req.user.documents[fields[0]][fields[1]][fields[2]] = newDoc._id : req.user.documents[fields[0]][fields[1]] = newDoc._id
     }
     req.user.logs.push({
-        action: `document uploaded`,
-        details: `path:${fieldPath}&documentId:${newDoc._id}`
+        action: `file uploaded`,
+        details: `file uploaded for ${fieldPath}`
     })
     await Promise.all([
         await req.user.save(),
         await Document.populate(req.user,
-            [{ path: "tests.docId", select: "name contentType createdAt", },
-            { path: "workExperience.docId", select: "name contentType createdAt", },
-            { path: "documents.personal.resume", select: "name contentType createdAt", },
-            { path: "documents.personal.passportBD", select: "name contentType createdAt", },
-            { path: "documents.personal.passportADD", select: "name contentType createdAt", },
-            { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
-            { path: "documents.academic.plus2", select: "name contentType createdAt", },
-            { path: "documents.academic.degree", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
-            { path: "documents.test.general", select: "name contentType createdAt", },
-            { path: "documents.test.languageProf", select: "name contentType createdAt", },
-            { path: "documents.workExperiences", select: "name contentType createdAt", },]),
+            [{ path: "tests.docId", select: "data", },
+            { path: "workExperience.docId", select: "data", },
+            { path: "documents.personal.resume", select: "data", },
+            { path: "documents.personal.passportBD", select: "data", },
+            { path: "documents.personal.passportADD", select: "data", },
+            { path: "documents.academic.secondarySchool", select: "data", },
+            { path: "documents.academic.plus2", select: "data", },
+            { path: "documents.academic.degree", select: "data", },
+            { path: "documents.academic.bachelors.transcripts", select: "data", },
+            { path: "documents.academic.bachelors.bonafide", select: "data", },
+            { path: "documents.academic.bachelors.CMM", select: "data", },
+            { path: "documents.academic.bachelors.PCM", select: "data", },
+            { path: "documents.academic.bachelors.OD", select: "data", },
+            { path: "documents.academic.masters.transcripts", select: "data", },
+            { path: "documents.academic.masters.bonafide", select: "data", },
+            { path: "documents.academic.masters.CMM", select: "data", },
+            { path: "documents.academic.masters.PCM", select: "data", },
+            { path: "documents.academic.masters.OD", select: "data", },
+            { path: "documents.test.general", select: "data", },
+            { path: "documents.test.languageProf", select: "data", },
+            { path: "documents.workExperiences", select: "data", },]),
     ])
     return ({ statusCode: 200, message: `Document added to ${fieldPath}`, data: { docs: req.user.documents } });
 })
 export const deleteUploadedInProfile = errorWrapper(async (req, res, next) => {
-    const { fieldPath, documentId } = req.body;
-    if (!fieldPath) return { statusCode: 400, data: null, message: `fieldPath is required` };
-    const allowedFieldPaths = ["personal.resume", "personal.passportBD", "personal.passportADD", "academic.secondarySchool", "academic.plus2", "academic.degree", "academic.bachelors.transcripts", "academic.bachelors.bonafide", "academic.bachelors.CMM", "academic.bachelors.PCM", "academic.bachelors.OD", "academic.masters.transcripts", "academic.masters.bonafide", "academic.masters.CMM", "academic.masters.PCM", "academic.masters.OD", "test.languageProf", "test.general", "workExperiences",];
-    if (!allowedFieldPaths.includes(fieldPath)) return { statusCode: 400, data: null, message: `Invalid fieldPath` };
+    const { error, value } = uploadInProfileSchema.validate(req.body)
+    if (error) return { statusCode: 400, data: [value], message: error.details[0].message };
+    const { fieldPath, documentId } = value;
     const existingDoc = await Document.findById(documentId);
     if (!existingDoc) return { statusCode: 400, data: null, message: `Document not found` };
-    if (existingDoc.user.toString() !== req.user._id.toString()) return {
-        statusCode: 400, data: null, message: `Unauthorized to delete this document`
-    };
+    if (existingDoc.user.toString() !== req.user._id.toString()) return { statusCode: 400, data: null, message: `Unauthorized to delete this document` };
     const { ...fields } = fieldPath.split(".")
-    switch (fields[0]) {
-        case "personal":
-            if (req.user.documents[fields[0]][fields[1]].toString() != documentId) return { statusCode: 400, data: null, message: `Document Id mis match` };
-            req.user.documents[fields[0]][fields[1]] = null
-            break;
-        case "academic":
-            if (!fields[2]) {
-                if (req.user.documents[fields[0]][fields[1]].toString() != documentId) return { statusCode: 400, data: null, message: `Document Id mis match` };
-                req.user.documents[fields[0]][fields[1]] = null
-                break;
-            }
-            if (req.user.documents[fields[0]][fields[1]][fields[2]].toString() != documentId) return { statusCode: 400, data: null, message: `Document Id mis match` };
-            req.user.documents[fields[0]][fields[1]][fields[2]] = null
-            break;
-        case "test":
-            if (!req.user.documents[fields[0]][fields[1]].includes(documentId)) return { statusCode: 400, data: null, message: `Document Id mis match` };
-            req.user.documents[fields[0]][fields[1]] = req.user.documents[fields[0]][fields[1]].filter(ele => ele.toString() != documentId)
-            break;
-        case "workExperiences":
-            if (!req.user.documents[fields[0]].includes(documentId)) return { statusCode: 400, data: null, message: `Document Id mis match` };
-            req.user.documents[fields[0]] = req.user.documents[fields[0]].filter(ele => ele.toString() != documentId)
-            break;
-        default: return { statusCode: 400, data: null, message: `Invalid fieldPath` };
+    if (fields[0] == "workExperiences" || fields[0] == "test") {
+        fields[1] ? await userModel.findByIdAndUpdate(req.user._id, { $pull: { [`documents.${fields[0]}.${fields[1]}`]: existingDoc._id }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } }) : await userModel.findByIdAndUpdate(req.user._id, { $pull: { [`documents.${fields[0]}`]: existingDoc._id }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } })
+    } else {
+        fields[2] ? await userModel.findByIdAndUpdate(req.user._id, { $set: { [`documents.${fields[0]}.${fields[1]}.${fields[2]}`]: null }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } }) : await userModel.findByIdAndUpdate(req.user._id, { $set: { [`documents.${fields[0]}.${fields[1]}`]: null }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } })
     }
-    req.user.logs.push({
-        action: `document deleted`,
-        details: `path:${fieldPath} `
-    })
     await Promise.all([
-        await req.user.save(),
         await Document.findByIdAndRemove(documentId),
+        await deleteFileInWorkDrive(existingDoc.data.resource_id),
         await Document.populate(req.user,
-            [{ path: "tests.docId", select: "name contentType createdAt", },
-            { path: "workExperience.docId", select: "name contentType createdAt", },
-            { path: "documents.personal.resume", select: "name contentType createdAt", },
-            { path: "documents.personal.passportBD", select: "name contentType createdAt", },
-            { path: "documents.personal.passportADD", select: "name contentType createdAt", },
-            { path: "documents.academic.secondarySchool", select: "name contentType createdAt", },
-            { path: "documents.academic.plus2", select: "name contentType createdAt", },
-            { path: "documents.academic.degree", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.bachelors.OD", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.transcripts", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.bonafide", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.CMM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.PCM", select: "name contentType createdAt", },
-            { path: "documents.academic.masters.OD", select: "name contentType createdAt", },
-            { path: "documents.test.general", select: "name contentType createdAt", },
-            { path: "documents.test.languageProf", select: "name contentType createdAt", },
-            { path: "documents.workExperiences", select: "name contentType createdAt", },])
+            [{ path: "tests.docId", select: "data", },
+            { path: "workExperience.docId", select: "data", },
+            { path: "documents.personal.resume", select: "data", },
+            { path: "documents.personal.passportBD", select: "data", },
+            { path: "documents.personal.passportADD", select: "data", },
+            { path: "documents.academic.secondarySchool", select: "data", },
+            { path: "documents.academic.plus2", select: "data", },
+            { path: "documents.academic.degree", select: "data", },
+            { path: "documents.academic.bachelors.transcripts", select: "data", },
+            { path: "documents.academic.bachelors.bonafide", select: "data", },
+            { path: "documents.academic.bachelors.CMM", select: "data", },
+            { path: "documents.academic.bachelors.PCM", select: "data", },
+            { path: "documents.academic.bachelors.OD", select: "data", },
+            { path: "documents.academic.masters.transcripts", select: "data", },
+            { path: "documents.academic.masters.bonafide", select: "data", },
+            { path: "documents.academic.masters.CMM", select: "data", },
+            { path: "documents.academic.masters.PCM", select: "data", },
+            { path: "documents.academic.masters.OD", select: "data", },
+            { path: "documents.test.general", select: "data", },
+            { path: "documents.test.languageProf", select: "data", },
+            { path: "documents.workExperiences", select: "data", },])
     ])
     return { statusCode: 200, message: `Document deleted from ${fieldPath} `, data: req.user.documents };
 })
@@ -424,7 +376,7 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
     let subject = "Verify Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
-    const source = fs.readFileSync(filePath, "utf-8").toString();
+    const source = readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source)
     req.user.verification[0].status = false
     req.user.verification[0].token = { data: (Math.random() + 1).toString(16).substring(2), expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
@@ -499,12 +451,24 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
 })
 export const IEH = errorWrapper(async (req, res, next) => {
     const { error, value } = Joi.object({ institutionId: Joi.string(), verificationDocName: Joi.string() }).validate(req.body)
-    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    if (error) {
+        unlinkSync(req.file.path ? req.file.path : "");
+        return { statusCode: 400, message: error.details[0].message, data: [value] };
+    }
     const { institutionId, verificationDocName } = value;
     const institution = await institutionModel.findById(institutionId)
-    if (!institution) return { statusCode: 400, message: `invalid institutionId`, data: { institutionId: institutionId } }
-    if (!institution.IEH.exists) return { statusCode: 400, message: `this institution doesn't have IEH`, data: { institutionId: institutionId } }
-    if (req.user.IEH.verifiedAccess) return { statusCode: 400, message: `already verified`, data: { institutionId: institutionId } }
+    if (!institution) {
+        unlinkSync(req.file.path ? req.file.path : "");
+        return { statusCode: 400, message: `invalid institutionId`, data: { institutionId: institutionId } }
+    }
+    if (!institution.IEH.exists) {
+        unlinkSync(req.file.path ? req.file.path : "");
+        return { statusCode: 400, message: `this institution doesn't have IEH`, data: { institutionId: institutionId } }
+    }
+    if (req.user.IEH.verifiedAccess) {
+        unlinkSync(req.file.path ? req.file.path : "");
+        return { statusCode: 400, message: `already verified`, data: { institutionId: institutionId } }
+    }
     // if (req.user.IEH.verificationStatus === "Verification Request Initiated") return { statusCode: 400, message: `already verified`, data: { institutionId: institutionId } }
     let IEH = {
         institution: institutionId,
@@ -512,13 +476,15 @@ export const IEH = errorWrapper(async (req, res, next) => {
         verificationDocName: verificationDocName,
         verificationDocument: ""
     }
-    if (req.file) {
-        const { originalname, path, mimetype } = req.file;
-        const data = fs.readFileSync(path);
-        const newDoc = await Document.create({ name: originalname, data: data, contentType: mimetype, viewers: [], user: req.decoded.id });
+    const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+    if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+    if (!uploadedFileResponse.data.new) {
+        const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+        const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "General", viewers: [] };
+        const newDoc = await Document.create(docDetails);
         IEH.verificationDocument = newDoc._id
-        fs.unlinkSync(path);
     }
+
     req.user.IEH = IEH
     req.user.logs.push({
         action: `IEH updated`,

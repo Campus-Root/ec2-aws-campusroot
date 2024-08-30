@@ -16,6 +16,13 @@ const userSchema = mongoose.Schema({
   failedLoginAttempts: { type: Number },
   nextLoginTime: { type: Date },
   lastActive: { type: Date },
+  docData: {
+    folder: { type: String },
+    name: { type: String },
+    parent: { type: String },
+    download_url: { type: String },
+    modified_by_zuid: { type: String }
+  }
 },
   { discriminatorKey: 'userType' },
   { timestamps: true }

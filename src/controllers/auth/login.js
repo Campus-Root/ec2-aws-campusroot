@@ -89,6 +89,6 @@ export const verifyOtp = errorWrapper(async (req, res, next) => {
 export const Logout = errorWrapper(async (req, res, next) => {
     const source = req.headers['user-agent'];
     const logoutAll = req.body.logoutAll;
-    (logoutAll) ? await deleteTokens(req.user._id,false) : await deleteTokens(req.user._id, source)
+    (logoutAll) ? await deleteTokens(req.user._id, false) : await deleteTokens(req.user._id, source)
     return { statusCode: 200, message: `Logged Out Successfully`, data: null };
 })

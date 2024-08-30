@@ -20,7 +20,7 @@ export const verifyTokens = async (source, accessToken, refreshToken) => {
         // verify refresh token when access token expired
         const refreshResult = await verifyRefreshToken(refreshToken, source)
         if (refreshResult.success && refreshResult.message === "Valid Refresh Token") return { success: true, message: refreshResult.message, decoded: refreshResult.decoded, accessToken: refreshResult.newAccessToken, refreshToken: refreshResult.newRefreshToken };
-        return { success, message: refreshResult.message, decoded: null, accessToken: null, refreshToken: null }
+        return { success: false, message: refreshResult.message, decoded: null, accessToken: null, refreshToken: null }
     } catch (error) {
         console.log(error);
         return { success: false, message: 'Error verifying tokens' };
@@ -66,3 +66,19 @@ export const deleteTokens = async (userId, source) => {
         throw error;
     }
 };
+export const storeNewToken = async (name, newAccessToken) => {
+    try {
+        await redisClient.set(`${name}`, newAccessToken, 'EX', 3600); // 1 hour
+    } catch (error) {
+        console.error('Error storing token:', error);
+        throw error;
+    }
+}
+export const fetchToken = async (name) => {
+    try {
+        return await redisClient.get(name) || null
+    } catch (error) {
+        console.error('Error storing token:', error);
+        throw error;
+    }
+}

@@ -161,7 +161,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
             break;
         default: return { statusCode: 500, message: `some internal server error`, data: null };
     }
-    if (totalPrice == 0) {
+    if (totalPrice === 0 || req.user.IEH.verifiedAccess === true) {
         const order = await orderModel.create({
             student: req.user._id,
             Package: packageId ? packageId : null,
@@ -441,13 +441,13 @@ export const order = errorWrapper(async (req, res, next) => {
     await req.order.save()
     await req.user.save()
     await packageModel.populate(req.order, { path: "Package" })
-    await productModel.populate(req.order, { path: "products"})
+    await productModel.populate(req.order, { path: "products" })
     return { statusCode: 200, message: 'order', data: req.order };
 });
 export const requestCancellation = errorWrapper(async (req, res, next) => {
     const updatedApplication = await productModel.findOneAndUpdate({ _id: req.params.applicationId }, { $set: { cancellationRequest: true } }, { new: true });
     if (!updatedApplication) return { statusCode: 400, message: `Invalid application ID`, data: { applicationId: req.params.applicationId } };
-    await Document.populate(updatedApplication, { path: "docChecklist.doc", select: "name contentType createdAt", })
+    await Document.populate(updatedApplication, { path: "docChecklist.doc", select: "data", })
     await userModel.populate(updatedApplication, [
         { path: "user", select: "firstName lastName email displayPicSrc" },
         { path: "counsellor", select: "firstName lastName email displayPicSrc" }
@@ -484,7 +484,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next) => {
         await application.save(),
         await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
         await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
-        Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
+        Document.populate(application, { path: "docChecklist.doc", select: "data", })
     ])
     if (req.user.preference.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -510,13 +510,14 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
     checklistItem.doc = null
     checklistItem.isChecked = false
     req.user.logs.push({ action: `document deleted in application`, details: `applicationId:${applicationId}` })
-    await req.user.save()
     await Promise.all([
         await application.save(),
+        await req.user.save(),
+        await deleteFileInWorkDrive(doc.data.resource_id),
         await Document.findByIdAndDelete(documentId),
         await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
         await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
-        await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
+        await Document.populate(application, { path: "docChecklist.doc", select: "data", })
     ])
     if (req.user.preference.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");

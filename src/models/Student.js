@@ -1,4 +1,4 @@
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
 import userModel from "./User.js";
 import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, DestinationTypeEnum, TestNamesEnum, TestDescriptionEnum, possibilityOfAdmitEnum, ProductCategoryEnum } from "../utils/enum.js";
 
@@ -218,10 +218,30 @@ const Student = mongoose.Schema(
                 }
             },
             test: {
-                languageProf: [{ type: mongoose.Types.ObjectId, ref: "document" }],   // 5
-                general: [{ type: mongoose.Types.ObjectId, ref: "document" }]           // 5
+                languageProf: {
+                    type: [mongoose.Types.ObjectId], ref: "document",
+                    validate: {
+                        validator: (val) => val.length <= 5,
+                        message: '{PATH} exceeds the limit of 5'
+                    }
+                },
+                general: {
+                    type: [mongoose.Types.ObjectId],
+                    ref: "document",
+                    validate: {
+                        validator: (val) => val.length <= 5,
+                        message: '{PATH} exceeds the limit of 5'
+                    }
+                }
             },
-            workExperiences: [{ type: mongoose.Types.ObjectId, ref: "document" }],
+            workExperiences: {
+                type: [mongoose.Types.ObjectId],
+                ref: "document",
+                validate: {
+                    validator: (val) => val.length <= 5,
+                    message: '{PATH} exceeds the limit of 5'
+                }
+            },
             visa: { type: Object },
             loan: { type: Object }
         },
@@ -238,13 +258,32 @@ const Student = mongoose.Schema(
         suggestedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],
         purchasedPackages: [{ type: mongoose.Types.ObjectId, ref: "package" }],
         orders: [{ type: mongoose.Types.ObjectId, ref: "order" }],
-        skills: [{ type: String, }],
+        skills: {
+            type: [String],
+            validate: {
+                validator: (val) => val.length <= 5,
+                message: '{PATH} exceeds the limit of 5'
+            }
+        },
         preference: {
             degree: { type: String },
             intake: { type: Date },
             budget: { upper: { type: Number }, lower: { type: Number, } },
-            courses: [{ type: String, }],
-            country: [{ type: String, enum: { values: Object.values(DestinationTypeEnum), message: "Invalid Destination Type" } }],
+            courses: {
+                type: [String],
+                validate: {
+                    validator: (val) => val.length <= 3,
+                    message: '{PATH} exceeds the limit of 3'
+                }
+            },
+            country: {
+                type: [String],
+                enum: { values: Object.values(DestinationTypeEnum), message: "Invalid Destination Type" },
+                validate: {
+                    validator: (val) => val.length <= 6,
+                    message: '{PATH} exceeds the limit of 6'
+                }
+            },
             exploreButton: { type: Boolean },
             theme: { type: String },
             currency: { type: String },

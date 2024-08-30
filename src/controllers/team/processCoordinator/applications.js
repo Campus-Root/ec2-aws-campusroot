@@ -8,6 +8,7 @@ import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { applicationStagesEnum } from "../../../utils/enum.js";
 import userModel from "../../../models/User.js";
 import { productModel } from "../../../models/Product.js";
+import { deleteFileInWorkDrive } from "../../../utils/CRMintegrations.js";
 export const switchStage = errorWrapper(async (req, res, next) => {
     const { applicationId, status, stage, note } = req.body
     const application = await productModel.findById(applicationId)
@@ -45,14 +46,17 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
     const checklistItem = { name: name }
     if (isChecked) checklistItem.isChecked = isChecked
     if (desc) checklistItem.desc = desc
+
+
     if (req.file) {
-        const { originalname, path, mimetype } = req.file;
-        const data = fs.readFileSync(path);
-        const upload = { name: originalname, data: data, contentType: mimetype, user: req.user._id, viewers: [req.user._id, application.processCoordinator], type: "Application" }
-        if (application.counsellor) upload.viewers.push(application.counsellor)
-        const newDoc = await Document.create(upload);
-        checklistItem.doc = newDoc._id
-        fs.unlinkSync(path);
+        const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+        if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+        if (uploadedFileResponse.data.new) {
+            const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+            const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Application", viewers: [] };
+            const newDoc = await Document.create(docDetails);
+            checklistItem.doc = newDoc._id
+        }
     }
     else checklistItem.doc = null
     application.docChecklist.push(checklistItem)
@@ -62,7 +66,7 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
         details: `applicationId:${applicationId}`
     })
     await req.user.save()
-    await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
+    await Document.populate(application, { path: "docChecklist.doc", select: "data", })
     await userModel.populate(application, [
         { path: "user", select: "firstName lastName email displayPicSrc" },
         { path: "counsellor", select: "firstName lastName email displayPicSrc" }
@@ -89,7 +93,11 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
             await application.save()
             break;
         case "delete":
-            if (checklistItem.doc) await Document.findByIdAndDelete(checklistItem.doc)
+            if (checklistItem.doc) {
+                const doc = await Document.findById(checklistItem.doc)
+                await deleteFileInWorkDrive(doc.data.resource_id)
+                await Document.findByIdAndDelete(checklistItem.doc)
+            }
             await application.updateOne({ $pull: { docChecklist: { _id: checklistItemId } } });
             break;
         default: return {
@@ -97,7 +105,7 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
         };
     }
     application = await productModel.findById(applicationId);
-    await Document.populate(application, { path: "docChecklist.doc", select: "name contentType createdAt", })
+    await Document.populate(application, { path: "docChecklist.doc", select: "data", })
     await userModel.populate(application, [
         { path: "user", select: "firstName lastName email displayPicSrc" },
         { path: "counsellor", select: "firstName lastName email displayPicSrc" }

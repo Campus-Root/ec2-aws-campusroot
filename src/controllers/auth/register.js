@@ -15,6 +15,7 @@ import { DestinationTypeEnum, LanguageTypeEnum } from "../../utils/enum.js";
 import axios from "axios";
 import qs from "qs";
 import { generateTokens } from "../../utils/redisTokens.js";
+import { createFolder } from "../../utils/CRMintegrations.js";
 export const StudentRegister = errorWrapper(async (req, res, next) => {
     const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
     if (!password || !email || !firstName || !lastName) return { statusCode: 400, data: null, message: `Incomplete details` };
@@ -28,12 +29,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     if (!Object.values(LanguageTypeEnum).includes(language)) return {
         statusCode: 400, data: null, message: `select language communication`
     };
-    const student = new studentModel({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country, language: language } });
-    // const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-    // const Counsellor = await teamModel.findById(Counsellors[0]._id);
-    // student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
-    // await student.save()
-    // Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
+    const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country, language: language } });
     const verification = [{
         type: "email",
         status: false,
@@ -58,12 +54,18 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
         details: "traditional registration done"
     })
     const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'], DeviceToken)
+    const doc = await createFolder(firstName + '-' + lastName + '-' + student._id, "o6kj58892caadca144e6f858734535f222cf2")
+    student.docData = {
+        folder: doc.id,
+        name: doc.attributes.name,
+        parent: doc.attributes.parent_id,
+        download_url: doc.attributes.download_url,
+        modified_by_zuid: doc.attributes.modified_by_zuid
+    }
     await student.save();
-    // await Counsellor.save();
-    // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
     req.AccessToken = newAccessToken;
-    return ({ statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } });
+    return { statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } };
 });
 export const verifyEmail = errorWrapper(async (req, res, next) => {
     const { email, emailVerificationString } = req.params;
@@ -100,6 +102,14 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
         action: `${role} Registration done`,
         details: `traditional registration done`
     })
+    const doc = await createFolder(firstName + '-' + lastName + '-' + user._id, "o6kj504b75a33306f4fafa37a6f5d033ca2c1")
+    user.docData = {
+        folder: doc.id,
+        name: doc.attributes.name,
+        parent: doc.attributes.parent_id,
+        download_url: doc.attributes.download_url,
+        modified_by_zuid: doc.attributes.modified_by_zuid
+    }
     await user.save();
     return ({ statusCode: 200, message: `${role} Registration successful`, data: { email, firstName, lastName, role } });
 });
@@ -162,13 +172,16 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
                 const htmlToSend = template(replacement);
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
-            // const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-            // student.advisors.push({ info: Counsellors[0]._id, role: "counsellor" })
-            // const Counsellor = await teamModel.findById(Counsellors[0]._id);
-            // Counsellor.students.push({ profile: student._id, stage: "Fresh Lead" });
-            // await Counsellor.save();
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
+            const doc = await createFolder(firstName + '-' + lastName + '-' + student._id, "o6kj58892caadca144e6f858734535f222cf2")
+            student.docData = {
+                folder: doc.id,
+                name: doc.attributes.name,
+                parent: doc.attributes.parent_id,
+                download_url: doc.attributes.download_url,
+                modified_by_zuid: doc.attributes.modified_by_zuid
+            }
             await student.save();
             // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
             res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
@@ -178,9 +191,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
     }
     catch (error) {
         console.log(error);
-        return {
-            statusCode: 400, data: null, message: error.message
-        }
+        return { statusCode: 400, data: null, message: error.message }
     }
 })
 export const linkedLogin = errorWrapper(async (req, res, next) => {
@@ -232,6 +243,3 @@ export const linkedLogin = errorWrapper(async (req, res, next) => {
 
 
 });
-// {
-//     accessToken: 'AQWUiyihfTg6eBaDLh7QiaqnMadaudxO_r1I-alkVQ-FElT_nc0F6gtI87IZFks0120pC19ggEf33koOV-U0C4zYoHVXA7_GF9NxiNi35hmQ6JlNwo3A7wLiuiBHqIvh6Kpu6w6QD8abvDbmAI6qU6tcSc82kGGtWr2jG8vWQYgsUhyzBK4t4pgkCwNGN4uqpDqkCdHifo0OoFcPoEWCvk-TmRr0zTIlMVReyacIAIxY7nFonU9_dY2_er8LvZiVk8eL7VscqSgr-TZVlfVCO3-y3kuxp1c7AUVGl8BqenHLrp7gMkA9oIMMH-tEHxDkXdfFMMq8wWmVo581_Ob342dylVNJDg'
-//   }

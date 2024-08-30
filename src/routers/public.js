@@ -12,7 +12,7 @@ const router = express.Router();
 
 // router.post("/all_universities/", allUniversities);
 // router.post("/all_courses", allCourses)
-router.post("/listings/:name", limiter,listings);
+router.post("/listings/:name", limiter, listings);
 router.get("/single_university", oneUniversity);
 router.get("/single_course", oneCourse);
 
@@ -26,9 +26,7 @@ router.get("/profiles", authMiddleware, CommunityProfiles);
 // router.get("/single_destination/:id", oneDestination);
 router.get("/counsellors", counsellors);
 // router.post("/all_courses", allCourses);
-
-
 router.get("/university", uniNameRegex);
-router.post("/callback",requestCallBack);
+router.post("/callback", requestCallBack);
 
 export default router

@@ -20,7 +20,7 @@ export const authMiddleware = async (req, res, next) => {
         }
         return next();
     } catch (error) {
-        return res.status(500).json({ success: false, message: 'Internal server error', data: null });
+     return res.status(500).json({ success: false, message: 'Internal server error', data: null });
     }
 }
 export const isTeam = (req, res, next) => {

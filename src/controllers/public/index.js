@@ -219,7 +219,7 @@ export const CommunityProfiles = errorWrapper(async (req, res, next) => {
 })
 export const counsellors = errorWrapper(async (req, res, next) => {
     const counsellors = await teamModel.find({ role: "counsellor" }, { firstName: 1, lastName: 1, numberOfStudentsAssisted: 1, displayPicSrc: 1 })
-    return ({ statusCode: 200, message: `all counsellors`, data: counsellors })
+    return { statusCode: 200, message: `all counsellors`, data: counsellors }
 })
 export const uniNameRegex = errorWrapper(async (req, res, next) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })

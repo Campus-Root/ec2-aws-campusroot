@@ -25,3 +25,32 @@ export const CheckoutSchema = Joi.object({
     products: Joi.array().items(ProductSchema).min(0),
     userCurrency: Joi.string()
 }).required();
+
+
+
+export const uploadInProfileSchema = Joi.object({
+    fieldPath: Joi.string().valid(
+        "personal.resume",
+        "personal.passportBD",
+        "personal.passportADD",
+        "academic.secondarySchool",
+        "academic.plus2",
+        "academic.degree",
+        "academic.bachelors.transcripts",
+        "academic.bachelors.bonafide",
+        "academic.bachelors.CMM",
+        "academic.bachelors.PCM",
+        "academic.bachelors.OD",
+        "academic.masters.transcripts",
+        "academic.masters.bonafide",
+        "academic.masters.CMM",
+        "academic.masters.PCM",
+        "academic.masters.OD",
+        "test.languageProf",
+        "test.general",
+        "workExperiences",
+        "IEH"
+    ),
+    fileIdentifier: Joi.string().allow(''),
+    documentId: Joi.string().allow(''),
+});

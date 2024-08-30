@@ -1,4 +1,9 @@
 import 'dotenv/config';
+import axios from 'axios';
+import { fetchToken, storeNewToken } from './redisTokens.js';
+import FormData from 'form-data';
+import { readFileSync, unlinkSync } from "fs";
+import pathw from 'path';
 export const refreshToken = async () => {
     try {
         const formData = new URLSearchParams();
@@ -45,3 +50,180 @@ export const leadCreation = async (accessToken, crmData) => {
         return new Error(`error at crm lead creation`)
     }
 }
+
+
+
+async function getZohoTokens(authorizationCode) {
+    try {
+        const clientId = process.env.CRM_CLIENT_ID;
+        const clientSecret = process.env.CRM_CLIENT_SECRET;
+        const response = await axios.post('https://accounts.zoho.in/oauth/v2/token', null, {
+            params: {
+                grant_type: 'authorization_code',
+                client_id: clientId,
+                client_secret: clientSecret,
+                code: authorizationCode,
+            },
+        });
+        console.log(response.data);
+        console.log("................................");
+        const { access_token, refresh_token, expires_in } = response.data;
+        console.log('Access Token:', access_token);
+        console.log('Refresh Token:', refresh_token);
+        console.log('Expires In (seconds):', expires_in);
+    } catch (error) {
+        console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+    }
+}
+
+
+
+export const regenerateToken = async () => {
+    try {
+        const clientId = process.env.CRM_CLIENT_ID;
+        const clientSecret = process.env.CRM_CLIENT_SECRET;
+        const refresh_token = process.env.CRM_REFRESH_TOKEN;
+        const { data } = await axios.post('https://accounts.zoho.in/oauth/v2/token', null,
+            {
+                params: {
+                    refresh_token: refresh_token,
+                    client_secret: clientSecret,
+                    grant_type: "refresh_token",
+                    client_id: clientId
+                }
+            })
+        await storeNewToken("ZOHO_ACCESS_TOKEN", data.access_token)
+        console.log("zoho access token regenerated");
+        return data.access_token
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export const createFolder = async (name, parent_id) => {
+    try {
+        const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN")
+        const ZOHO_ACCESS_TOKEN = (existingToken && validateAccessToken(existingToken)) ? existingToken : await regenerateToken()
+        const { data } = await axios.post(
+            `https://www.zohoapis.in/workdrive/api/v1/files`,
+            {
+                data: {
+                    attributes: {
+                        name: name, // Folder name
+                        parent_id: parent_id
+                    },
+                    type: "files" // Required type field for folder creation
+                }
+            },
+            {
+                headers: {
+                    Authorization: `Zoho-oauthtoken ${ZOHO_ACCESS_TOKEN}`, // Authentication header
+                    'Content-Type': 'application/json' // Ensure correct content type for JSON body
+                }
+            }
+        );
+        return data.data;
+    } catch (error) {
+        console.log(error.response.data);
+    }
+}
+
+// WorkDrive.users.READ
+export const validateAccessToken = async (token) => {
+    try {
+        // Making a minimal API call to validate the token
+        await axios.get('https://www.zohoapis.in/workdrive/api/v1/users/me', {
+            headers: {
+                Authorization: `Zoho-oauthtoken ${token}`,
+            },
+        });
+        console.log("zoho access token validity passed");
+        return true; // Token is valid
+    } catch (error) {
+        console.error("zoho access token validity failed");
+        return false;
+    }
+}
+
+// WorkDrive.files.READ WorkDrive.files.CREATE 
+export const uploadFileToWorkDrive = async ({ originalname, path, mimetype, fileIdentifier, folder_ID }) => {
+    const fileExtension = pathw.extname(originalname);
+    const filename = fileIdentifier ? `${fileIdentifier}${fileExtension}` : originalname;
+    const fileData = readFileSync(path);
+    const formData = new FormData();
+    formData.append('content', fileData, { filename, contentType: mimetype });
+    formData.append('parent_id', folder_ID);
+    formData.append('override-name-exist', 'true');
+    let uploadData
+    try {
+        const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN");
+        const isValidToken = await validateAccessToken(existingToken);
+        const ZOHO_ACCESS_TOKEN = isValidToken ? existingToken : await regenerateToken();
+        const response = await axios.post('https://www.zohoapis.in/workdrive/api/v1/upload', formData, { headers: { Authorization: `Zoho-oauthtoken ${ZOHO_ACCESS_TOKEN}`, ...formData.getHeaders(), }, });
+        const fileInfo = JSON.parse(response.data.data[0].attributes["File INFO"])
+        switch (fileInfo.OPERATION) {
+            case "UPDATE":
+                uploadData = { new: false }
+                break;
+            case "UPLOAD":
+                const resourceId = response.data.data[0].attributes.resource_id;
+                const previewResponse = await axios.get(`https://www.zohoapis.in/workdrive/api/v1/files/${resourceId}/previewinfo`, { headers: { Authorization: `Zoho-oauthtoken ${ZOHO_ACCESS_TOKEN}` } });
+                uploadData = {
+                    new: true,
+                    FileName: response.data.data[0].attributes.FileName,
+                    resource_id: resourceId,
+                    mimetype,
+                    originalname,
+                    preview_url: previewResponse.data.data.attributes.preview_url,
+                }
+                break;
+        }
+    } catch (error) {
+        console.error(error.response?.data || error.message);
+        return { success: false, message: 'Error uploading file to WorkDrive', data: error.response?.data || error.message };
+    } finally {
+        unlinkSync(path);
+    }
+    return { success: true, message: 'file uploaded to WorkDrive', data: uploadData };
+};
+
+export const deleteFileInWorkDrive = async (resource_id) => {
+    try {
+        // Fetch and validate Zoho access token
+        const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN");
+        const isValidToken = await validateAccessToken(existingToken);
+        const ZOHO_ACCESS_TOKEN = isValidToken ? existingToken : await regenerateToken();
+
+        // Perform the PATCH request to delete the file
+        const response = await axios.patch(
+            `https://www.zohoapis.in/workdrive/api/v1/files/${resource_id}`,
+            {
+                data: {
+                    attributes: { status: "51" },
+                    type: "files"
+                }
+            },
+            {
+                headers: { Authorization: `Zoho-oauthtoken ${ZOHO_ACCESS_TOKEN}` }
+            }
+        );
+
+        // Return a success response
+        return {
+            success: true,
+            message: 'File deleted from WorkDrive successfully',
+            data: response.data
+        };
+
+    } catch (error) {
+        // Log and return error response
+        console.error(error.response?.data || error.message);
+        return {
+            success: false,
+            message: 'Error deleting file in WorkDrive',
+            data: error.response?.data || error.message
+        };
+    }
+};
+
+

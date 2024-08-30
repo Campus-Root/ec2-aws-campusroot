@@ -5,29 +5,41 @@ import userModel from "../../models/User.js";
 import fs from "fs"
 import { decrypt, encrypt } from "../../utils/crypto.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
+import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 
 export const postMessages = errorWrapper(async (req, res, next) => {
-    const { content, chatId, repliedTo } = req.body
-    if (!chatId) return { statusCode: 400, data: null, message: `incomplete chatID` };
-    if (!content && !req.file) return {
-        statusCode: 400, data: null, message: `incomplete content or attachment`
-    };
+
+    const { error, value } = Joi.object({ chatId: Joi.string().required(), content: Joi.string().allow(""), repliedTo: Joi.string(), fileIdentifier: Jio.string() }).validate(req.body)
+    if (error) {
+        if (req.file && req.file.path) unlinkSync(req.file.path);
+        return { statusCode: 400, message: error.details[0].message, data: [value] };
+    }
+    const { content, chatId, repliedTo } = value
+    if (!content && !req.file) {
+        if (req.file && req.file.path) unlinkSync(req.file.path);
+        return { statusCode: 400, data: null, message: `incomplete content or attachment` };
+    }
     const user = await userModel.findById(req.decoded.id)
     const chat = await chatModel.findById(chatId)
-    if (!chat) return {
-        statusCode: 400, data: null, message: `invalid chatID`
-    };
-    if (!chat.participants.includes(req.decoded.id)) return {
-        statusCode: 400, data: null, message: `invalid sender`
-    };
+    if (!chat) {
+        if (req.file && req.file.path) unlinkSync(req.file.path);
+        return { statusCode: 400, data: null, message: `invalid chatID` };
+    }
+    if (!chat.participants.includes(req.decoded.id)) {
+        if (req.file && req.file.path) unlinkSync(req.file.path);
+        return { statusCode: 400, data: null, message: `invalid sender` };
+    }
     const { encryptedData, key } = encrypt(content)
     let message = await messageModel.create({ sender: user._id, content: encryptedData, iv: key, chat: chatId })
     if (req.file) {
-        const { originalname, path, mimetype } = req.file;
-        const data = fs.readFileSync(path);
-        const newDoc = await Document.create({ name: originalname, data: data, contentType: mimetype, viewers: chat.participants, user: req.decoded.id });
-        message.document = newDoc._id
-        fs.unlinkSync(path);
+        const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+        if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+        if (uploadedFileResponse.data.new) {
+            const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+            const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Chat", viewers: [] };
+            const newDoc = await Document.create(docDetails);
+            message.document = newDoc._id
+        }
     }
     if (repliedTo) message.repliedTo = repliedTo
     await message.save()
@@ -37,7 +49,7 @@ export const postMessages = errorWrapper(async (req, res, next) => {
         message.repliedTo.decoded = decrypt(message.repliedTo.iv, message.repliedTo.content);
     }
     await userModel.populate(message, { path: "sender", select: "firstName lastName displayPicSrc email userType role" })
-    await Document.populate(message, { path: "document", select: "name contentType createdAt" })
+    await Document.populate(message, { path: "document", select: "data" })
     chat.lastMessage = message._id
     chat.unSeenMessages.push({ message: message._id, seen: [req.decoded.id] })
     await chat.save()
@@ -58,7 +70,7 @@ export const fetchMessages = errorWrapper(async (req, res, next) => {
     const messages = await messageModel
         .find({ chat: chatId })
         .populate("sender", "firstName lastName displayPicSrc email userType role")
-        .populate("document", "firstName lastName contentType createdAt")
+        .populate("document", "data")
         .populate("repliedTo", "-chat")
         .sort({ updatedAt: -1 })
         .skip((page - 1) * pageSize)

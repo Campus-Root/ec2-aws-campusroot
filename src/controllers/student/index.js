@@ -112,7 +112,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
     await productModel.populate(req.user, [{ path: "activity.products orders.products" }]),
     await courseModel.populate(req.user, [{ path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course orders.products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },]),
     await universityModel.populate(req.user, [{ path: "activity.cart.course.university activity.wishList.university recommendations.data.course.university activity.products.course.university orders.products.course.university", select: "name logoSrc location type establishedYear " },]),
-    await Document.populate(req.user, [{ path: "activity.products.docChecklist.doc orders.products.docChecklist", select: "name contentType createdAt" },]),
+    await Document.populate(req.user, [{ path: "activity.products.docChecklist.doc orders.products.docChecklist", select: "data" },]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
     await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.advisors orders.products.advisors", select: "firstName displayPicSrc lastName email role" }),
   ]);
