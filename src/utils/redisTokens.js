@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import 'dotenv/config';
 import { getRedisClient } from "./dbConnection.js";
-const redisClient = getRedisClient();
+const redisClient = await getRedisClient();
 const { ACCESS_SECRET, REFRESH_SECRET } = process.env
 export const generateTokens = async (userId, source, DeviceToken) => {
     const newAccessToken = jwt.sign({ id: userId }, ACCESS_SECRET, { expiresIn: '1h' });

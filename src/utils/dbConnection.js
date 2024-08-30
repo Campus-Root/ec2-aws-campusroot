@@ -2,18 +2,25 @@ import mongoose from "mongoose";
 import 'dotenv/config';
 import { createClient } from 'redis';
 
-export const connectDB = async () => {
+export const connectDB = async (retryCount = 0) => {
     try {
         await mongoose.connect(process.env.MONGO_URL);
         console.log('Connected to MongoDB');
     } catch (err) {
-        console.error('Error connecting to MongoDB:', err);
+        if (retryCount < 5) {  // Set a maximum number of retries
+            console.error('Error connecting to MongoDB. Retrying...', err);
+            setTimeout(() => connectDB(retryCount + 1), 5000); // Retry after 5 seconds
+        } else {
+            console.error('Failed to connect to MongoDB after multiple attempts:', err);
+            process.exit(1);  // Exit the process after max retries
+        }
     }
 };
 
 let redisClient;
 
 export const connectRedis = async () => {
+    if (redisClient) return redisClient
     try {
         redisClient = createClient({
             url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
@@ -22,16 +29,14 @@ export const connectRedis = async () => {
         redisClient.on('error', (err) => console.log('Redis Client Error', err));
         await redisClient.connect();
         console.log('Connected to Redis');
+        return redisClient;
     } catch (err) {
         console.error('Error connecting to Redis:', err);
     }
 };
 
-export const getRedisClient = () => {
-    if (!redisClient) {
-        connectRedis();
-        // throw new Error('Redis client is not initialized. Call connectRedis first.');
-    }
+export const getRedisClient = async () => {
+    if (!redisClient) await connectRedis();
     return redisClient;
 };
 
@@ -41,9 +46,6 @@ export const initialize = async () => {
         await connectDB(); // Connect to MongoDB
         await connectRedis(); // Connect to Redis
         console.log('Application initialized successfully');
-
-        // Start your server or application logic here
-        // import and use your server configuration, routes, etc.
     } catch (err) {
         console.error('Error during initialization:', err);
         process.exit(1); // Exit the process if initialization fails

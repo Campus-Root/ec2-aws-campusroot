@@ -6,7 +6,7 @@ import { getRedisClient } from "./dbConnection.js";
 export const getTokens = async (ids) => {
     try {
         const tokens = [];
-        const redisClient = getRedisClient();
+        const redisClient = await getRedisClient();
         for (const userId of ids) {
             const keys = await redisClient.keys(`DeviceToken:${userId}:*`);
             const values = await Promise.all(keys.map(key => redisClient.get(key)));
