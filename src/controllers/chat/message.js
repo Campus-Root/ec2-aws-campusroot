@@ -6,6 +6,7 @@ import fs from "fs"
 import { decrypt, encrypt } from "../../utils/crypto.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
+import Joi from "joi";
 
 export const postMessages = errorWrapper(async (req, res, next) => {
 
