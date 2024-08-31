@@ -16,7 +16,7 @@ async function sendMail(emailData) {
         });
         console.log("transporter created");
         let info = await transporter.sendMail({
-            from: `"CAMPUSROOT" <${AUTH}>`, // sender address
+            from: `"ONE WINDOW" <${AUTH}>`, // sender address
             to: emailData.to, // list of receivers
             subject: emailData.subject, // Subject line
             html: emailData.html, // html body
