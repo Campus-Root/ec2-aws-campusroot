@@ -77,6 +77,46 @@ export const wishList = errorWrapper(async (req, res, next) => {
     ])
     return { statusCode: 200, message: `${action} successful`, data: student.activity.wishList };
 });
+export const paySummary = errorWrapper(async (req, res) => {
+    const { error, value } = CheckoutSchema.validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { packageId, products, userCurrency } = value;
+    class item {
+        constructor(originalPrice, currency, finalPrice, details) {
+            this.originalPrice = originalPrice;
+            this.currency = currency;
+            this.finalPrice = finalPrice;
+            this.details = details;
+        }
+    }
+    const items = [];
+    const hasPackageId = Boolean(packageId);
+    const hasProducts = Array.isArray(products) && products.length > 0;
+    let errorStack = [];
+    if (hasPackageId) {
+        const Package = await packageModel.findById(packageId);
+        if (!Package) return { statusCode: 400, message: `invalid packageId`, data: { packageId: packageId } };
+        if (!Package.active) return { statusCode: 400, message: `inactive package selected`, data: { packageId: packageId } };
+        if (Package.MutuallyExclusivePackages.length > 0) {
+            let mutuallyExclusivePackages = req.user.purchasedPackages.filter(ele => Package.MutuallyExclusivePackages.includes(ele.toString()));
+            if (mutuallyExclusivePackages.length > 0) return { statusCode: 400, message: `mutually exclusive package already purchased`, data: mutuallyExclusivePackages };
+        }
+        // final price calculation after promo codes
+        items.push(new item(Package.priceDetails.totalPrice, Package.priceDetails.currency, Package.priceDetails.totalPrice, { variety: Package.variety, name: Package.name, description: Package.description, country: Package.country, imageSrc: Package.image, duration: Package.duration, requirements: Package.requirements, benefits: Package.benefits, termsAndConditions: Package.termsAndConditions, active: Package.active }))
+    }
+    if (hasProducts) {
+        for (const product of products) {
+            const course = await courseModel.findById(product.courseId, "elite")
+            if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });
+            if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
+            if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
+            let priceObject = await priceModel.findOne({ productCategory: product.category }, "price currency")
+            items.push(new item(priceObject.price, priceObject.currency, priceObject.price, product))
+        }
+        if (errorStack.length > 0) return { statusCode: 400, message: `Invalid products`, data: errorStack };
+    }
+    return { statusCode: 200, message: "Payment Summary", data: { items: items, totalPrice: items.reduce((acc, ele) => acc + ele.finalPrice, 0) } }
+})
 export const checkout = errorWrapper(async (req, res, next) => {
     const { error, value } = CheckoutSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
