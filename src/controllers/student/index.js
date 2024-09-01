@@ -118,7 +118,7 @@ export const dashboard = errorWrapper(async (req, res, next) => {
   ]);
   let applications, checklist
   if (req.user.activity.products.length > 0) {
-    if (req.user.preference.currency) {
+    if (req.user.preference?.currency != null) {
       const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
       const applyCurrencyConversion = (element) => {
         if (element.course.currency.code !== req.user.preference.currency) {
