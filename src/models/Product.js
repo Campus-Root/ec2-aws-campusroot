@@ -31,7 +31,7 @@ const productSchema = mongoose.Schema({
             justification: { type: String },
             userConsent: { type: Boolean },
         },
-        notes: [{ type: String }],
+        notes: { type: [String] },
     },
     log: [{
         status: { type: String, enum: { values: Object.values(applicationStateEnum), message: "Invalid Status" }, },

@@ -24,8 +24,8 @@ const packageSchema = mongoose.Schema({
         start: { type: Date },
         end: { type: Date }
     },
-    requirements: [{ type: String }],
-    benefits: [{ type: String }],
+    requirements: { type: [String] },
+    benefits: { type: [String] },
     products: [{ category: { type: String, enum: { values: Object.values(ProductCategoryEnum), message: "Invalid category" } }, quantity: { type: Number } }],
     termsAndConditions: { type: String },
     active: { type: Boolean },

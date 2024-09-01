@@ -14,7 +14,7 @@ const Team = mongoose.Schema({
         token_type: { type: String },
         expiry_date: { type: String },
     },// for all team
-    language: [{ type: String }],
+    language: { type: [String] },
     leads: [{ type: mongoose.Types.ObjectId, ref: "leads" }],// for remoteStudentAdvisor
     applications: [{ type: mongoose.Types.ObjectId, ref: "product" }],// for Process Coordinators
     institution: { type: mongoose.Types.ObjectId, ref: 'institution' }, // for IEM member

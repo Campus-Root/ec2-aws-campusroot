@@ -6,7 +6,7 @@ const institutionSchema = mongoose.Schema({
     District: { type: String },
     InstitutionType: { type: String },
     Aicte_ID: { type: String },
-    university: [{ type: String }],
+    university: { type: [String] },
     IEH: {
         exists: { type: Boolean, default: false },
         logoSrc: { type: String },

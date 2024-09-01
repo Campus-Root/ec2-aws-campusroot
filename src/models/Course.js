@@ -16,8 +16,8 @@ const courseSchema = mongoose.Schema(
         about: { type: String },
         description: { type: String },
         language: { type: String },
-        discipline: { type: String, },
-        subDiscipline: { type: String, },
+        discipline: { type: [String], },
+        subDiscipline: { type: [String], },
         studyLevel: { type: String, },
         programLink: { type: String }, // not to user   hide
         curriculumLink: { type: String }, // not to user hide
@@ -28,7 +28,7 @@ const courseSchema = mongoose.Schema(
             tuitionFeeLink: { type: String },// not to user hide
         },
         startDate: [{
-            courseStartingMonth: { type: Number }, 
+            courseStartingMonth: { type: Number },
             deadlineMonth: { type: Number },
             courseStarting: { type: Date },
             Deadline: { type: Date },
@@ -43,7 +43,7 @@ const courseSchema = mongoose.Schema(
         duration: { type: String },
         pathway: { type: Boolean }, // hc hide
         courseType: { type: String }, //hc hide
-        studyMode: [{ type: String }],
+        studyMode: { type: [String] },
         AdmissionsRequirements: {
             AcademicRequirements: [{
                 testName: { type: String },
@@ -57,7 +57,7 @@ const courseSchema = mongoose.Schema(
                 minScore: { type: Number },
                 Link: { type: String }, // not to user hide
             }],
-            generalRequirements: [{ type: String, }],
+            generalRequirements: { type: [String], },
             generalRequirementLink: { type: String }, // not to user hide 
             year15Requirement: { type: Boolean }, // hide 
             year15RequirementLink: { type: String }, // not to user hide
@@ -91,7 +91,7 @@ const courseSchema = mongoose.Schema(
             code: { type: String, enum: { values: Object.keys(CurrencySymbolEnum), message: "Invalid Type of currency code" } },
         },
         initialDeposits: { requirement: { type: Boolean }, InitialDepositsLink: { type: String } }, // not to user hide
-        scholarship: { exists: { type: Boolean }, termsAndConditions: [{ type: String }], scholarshipLink: { type: String } }, //hide 
+        scholarship: { exists: { type: Boolean }, termsAndConditions: { type: [String] }, scholarshipLink: { type: String } }, //hide 
         contactInfo: { emailID: { type: String }, contactLink: { type: String }, contactNumber: { type: String }, },  // for intenal use only //hide
     },
     { timestamps: true }
