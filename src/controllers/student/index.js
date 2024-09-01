@@ -60,8 +60,8 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     details: `recommendations${req.user.recommendations.data.length}`
   })
   await req.user.save();
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite" })
-  await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear " })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite startDate" })
+  await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear" })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
     const applyCurrencyConversion = (element) => {
