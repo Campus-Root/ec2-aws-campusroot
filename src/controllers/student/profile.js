@@ -65,7 +65,7 @@ export const editEmail = errorWrapper(async (req, res, next) => {
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
     const source = readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source)
-    const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${req.user.verification[0].token.data}` }
+    const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}api/v1/auth/verify/${email}/${req.user.verification[0].token.data}` }
     const htmlToSend = template(replacement)
     await sendMail({
         to: req.user.email, subject: subject, html: htmlToSend
