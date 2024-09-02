@@ -66,6 +66,7 @@ app.use(helmet.contentSecurityPolicy({
 		connectSrc: ["'self'", "https://ipapi.co", "blob:"], // Allow blob URLs for workers
 		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
 		workerSrc: ["'self'", "blob:"], // Add worker-src directive
+		frameSrc: ["'self'", "https://accounts.google.com"],
 	},
 }));
 // Adding missing security headers
