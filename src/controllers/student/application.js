@@ -384,7 +384,14 @@ export const orderInfo = errorWrapper(async (req, res, next) => {
     // https://campusroot.com/paymentsuccess?reference=669fa190dc22145b5fadc789
     const order = await orderModel.findOne({ _id: orderId, student: req.user._id });
     if (!order) return { statusCode: 400, message: `invalid orderId or you might not have permission`, data: { orderId: orderId } };
-    await packageModel.populate(order, { path: "Package", select: "-logs" })
+    await Promise.all([
+        packageModel.populate(order, { path: "Package", select: "-logs" }),
+        productModel.populate(order, { path: "products" }),
+        courseModel.populate(order, { path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" }),
+        universityModel.populate(order, { path: "products.course.university", select: "name logoSrc location type establishedYear " }),
+        Document.populate(order, { path: "products.docChecklist", select: "data" }),
+        userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
+    ])
     return { statusCode: 200, message: 'order info', data: order };
 })
 export const order = errorWrapper(async (req, res, next) => {
