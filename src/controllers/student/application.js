@@ -84,7 +84,7 @@ export const paySummary = errorWrapper(async (req, res) => {
     class item {
         constructor(originalPrice, currency, finalPrice, details) {
             this.originalPrice = originalPrice;
-            this.currency = currency;
+            this.currency = { symbol: "₹", code: "INR" };
             this.finalPrice = finalPrice;
             this.details = details;
         }
