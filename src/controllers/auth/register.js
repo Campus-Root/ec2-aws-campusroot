@@ -63,6 +63,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
 export const verifyEmail = errorWrapper(async (req, res, next) => {
     const { email, emailVerificationString } = req.params;
     const user = await studentModel.findOne({ email: email });
+    console.log(email, emailVerificationString, user.verification);
     if (!user) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false`);
     if (new Date() > user.verification[0].token.expiry) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false&info=expired`);
     if (user.verification[0].token.data !== emailVerificationString) return res.redirect(`${process.env.STUDENT_URL}/email-verification/?success=false&info=invalid`);
@@ -73,6 +74,8 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
         details: "Email Verification Successful"
     })
     await user.save()
+    console.log(user.verification);
+
     let subject = "CAMPUSROOT Ed.tech Pvt. Ltd. - Verification Successful"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
