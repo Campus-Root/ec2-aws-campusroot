@@ -220,27 +220,27 @@ const Student = mongoose.Schema(
             test: {
                 languageProf: {
                     type: [mongoose.Types.ObjectId], ref: "document",
-                    validate: {
-                        validator: (val) => val.length <= 5,
-                        message: '{PATH} exceeds the limit of 5'
-                    }
+                    // validate: {
+                    //     validator: (val) => val.length <= 5,
+                    //     message: '{PATH} exceeds the limit of 5'
+                    // }
                 },
                 general: {
                     type: [mongoose.Types.ObjectId],
                     ref: "document",
-                    validate: {
-                        validator: (val) => val.length <= 5,
-                        message: '{PATH} exceeds the limit of 5'
-                    }
+                    // validate: {
+                    //     validator: (val) => val.length <= 5,
+                    //     message: '{PATH} exceeds the limit of 5'
+                    // }
                 }
             },
             workExperiences: {
                 type: [mongoose.Types.ObjectId],
                 ref: "document",
-                validate: {
-                    validator: (val) => val.length <= 5,
-                    message: '{PATH} exceeds the limit of 5'
-                }
+                // validate: {
+                //     validator: (val) => val.length <= 5,
+                //     message: '{PATH} exceeds the limit of 5'
+                // }
             },
             visa: { type: Object },
             loan: { type: Object }
@@ -260,10 +260,10 @@ const Student = mongoose.Schema(
         orders: [{ type: mongoose.Types.ObjectId, ref: "order" }],
         skills: {
             type: [String],
-            validate: {
-                validator: (val) => val.length <= 5,
-                message: '{PATH} exceeds the limit of 5'
-            }
+            // validate: {
+            //     validator: (val) => val.length <= 5,
+            //     message: '{PATH} exceeds the limit of 5'
+            // }
         },
         preference: {
             degree: { type: String },
@@ -271,18 +271,18 @@ const Student = mongoose.Schema(
             budget: { upper: { type: Number }, lower: { type: Number, } },
             courses: {
                 type: [String],
-                validate: {
-                    validator: (val) => val.length <= 3,
-                    message: '{PATH} exceeds the limit of 3'
-                }
+                // validate: {
+                //     validator: (val) => val.length <= 3,
+                //     message: '{PATH} exceeds the limit of 3'
+                // }
             },
             country: {
                 type: [String],
                 enum: { values: Object.values(DestinationTypeEnum), message: "Invalid Destination Type" },
-                validate: {
-                    validator: (val) => val.length <= 6,
-                    message: '{PATH} exceeds the limit of 6'
-                }
+                // validate: {
+                //     validator: (val) => val.length <= 6,
+                //     message: '{PATH} exceeds the limit of 6'
+                // }
             },
             exploreButton: { type: Boolean },
             theme: { type: String },
