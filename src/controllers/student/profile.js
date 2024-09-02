@@ -381,7 +381,7 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
     req.user.verification[0].status = false
     req.user.verification[0].token = { data: (Math.random() + 1).toString(16).substring(2), expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
     const replacement = {
-        userName: `${req.user.firstName} ${req.user.lastName} `, URL: `${process.env.SERVER_URL} /api/v1 / auth / verify / ${req.user.email}/${req.user.verification[0].token.data}`
+        userName: `${req.user.firstName} ${req.user.lastName} `, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${req.user.email}/${req.user.verification[0].token.data}`
     }
     const htmlToSend = template(replacement)
     await sendMail({ to: req.user.email, subject: subject, html: htmlToSend });
