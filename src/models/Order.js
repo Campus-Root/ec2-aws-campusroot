@@ -9,7 +9,7 @@ const orderSchema = mongoose.Schema({
         razorpay_order_id: { type: String },
         amount: { type: Number },
         amount_due: { type: Number },
-        created_at: { type: Date },
+        created_at: { type: Date, default: new Date() },
         currency: { type: String },
         paymentStatus: { type: String, enum: { values: Object.values(PaymentStatusEnum), message: "Invalid Payment Status" } },
         misc: { type: Object }
