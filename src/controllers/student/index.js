@@ -34,7 +34,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     ug_gpa: ug_gpa,
     gre: gre,
     sub_discipline: req.user.preference.courses,
-    country_preference:req.user.preference.country
+    country:req.user.preference.country
   }
   const response = await fetch("http://localhost:4321/predict/", {
     method: "POST",
@@ -53,7 +53,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     ug_gpa: JSON.stringify(ug),
     gre: JSON.stringify(GRE.scores),
     sub_discipline: JSON.stringify(req.user.preference.courses),
-    country_preference:JSON.stringify(req.user.preference.country)
+    country:JSON.stringify(req.user.preference.country)
   }
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]

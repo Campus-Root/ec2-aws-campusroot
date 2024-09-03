@@ -177,7 +177,8 @@ const Student = mongoose.Schema(
             criteria: {
                 ug_gpa: { type: String, },
                 gre: { type: String, },
-                sub_discipline: { type: String }
+                sub_discipline: { type: String },
+                country: { type: String },
             },
             data: [{
                 // university: { type: mongoose.Types.ObjectId, ref: "university" },
