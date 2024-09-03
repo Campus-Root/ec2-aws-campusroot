@@ -20,7 +20,8 @@ export const errorWrapper = (fn) => {
         }
       }
     } catch (error) {
-      console.log(error.message);
+      // console.log(error.message);
+      console.error(error)
       return next(generateAPIError(`${error.name}:${error.message}`, 500, error.message));
     }
   };

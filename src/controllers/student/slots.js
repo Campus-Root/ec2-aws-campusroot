@@ -59,7 +59,7 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
 })
 export const modifySlot = errorWrapper(async (req, res, next) => {
     const { meetingId, option, startTime, endTime, timeZone } = req.body
-    const meeting = await meetingModel.findById(meetingId).populate("member", "googleTokens")
+    let meeting = await meetingModel.findById(meetingId).populate("member", "googleTokens")
     if (!meeting || !meeting.data.id) return { statusCode: 400, data: null, message: "invalid meetingId" }
     oauth2Client.setCredentials(meeting.member.googleTokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
@@ -82,19 +82,29 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
             if (!timeZone) return {
                 statusCode: 400, data: null, message: "invalid timeZone"
             }
+            const latestEvent = await calendar.events.get({
+                calendarId: 'primary',
+                eventId: meeting.data.id,
+            });
             const updatedEvent = {
                 ...meeting.data,
                 start: { dateTime: new Date(startTime), timeZone: timeZone, },
                 end: { dateTime: new Date(endTime), timeZone: timeZone, },
+                sequence: latestEvent.data.sequence + 1, // Use the latest sequence number
             };
-            response = await calendar.events.update({ calendarId: 'primary', eventId: meeting.data.id, requestBody: updatedEvent, sendUpdates: 'all' });
+            const response = await calendar.events.update({
+                calendarId: 'primary',
+                eventId: meeting.data.id,
+                requestBody: updatedEvent,
+                sendUpdates: 'all',
+            });
+            console.log(response.data);
             meeting.data = response.data
             meeting.status = "rescheduled"
             msg = 'Event rescheduled successfully'
             req.user.logs.push({ action: `Event rescheduled ${startTime}`, details: `meetingId:${meetingId}` })
-        default: return {
-            statusCode: 400, data: null, message: "invalid option"
-        }
+            break;
+        default: return { statusCode: 400, data: null, message: "invalid option" }
     }
     await req.user.save()
     await meeting.save()
