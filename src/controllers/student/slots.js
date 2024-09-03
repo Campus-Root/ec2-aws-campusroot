@@ -63,9 +63,7 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
     if (!meeting || !meeting.data.id) return { statusCode: 400, data: null, message: "invalid meetingId" }
     oauth2Client.setCredentials(meeting.member.googleTokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    if (meeting.status === "cancelled") return {
-        statusCode: 400, data: null, message: "cannot modify cancelled meeting"
-    }
+    if (meeting.status === "cancelled") return {statusCode: 400, data: null, message: "cannot modify cancelled meeting"}
     let msg, response
     switch (option) {
         case "cancelEvent":
@@ -98,7 +96,6 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
                 requestBody: updatedEvent,
                 sendUpdates: 'all',
             });
-            console.log(response.data);
             meeting.data = response.data
             meeting.status = "rescheduled"
             msg = 'Event rescheduled successfully'
