@@ -1,13 +1,14 @@
 {
   "files": {
     "main.css": "/static/css/main.b64f24c1.css",
-    "main.js": "/static/js/main.4f9e408c.js",
+    "main.js": "/static/js/main.87fcf39d.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
     "static/media/homepage3.png": "/static/media/homepage3.e608fa12cac2d6c3d971.png",
     "static/media/section1.png": "/static/media/section1.24e1b0da027aba611d17.png",
     "static/media/homepage2.png": "/static/media/homepage2.046126c6ce976c29685d.png",
     "static/media/Maskgroup.png": "/static/media/Maskgroup.c195e3e145f54285ab51.png",
+    "static/media/airecommend.png": "/static/media/airecommend.9aac3f261c26cf311f79.png",
     "static/media/section2.png": "/static/media/section2.97560adabd86f2040c36.png",
     "static/media/calendar.gif": "/static/media/calendar.15b8535a4830419c950f.gif",
     "static/media/instagram-icon.gif": "/static/media/instagram-icon.0d0ede19c0d1daa8f291.gif",
@@ -31,11 +32,11 @@
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
     "main.b64f24c1.css.map": "/static/css/main.b64f24c1.css.map",
-    "main.4f9e408c.js.map": "/static/js/main.4f9e408c.js.map",
+    "main.87fcf39d.js.map": "/static/js/main.87fcf39d.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.b64f24c1.css",
-    "static/js/main.4f9e408c.js"
+    "static/js/main.87fcf39d.js"
   ]
 }
