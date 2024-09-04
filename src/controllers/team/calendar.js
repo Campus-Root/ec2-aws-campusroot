@@ -5,7 +5,7 @@ import { google } from "googleapis";
 
 export const generatingAuthUrl = errorWrapper(async (req, res, next) => {
     const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/userinfo.email"] });
-    ({ statusCode: 200, message: `auth url`, data: url });
+    return { statusCode: 200, message: `auth url`, data: url };
 })
 export const googleAuthentication = errorWrapper(async (req, res, next) => {
     const { tokens } = await oauth2Client.getToken(req.query.code)
