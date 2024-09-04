@@ -84,13 +84,13 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
     return res.redirect(`${process.env.STUDENT_URL}email-verification/?success=true`);
 });
 export const TeamRegister = errorWrapper(async (req, res, next) => {
-    const { email, firstName, lastName, password, role } = req.body;
-    if (!email || !firstName || !lastName || !password || !role) return { statusCode: 400, data: null, message: `Incomplete details` };
+    const { email, firstName, lastName, password, role, expertiseCountry } = req.body;
+    if (!email || !firstName || !lastName || !password || !role || !expertiseCountry.length) return { statusCode: 400, data: null, message: `Incomplete details` };
     const alreadyExists = await teamModel.findOne({ email: email });
     if (alreadyExists) return {
         statusCode: 400, data: null, message: `Email Already Registered`
     };
-    const user = await teamModel.create({ email, firstName, lastName, password: await bcrypt.hash(password, 12), role });
+    const user = await teamModel.create({ email, firstName, lastName, password: await bcrypt.hash(password, 12), role,expertiseCountry });
     user.logs.push({
         action: `${role} Registration done`,
         details: `traditional registration done`
