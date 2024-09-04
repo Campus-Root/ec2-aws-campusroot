@@ -4,6 +4,7 @@ import { studentModel } from "../../models/Student.js";
 import Document from "../../models/Uploads.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import userModel from "../../models/User.js";
+import { productModel } from "../../models/Product.js"
 import meetingModel from "../../models/meetings.js";
 import leadsModel from "../../models/leads.js";
 export const profile = errorWrapper(async (req, res, next) => {
