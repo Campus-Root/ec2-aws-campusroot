@@ -77,6 +77,7 @@ export const verifyOtp = errorWrapper(async (req, res, next) => {
         password: Joi.string().required(),
     }).validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { email, otp, password } = value;
     const user = await userModel.findOne({ email: email })
     if (!user) return { statusCode: 401, message: `invalid email. Please Register`, data: null }
     const verification = await bcrypt.compare(otp, user.otp)
