@@ -444,6 +444,45 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
         action: `${country} counsellor assigned`,
         details: `counsellorId:${Counsellors[0]}&country:${country}}`
     })
+
+    sendMail({
+        to: Counsellors[0].email,
+        subject: "Student is requesting your service",
+        html: `
+            <html lang="en">
+                <head>
+                    <meta charset="UTF-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <title>Document</title>
+                    <style>
+                        .container {
+                            font-family: Arial, sans-serif;
+                            text-align: center;
+                            padding: 20px;
+                        }
+                        img {
+                            max-width: 200px;
+                            margin-bottom: 20px;
+                        }
+                        h3 {
+                            color: #333;
+                        }
+                        h2 {
+                            color: #0073e6;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                        <h3>Dear ${Counsellors[0].firstName} ${Counsellors[0].lastName},</h3>
+                        <h2>Student is waiting for your guidance!</h2>
+                    </div>
+                </body>
+            </html>
+        `
+    });
+
     await req.user.save()
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     await userModel.populate(chat, { path: "participants", select: "firstName lastName displayPicSrc email userType role" });

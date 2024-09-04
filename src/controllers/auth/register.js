@@ -95,7 +95,7 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
         action: `${role} Registration done`,
         details: `traditional registration done`
     })
-    const doc = await createFolder(firstName + '-' + lastName + '-' + user._id, DEFAULT_MEMBER_PARENTID_FOLDER_ZOHO)
+    const doc = await createFolder(firstName + '-' + lastName + '-' + user._id, process.env.DEFAULT_MEMBER_PARENTID_FOLDER_ZOHO)
     user.docData = {
         folder: doc.id,
         name: doc.attributes.name,
