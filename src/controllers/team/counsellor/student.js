@@ -106,7 +106,7 @@ export const Package = errorWrapper(async (req, res, next) => {
             if (data.products.length > 0 && !data.products.every(element => Org.has(element.category) && !isNaN(element.quantity) && Number(element.quantity) > 0)) return {
                 statusCode: 400, data: null, message: `invalid product list`
             };
-            if (!data.name || !data.description || !data.totalPrice || !data.benefits || !data.name || !data.termsAndConditions) return {
+            if (!data.name || !data.description || !data.totalPrice || !data.benefits || !data.termsAndConditions) return {
                 statusCode: 400, data: null, message: `incomplete form data`
             };
             Package = await packageModel.create({
