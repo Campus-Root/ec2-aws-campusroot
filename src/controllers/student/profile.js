@@ -89,7 +89,7 @@ export const editPhone = errorWrapper(async (req, res, next) => {
     var smsResponse = await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
     // var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: req.user.verification[1].token.data, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
     if (!smsResponse.return) {
-        console.log(smsResponse); return { statusCode: 400, data: null, message: "Otp not sent" }
+        return { statusCode: 400, data: null, message: "Otp not sent" }
     }
     req.user.logs.push({
         action: `profile info updated & otp sent for verification`,
@@ -395,7 +395,6 @@ export const sendUserOTP = errorWrapper(async (req, res, next) => {
     req.user.verification[1].token = { data: otp, expiry: expiry, }
     const smsResponse = await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
     if (!smsResponse.return) {
-        console.log(smsResponse);
         return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
     }
     req.user.logs.push({

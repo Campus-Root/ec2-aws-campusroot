@@ -58,7 +58,6 @@ export const student_transfer = errorWrapper(async (req, res, next) => {
     const { studentId, fromId, toId, role } = req.body
     const student = await studentModel.findById(studentId)
     if (!student) return { statusCode: 400, data: null, message: `Invalid StudentId` };
-    console.log(student[role].toString(), fromId);
     if (student[role].toString() != fromId) return {
         statusCode: 400, data: null, message: `${role} mismatch from student side`
     };

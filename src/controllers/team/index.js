@@ -73,7 +73,6 @@ export const singleApplications = errorWrapper(async (req, res, next) => {
 })
 export const listings = errorWrapper(async (req, res, next) => {
     const { page, perPage = 20 } = req.body, filter = {}, skip = (page - 1) * perPage; // Number of items per page
-    console.log(perPage);
     let totalPages = 0, totalDocs
     switch (req.params.name) {
         case "students":

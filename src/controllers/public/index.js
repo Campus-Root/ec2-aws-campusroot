@@ -17,7 +17,6 @@ export const listings = errorWrapper(async (req, res, next) => {
     const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
-    console.log(req.body.filterData);
     switch (req.params.name) {
         case "universities":
             filter.courses = { "$gt": 0 }
