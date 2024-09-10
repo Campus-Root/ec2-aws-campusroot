@@ -5,7 +5,7 @@ import { authMiddleware, isStudent } from "../middleware/auth.js";
 import { checkDisposableEmail, isPaid, validatePayment, validateProducts } from "../middleware/validations.js";
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
-import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation } from "../controllers/student/index.js";
+import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation, deleteData, deleteAccount } from "../controllers/student/index.js";
 import { deleteUploadedInProfile, editEmail, editPhone, editProfile, IEH, profile, requestCounsellor, sendUserOTP, uploadInProfile, verifyEmail, verifyUserOTP } from "../controllers/student/profile.js";
 import { wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, requestCancellation, checkout, uploadInApplication, paymentVerification, order, orderInfo, Cart, reCheckout, paySummary } from "../controllers/student/application.js";
 const router = express.Router();
@@ -51,8 +51,8 @@ router.post("/apply-omit-force", authMiddleware, isStudent, removeForceApply)
 router.post("/upload-application", authMiddleware, isStudent, handleFile, uploadInApplication);
 router.post("/delete-uploaded-application/", authMiddleware, isStudent, deleteUploadedFromApplication);
 router.put("/request-cancellation/:applicationId", authMiddleware, isStudent, requestCancellation);
-
-
+router.put('/delete-data', authMiddleware, isStudent, deleteData)
+router.put('/delete-account', authMiddleware, isStudent, deleteAccount)
 router.get("/all-students", authMiddleware, isStudent, allStudents)
 router.get("/single-student/:studentId", authMiddleware, isStudent, singleStudent)
 export default router;

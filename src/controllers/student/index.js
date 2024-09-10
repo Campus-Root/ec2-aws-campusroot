@@ -14,6 +14,7 @@ import { currencySymbols } from "../../utils/enum.js";
 import { productModel } from "../../models/Product.js";
 import { orderModel } from "../../models/Order.js";
 import { packageModel } from "../../models/Package.js";
+import sendMail from "../../utils/sendEMAIL.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next) => {
   // if (!req.user.verification[0].status) return { statusCode: 400, data: student , message:    `do verify your email to generate recommendations`};
@@ -34,7 +35,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     ug_gpa: ug_gpa,
     gre: gre,
     sub_discipline: req.user.preference.courses,
-    country:req.user.preference.country
+    country: req.user.preference.country
   }
   const response = await fetch("http://localhost:4321/predict/", {
     method: "POST",
@@ -53,7 +54,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next) => {
     ug_gpa: JSON.stringify(ug),
     gre: JSON.stringify(GRE.scores),
     sub_discipline: JSON.stringify(req.user.preference.courses),
-    country:JSON.stringify(req.user.preference.country)
+    country: JSON.stringify(req.user.preference.country)
   }
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
@@ -180,4 +181,162 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
   ])
   await userModel.populate(student, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
   return ({ statusCode: 200, message: `student details`, data: student });
+})
+export const deleteData = errorWrapper(async (req, res, next) => {
+  await sendMail({
+    to: req.user.email,
+    subject: "Data Deletion",
+    html: `
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>Document</title>
+                <style>
+                    .container {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    img {
+                        max-width: 200px;
+                        margin-bottom: 20px;
+                    }
+                    h3 {
+                        color: #333;
+                    }
+                    h2 {
+                        color: #0073e6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                    <h3>Dear ${req.user.firstName} ${req.user.lastName},</h3>
+                    <h2>your data will be deleted permanently after 60 days</h2>
+                </div>
+            </body>
+        </html>
+    `
+  });
+  await sendMail({
+    to: "developer.campusroot@gmail.com",
+    subject: "Delete Data",
+    html: `
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>Document</title>
+                <style>
+                    .container {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    img {
+                        max-width: 200px;
+                        margin-bottom: 20px;
+                    }
+                    h3 {
+                        color: #333;
+                    }
+                    h2 {
+                        color: #0073e6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                    <h3>studentId:  ${req.user._id}</h3>
+                    <p>This student is requesting to delete data</p>
+                </div>
+            </body>
+        </html>
+    `
+  });
+  return { statusCode: 200, message: "Requested to delete data", data: null }
+})
+
+export const deleteAccount = errorWrapper(async (req, res, next) => {
+  req.user.active = false
+  await req.user.save()
+
+  await sendMail({
+    to: req.user.email,
+    subject: "Account Deletion",
+    html: `
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>Document</title>
+                <style>
+                    .container {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    img {
+                        max-width: 200px;
+                        margin-bottom: 20px;
+                    }
+                    h3 {
+                        color: #333;
+                    }
+                    h2 {
+                        color: #0073e6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                    <h3>Dear ${req.user.firstName} ${req.user.lastName},</h3>
+                    <h2>your account will be deleted permanently after 60 days</h2>
+                </div>
+            </body>
+        </html>
+    `
+  });
+  await sendMail({
+    to: "developer.campusroot@gmail.com",
+    subject: "Delete Account",
+    html: `
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>Document</title>
+                <style>
+                    .container {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    img {
+                        max-width: 200px;
+                        margin-bottom: 20px;
+                    }
+                    h3 {
+                        color: #333;
+                    }
+                    h2 {
+                        color: #0073e6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                    <h3>studentId:  ${req.user._id}</h3>
+                    <p>This student is requesting to delete account</p>
+                </div>
+            </body>
+        </html>
+    `
+  });
+  return { statusCode: 200, message: "Requested to delete Account", data: null }
 })

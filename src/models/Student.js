@@ -4,6 +4,7 @@ import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, De
 
 const Student = mongoose.Schema(
     {
+        active: { type: Boolean, default: true },
         verification: [{
             type: { type: String }, // "email"  // "phone"
             status: { type: Boolean, default: false },
