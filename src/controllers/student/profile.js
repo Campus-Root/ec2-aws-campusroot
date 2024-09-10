@@ -486,7 +486,7 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     await userModel.populate(chat, { path: "participants", select: "firstName lastName displayPicSrc email userType role" });
     const advisor = req.user.advisors.find(ele => ele.info._id.toString() === Counsellors[0]._id.toString());
-    return { statusCode: 200, message: `counsellor assigned`, data: { advisors: advisor, chat: chat } };
+    return { statusCode: 200, message: `counsellor assigned`, data: { advisor: advisor, chat: chat } };
 })
 export const IEH = errorWrapper(async (req, res, next) => {
     const { error, value } = Joi.object({ institutionId: Joi.string(), verificationDocName: Joi.string() }).validate(req.body)
