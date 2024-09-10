@@ -432,8 +432,8 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
             details: `counsellorId:${alreadyExistButDifferentCountry.info._id}&country:${country}}`
         })
         await req.user.save()
-        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
-        return ({ statusCode: 200, message: `counsellor assigned for multiple countries`, data: req.user.advisors });
+        await userModel.populate(alreadyExistButDifferentCountry, { path: "info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
+        return ({ statusCode: 200, message: `counsellor assigned for multiple countries`, data: { advisor: alreadyExistButDifferentCountry, chat: null } });
     }
     const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
     await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
@@ -485,7 +485,8 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     await userModel.populate(chat, { path: "participants", select: "firstName lastName displayPicSrc email userType role" });
-    return { statusCode: 200, message: `counsellor assigned`, data: { advisors: req.user.advisors, chat: chat } };
+    const advisor = req.user.advisors.find(ele => ele.info._id.toString() === Counsellors[0]._id.toString());
+    return { statusCode: 200, message: `counsellor assigned`, data: { advisors: advisor, chat: chat } };
 })
 export const IEH = errorWrapper(async (req, res, next) => {
     const { error, value } = Joi.object({ institutionId: Joi.string(), verificationDocName: Joi.string() }).validate(req.body)
