@@ -121,6 +121,10 @@ export const Package = errorWrapper(async (req, res, next) => {
                     totalPrice: Number(data.totalPrice),
                     currency: data.currency,
                 },
+                duration: {
+                    start: new Date(),
+                    end:  new Date(data.end) ?  new Date(data.end) : null
+                },
                 benefits: data.benefits,
                 products: data.products,
                 requirements: data.requirements,
@@ -210,6 +214,10 @@ export const Package = errorWrapper(async (req, res, next) => {
             if (data.requirements.length > 0) {
                 logStack.push(`requirements changed from ${Package.requirements} to ${data.requirements}`)
                 Package.requirements = data.requirements;
+            }
+            if (data.end && new Date(Package.duration.end) !== new Date(data.end)) {
+                logStack.push(`end date changed from ${Package.data.end} to ${data.end}`)
+                Package.duration.end = new Date(data.end);
             }
             if (data.products.length > 0) {
                 logStack.push(`products changed from ${Package.products} to ${data.products}`)
