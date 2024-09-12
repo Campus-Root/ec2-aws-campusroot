@@ -125,3 +125,13 @@ export const listings = errorWrapper(async (req, res, next) => {
         default: return { statusCode: 400, data: null, message: `invalid params` };
     }
 })
+export const newStudents = errorWrapper(async (req, res, next) => {
+    const { page, perPage = 20 } = req.body, filter = {}, skip = (page - 1) * perPage; // Number of items per page
+    let totalPages = 0, totalDocs
+    req.body.filterData.forEach(ele => { if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }] });
+    filter["advisors"] = { $size: 0 }
+    const listOfStudents = await studentModel.find(filter, "firstName lastName email displayPicSrc phone verification preference").skip(skip).limit(perPage);
+    totalDocs = await studentModel.countDocuments(filter)
+    totalPages = Math.ceil(totalDocs / perPage);
+    return ({ statusCode: 200, message: `students list`, data: { list: listOfStudents, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
+}) 
