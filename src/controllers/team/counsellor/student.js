@@ -57,7 +57,7 @@ export const recommend = errorWrapper(async (req, res, next) => {
     })
     await req.user.save()
     const newRecommend = student.recommendations.data.find(ele => ele.course == courseId)
-    
+
     await courseModel.populate(newRecommend, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite", },)
     await universityModel.populate(newRecommend, { path: "course.university", select: "name logoSrc location type establishedYear " },)
     return ({ statusCode: 200, message: "Recommendations Generated", data: newRecommend });
@@ -123,6 +123,7 @@ export const Package = errorWrapper(async (req, res, next) => {
                 },
                 benefits: data.benefits,
                 products: data.products,
+                requirements: data.requirements,
                 termsAndConditions: data.termsAndConditions,
                 logs: [{ action: "Package suggested to student", time: new Date(), details: `studentId=${studentId}` }]
             })
@@ -203,19 +204,23 @@ export const Package = errorWrapper(async (req, res, next) => {
                 Package.priceDetails.currency.symbol = data.currency.symbol;
             }
             if (data.benefits.length > 0) {
-                logStack.push(`currency symbol changed from ${Package.benefits} to ${data.benefits}`)
+                logStack.push(`benefits changed from ${Package.benefits} to ${data.benefits}`)
+                Package.benefits = data.benefits;
+            }
+            if (data.requirements.length > 0) {
+                logStack.push(`requirements changed from ${Package.benefits} to ${data.benefits}`)
                 Package.benefits = data.benefits;
             }
             if (data.products.length > 0) {
-                logStack.push(`currency symbol changed from ${Package.products} to ${data.products}`)
+                logStack.push(`products changed from ${Package.products} to ${data.products}`)
                 Package.products = data.products;
             }
             if (data.termsAndConditions.length > 0) {
-                logStack.push(`currency symbol changed from ${Package.termsAndConditions} to ${data.termsAndConditions}`)
+                logStack.push(`termsAndConditions changed from ${Package.termsAndConditions} to ${data.termsAndConditions}`)
                 Package.termsAndConditions = data.termsAndConditions;
             }
             if (Package.active !== data.active) {
-                logStack.push(`currency symbol changed from ${Package.active} to ${data.active}`)
+                logStack.push(`package active status changed from ${Package.active} to ${data.active}`)
                 Package.active = data.active;
             }
             Package.logs.push({ action: "package details updated", details: `${logStack}` })
