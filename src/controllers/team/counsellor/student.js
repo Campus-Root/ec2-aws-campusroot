@@ -208,8 +208,8 @@ export const Package = errorWrapper(async (req, res, next) => {
                 Package.benefits = data.benefits;
             }
             if (data.requirements.length > 0) {
-                logStack.push(`requirements changed from ${Package.benefits} to ${data.benefits}`)
-                Package.benefits = data.benefits;
+                logStack.push(`requirements changed from ${Package.requirements} to ${data.requirements}`)
+                Package.requirements = data.requirements;
             }
             if (data.products.length > 0) {
                 logStack.push(`products changed from ${Package.products} to ${data.products}`)

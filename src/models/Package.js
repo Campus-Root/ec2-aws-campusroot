@@ -21,7 +21,7 @@ const packageSchema = mongoose.Schema({
         availableCoupons: [{ type: mongoose.Schema.Types.ObjectId, ref: "coupon" }],
     },
     duration: {
-        start: { type: Date },
+        start: { type: Date, default: new Date() },
         end: { type: Date }
     },
     requirements: { type: [String] },
