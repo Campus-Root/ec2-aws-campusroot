@@ -1,7 +1,6 @@
 import courseModel from "../../../models/Course.js";
 import universityModel from "../../../models/University.js";
 import { studentModel } from "../../../models/Student.js";
-import { generateAPIError } from "../../../errors/apiError.js";
 import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { CurrencySymbolEnum, DestinationTypeEnum, possibilityOfAdmitEnum, ProductCategoryEnum, studentCounsellingStagesEnum } from "../../../utils/enum.js";
 import userModel from "../../../models/User.js";
@@ -215,8 +214,8 @@ export const Package = errorWrapper(async (req, res, next) => {
                 logStack.push(`requirements changed from ${Package.requirements} to ${data.requirements}`)
                 Package.requirements = data.requirements;
             }
-            if (data.end && new Date(Package.duration.end) !== new Date(data.end)) {
-                logStack.push(`end date changed from ${Package.data.end} to ${data.end}`)
+            if (data.end) {
+                logStack.push(`end date changed to ${data.end}`)
                 Package.duration.end = new Date(data.end);
             }
             if (data.products.length > 0) {
