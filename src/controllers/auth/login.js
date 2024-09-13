@@ -6,7 +6,6 @@ import Handlebars from "handlebars";
 import userModel from "../../models/User.js";
 import sendMail from "../../utils/sendEMAIL.js";
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { cookieOptions } from "../../index.js";
 import Joi from "joi";
 import { loginSchema } from "../../schemas/student.js";
@@ -54,7 +53,7 @@ export const forgotPassword = errorWrapper(async (req, res, next) => {
     }
     const otp = Math.random().toString().substr(2, 4)
     let subject = "CAMPUSROOT Ed.tech Pvt. Ltd. - One-Time Password"
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const __filename = new URL(import.meta.url).pathname;
     const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
     const source = fs.readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source)

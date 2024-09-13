@@ -21,10 +21,9 @@ const app = express();
 const server = createServer(app);
 
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { getTokens, sendPushNotification } from "./utils/sendNotification.js";
 import xssReqSanitizer from "xss-req-sanitizer";
-const __filename = fileURLToPath(import.meta.url);
+const __filename = new URL(import.meta.url).pathname;
 
 
 const __dirname = path.dirname(__filename);
