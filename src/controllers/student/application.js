@@ -37,9 +37,15 @@ export const Cart = errorWrapper(async (req, res, next) => {
             req.user.activity.cart.push({ category: category, course: courseId, intake: intake });
             break;
         case 'remove':
-            // if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
-            await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": [itemIds] } })
-            // req.user.activity.cart = req.user.activity.cart.filter(ele => ele._id.toString() != itemId)
+            if (itemIds && itemIds.length > 0) {
+                const foundItems = req.user.activity.cart.filter(ele => itemIds.includes(ele._id.toString()));
+                if (foundItems.length === 0) return { statusCode: 400, message: `No items found to remove`, data: [value] };
+                await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": { _id: { $in: itemIds } } } });
+            } else if (itemId) {
+                const foundItem = req.user.activity.cart.find(ele => ele._id.toString() === itemId);
+                if (!foundItem) return { statusCode: 400, message: `Item doesn't exist`, data: [value] };
+                await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": { _id: itemId } } });
+            } else return { statusCode: 400, message: `No itemId or itemIds provided`, data: [value] };
             break;
         case 'update':
             if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
