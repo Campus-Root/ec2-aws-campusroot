@@ -12,7 +12,8 @@ export const CartSchema = Joi.object({
     category: Joi.string().valid(...Object.values(ProductCategoryEnum)),
     courseId: Joi.string(),
     intake: Joi.date().greater('now'),
-    itemId: Joi.string().allow('')
+    itemId: Joi.string().allow(''),
+    itemIds: Joi.array().min(0)
 }).required();
 
 export const ProductSchema = Joi.object({

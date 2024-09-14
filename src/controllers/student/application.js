@@ -22,7 +22,7 @@ const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next) => {
     const { error, value } = CartSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
-    const { action, category, courseId, intake, itemId } = value;
+    const { action, category, courseId, intake, itemId, itemIds } = value;
     let found = req.user.activity.cart.filter(ele => (ele.course.toString() == courseId && new Date(ele.intake) == new Date(intake) && ele.category == category) || ele._id.toString() == itemId)
     let course, intakeExists;
     switch (action) {
@@ -37,8 +37,9 @@ export const Cart = errorWrapper(async (req, res, next) => {
             req.user.activity.cart.push({ category: category, course: courseId, intake: intake });
             break;
         case 'remove':
-            if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
-            req.user.activity.cart = req.user.activity.cart.filter(ele => ele._id.toString() != itemId)
+            // if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
+            await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": [itemIds] } })
+            // req.user.activity.cart = req.user.activity.cart.filter(ele => ele._id.toString() != itemId)
             break;
         case 'update':
             if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
