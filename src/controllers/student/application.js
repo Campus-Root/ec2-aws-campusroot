@@ -18,6 +18,8 @@ import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
 import { priceModel } from "../../models/prices.js";
 import { CartSchema, CheckoutSchema } from "../../schemas/student.js";
+import { startSession } from "mongoose"
+import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next) => {
     const { error, value } = CartSchema.validate(req.body)
@@ -222,6 +224,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
             },
             status: "pending",
         })
+        // add product details
         await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } })
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
@@ -284,107 +287,105 @@ export const reCheckout = errorWrapper(async (req, res, next) => {
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 })
 export const paymentVerification = async (req, res, next) => {
-    const { razorpay_order_id } = req.body;
-    const order = await orderModel.findOneAndUpdate(
-        { "paymentDetails.razorpay_order_id": razorpay_order_id },
-        {
-            $set: {
-                "paymentDetails.paymentStatus": req.razorPay.status,
-                "paymentDetails.amount": req.razorPay.amount,
-                "paymentDetails.amount_due": req.razorPay.amount_due,
-                "paymentDetails.currency": req.razorPay.currency,
-                "paymentDetails.misc": req.razorPay,
+    const session = await startSession();
+    try {
+        session.startTransaction();  // Start transaction
+        const { razorpay_order_id } = req.body;
+        const order = await orderModel.findOneAndUpdate(
+            { "paymentDetails.razorpay_order_id": razorpay_order_id },
+            {
+                $set: {
+                    "paymentDetails.paymentStatus": req.razorPay.status,
+                    "paymentDetails.amount": req.razorPay.amount,
+                    "paymentDetails.amount_due": req.razorPay.amount_due,
+                    "paymentDetails.currency": req.razorPay.currency,
+                    "paymentDetails.misc": req.razorPay,
+                },
+                $push: { "logs": { action: "payment made", details: razorpay_order_id } }
             },
-            $push: { "logs": { action: "payment made", details: razorpay_order_id } }
-        },
-        { new: true }
-    );
-    const student = await studentModel.findById(order.student, "advisors");
-    await userModel.populate(student, { path: 'advisors.info', select: 'role expertiseCountry' });
-    const hasPackageId = Boolean(order.Package);
-    const hasProducts = Array.isArray(order.products) && order.products.length > 0;
-    if (hasProducts) {
-        for (const product of order.products) {
-            const Product = await productModel.findById(product);
-            let course = await courseModel.findById(Product.course, "location.country");
-            let country = course.location.country;
-            let counsellors = student.advisors.filter(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country));
-            switch (Product.category) {
-                case ProductCategoryEnum.ELITE || ProductCategoryEnum.PREMIUM:
-                    if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
-                    else {
-                        const Counsellors = await teamModel.aggregate([
-                            { $match: { role: "counsellor", expertiseCountry: country } },
-                            { $project: { _id: 1, students: 1, studentsCount: { $size: "$students" } } },
-                            { $sort: { studentsCount: 1 } },
-                            { $limit: 1 }
-                        ]);
-                        await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-                        await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
-                        student.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] });
-                        Product.advisors.push(Counsellors[0]._id);
-                    }
-                    let processCoordinators = student.advisors.filter(ele => ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country)));
-                    if (processCoordinators.length > 0) {
-                        if (!processCoordinators[0].assignedCountries.includes(country)) processCoordinators[0].assignedCountries.push(country);
-                        Product.advisors.push(processCoordinators[0].info._id);
-                        await teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: Product._id } });
-                    } else {
-                        const ProcessCoordinators = await teamModel.aggregate([
-                            { $match: { role: "processCoordinator", expertiseCountry: country } },
-                            { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } },
-                            { $sort: { applicationsCount: 1 } },
-                            { $limit: 1 }
-                        ]);
-                        if (ProcessCoordinators.length > 0) {
-                            await teamModel.findByIdAndUpdate(ProcessCoordinators[0]._id, { $push: { applications: Product._id } });
-                            student.advisors.push({ info: ProcessCoordinators[0]._id, assignedCountries: [country] });
-                            await chatModel.create({ participants: [student._id, ProcessCoordinators[0]._id] });
-                            Product.advisors.push(ProcessCoordinators[0]._id);
+            { new: true, session }
+        );
+        const student = await studentModel.findById(order.student, "advisors").session(session);
+        await userModel.populate(student, { path: 'advisors.info', select: 'role expertiseCountry' });
+        const hasPackageId = Boolean(order.Package);
+        const hasProducts = Array.isArray(order.products) && order.products.length > 0;
+        if (hasProducts) {
+            for (const product of order.products) {
+                const Product = await productModel.findById(product).session(session);
+                let course = await courseModel.findById(Product.course, "location.country").session(session);
+                let country = course.location.country;
+                let counsellors = [], processCoordinators = []
+                for (const ele of student.advisors) {
+                    if (ele.info.role === "counsellor" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) counsellors.push(ele)
+                    else if (ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) processCoordinators.push(ele)
+                }
+                switch (Product.category) {
+                    case ProductCategoryEnum.ELITE:
+                    case ProductCategoryEnum.PREMIUM:
+                        if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
+                        else {
+                            const Counsellor = await getNewAdvisor("counsellor", country);
+                            teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } }, { session });
+                            chatModel.create({ participants: [student._id, Counsellor._id] }, { session });
+                            student.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
+                            Product.advisors.push(Counsellor._id);
                         }
-                    }
-                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }];
-                    Product.status = "Processing";
-                    Product.stage = "Waiting For Counsellor's Approval";
-                    break;
-                case ProductCategoryEnum.SOP_LOR:
-                    if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
-                    else {
-                        const Counsellors = await teamModel.aggregate([
-                            { $match: { role: "counsellor", expertiseCountry: country } },
-                            { $project: { _id: 1, students: 1, studentsCount: { $size: "$students" } } },
-                            { $sort: { studentsCount: 1 } },
-                            { $limit: 1 }
-                        ]);
-                        if (Counsellors.length > 0) {
-                            await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-                            student.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] });
-                            Product.advisors.push(Counsellors[0]._id);
+                        if (processCoordinators.length > 0) {
+                            if (!processCoordinators[0].assignedCountries.includes(country)) processCoordinators[0].assignedCountries.push(country);
+                            Product.advisors.push(processCoordinators[0].info._id);
+                            teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: Product._id } }, { session });
+                        } else {
+                            const ProcessCoordinator = await getNewAdvisor("processCoordinator", country);
+                            teamModel.findByIdAndUpdate(ProcessCoordinator._id, { $push: { applications: Product._id } }, { session });
+                            student.advisors.push({ info: ProcessCoordinator._id, assignedCountries: [country] });
+                            chatModel.create({ participants: [student._id, ProcessCoordinator._id] }, { session });
+                            Product.advisors.push(ProcessCoordinator._id);
                         }
-                    }
-                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Connection" }] }];
-                    Product.status = "Processing";
-                    Product.stage = "Waiting For Counsellor's Connection";
-                    break;
-                case ProductCategoryEnum.VISA:
-                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Visa expert Connection" }] }];
-                    Product.status = "Processing";
-                    Product.stage = "Waiting For Visa expert Connection";
-                    break;
-                case ProductCategoryEnum.LOAN:
-                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For loan expert Connection" }] }];
-                    Product.status = "Processing";
-                    Product.stage = "Waiting For loan expert Connection";
-                    break;
+                        Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }];
+                        Product.status = "Processing";
+                        Product.stage = "Waiting For Counsellor's Approval";
+                        break;
+                    case ProductCategoryEnum.SOP_LOR:
+                        if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
+                        else {
+                            const Counsellor = await getNewAdvisor("counsellor", country);
+                            teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                            student.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
+                            Product.advisors.push(Counsellor._id);
+                        }
+                        Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Connection" }] }];
+                        Product.status = "Processing";
+                        Product.stage = "Waiting For Counsellor's Connection";
+                        break;
+
+                    case ProductCategoryEnum.VISA:
+                        Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Visa expert Connection" }] }];
+                        Product.status = "Processing";
+                        Product.stage = "Waiting For Visa expert Connection";
+                        break;
+                    case ProductCategoryEnum.LOAN:
+                        Product.log = [{ status: "Processing", stages: [{ name: "Waiting For loan expert Connection" }] }];
+                        Product.status = "Processing";
+                        Product.stage = "Waiting For loan expert Connection";
+                        break;
+                }
+                await Product.save({ session });
             }
-            await Product.save();
+
+            studentModel.findByIdAndUpdate(order.student, { $addToSet: { "activity.products": order.products } }, { session });
         }
-        await studentModel.findByIdAndUpdate(order.student, { $addToSet: { "activity.products": order.products } });
+        if (hasPackageId) studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } }, { session });
+        await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } }, { session });
+        await student.save({ session });
+        await session.commitTransaction();  // Commit the transaction
+    } catch (error) {
+        await session.abortTransaction();
+        return res.status(500).json({ success: false, message: 'Transaction failed', error: error.message });
     }
-    if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } });
-    await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } });
-    await student.save();
-    return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
+    finally {
+        session.endSession();
+        return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
+    }
 };
 export const orderInfo = errorWrapper(async (req, res, next) => {
     const { orderId } = req.query;
@@ -400,10 +401,10 @@ export const orderInfo = errorWrapper(async (req, res, next) => {
     await universityModel.populate(order, { path: "products.course.university", select: "name logoSrc location type establishedYear " })
     return { statusCode: 200, message: 'order info', data: order };
 })
-export const order = errorWrapper(async (req, res, next) => {
+export const addingProductsToOrder = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "role expertiseCountry" })
     const { products } = req.body
-    let productIds = [], counsellor, processCoordinator
+    let productIds = []
     for (const product of products) {
         const newProductDetails = await productModel.create({
             user: req.user._id,
@@ -417,7 +418,6 @@ export const order = errorWrapper(async (req, res, next) => {
         let course = await courseModel.findById(newProductDetails.course, "location startDate")
         let country = course.location.country
         let counsellors = req.user.advisors.filter(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country));
-
         switch (product.category) {
             case ProductCategoryEnum.PREMIUM:
             case ProductCategoryEnum.ELITE:
