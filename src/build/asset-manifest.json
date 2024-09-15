@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.4c6e4cd2.css",
-    "main.js": "/static/js/main.bf70b953.js",
+    "main.js": "/static/js/main.9995fd2b.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
     "static/media/homepage1.png": "/static/media/homepage1.c981a28fe27fd3b3dc50.png",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
@@ -24,6 +24,7 @@
     "static/media/explore.png": "/static/media/explore.6618f116a3a9c9eb3795.png",
     "static/media/check_list.gif": "/static/media/check_list.9f1e8d67e35dd010962d.gif",
     "static/media/nomeetings.png": "/static/media/nomeetings.ec477ef9ac7ff8074696.png",
+    "static/media/countriescard.jpeg": "/static/media/countriescard.6e1870399e00c35e0a9e.jpeg",
     "static/media/norecommend.png": "/static/media/norecommend.db6e2ee5e951d985f887.png",
     "static/media/profilebg.png": "/static/media/profilebg.357f4785db0462cd3b48.png",
     "static/media/standardLoader.gif": "/static/media/standardLoader.b2a8fa3d8baba9fc720f.gif",
@@ -36,11 +37,11 @@
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
     "main.4c6e4cd2.css.map": "/static/css/main.4c6e4cd2.css.map",
-    "main.bf70b953.js.map": "/static/js/main.bf70b953.js.map",
+    "main.9995fd2b.js.map": "/static/js/main.9995fd2b.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.4c6e4cd2.css",
-    "static/js/main.bf70b953.js"
+    "static/js/main.9995fd2b.js"
   ]
 }
