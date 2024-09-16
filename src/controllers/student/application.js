@@ -18,7 +18,7 @@ import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
 import { priceModel } from "../../models/prices.js";
 import { CartSchema, CheckoutSchema } from "../../schemas/student.js";
-import { startSession } from "mongoose"
+import { startSession, Types } from "mongoose"
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next) => {
@@ -40,13 +40,10 @@ export const Cart = errorWrapper(async (req, res, next) => {
             break;
         case 'remove':
             if (itemIds && itemIds.length > 0) {
-                const foundItems = req.user.activity.cart.filter(ele => itemIds.includes(ele._id.toString()));
-                if (foundItems.length === 0) return { statusCode: 400, message: `No items found to remove`, data: [value] };
-                await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": itemIds } });
+                // Filter the cart to find items that match the provided IDs
+                req.user.activity.cart = req.user.activity.cart.filter(item => !itemIds.includes(item._id.toString()));
             } else if (itemId) {
-                const foundItem = req.user.activity.cart.find(ele => ele._id.toString() === itemId);
-                if (!foundItem) return { statusCode: 400, message: `Item doesn't exist`, data: [value] };
-                await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": { _id: itemId } } });
+                req.user.activity.cart = req.user.activity.cart.filter(item => !itemId.includes(item._id.toString()));
             } else return { statusCode: 400, message: `No itemId or itemIds provided`, data: [value] };
             break;
         case 'update':
