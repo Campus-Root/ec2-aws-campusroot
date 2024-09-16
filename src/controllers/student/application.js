@@ -42,7 +42,7 @@ export const Cart = errorWrapper(async (req, res, next) => {
             if (itemIds && itemIds.length > 0) {
                 const foundItems = req.user.activity.cart.filter(ele => itemIds.includes(ele._id.toString()));
                 if (foundItems.length === 0) return { statusCode: 400, message: `No items found to remove`, data: [value] };
-                await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": { _id: { $in: itemIds } } } });
+                await userModel.findByIdAndUpdate(req.user._id, { $pull: { "activity.cart": itemIds } });
             } else if (itemId) {
                 const foundItem = req.user.activity.cart.find(ele => ele._id.toString() === itemId);
                 if (!foundItem) return { statusCode: 400, message: `Item doesn't exist`, data: [value] };
