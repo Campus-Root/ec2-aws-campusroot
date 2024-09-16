@@ -18,7 +18,7 @@ import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
 import { priceModel } from "../../models/prices.js";
 import { CartSchema, CheckoutSchema } from "../../schemas/student.js";
-import { startSession, Types } from "mongoose"
+import { startSession } from "mongoose"
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next) => {
