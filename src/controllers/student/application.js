@@ -62,7 +62,7 @@ export const Cart = errorWrapper(async (req, res, next) => {
     await courseModel.populate(req.user, { path: "activity.cart.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university elite", },)
     await universityModel.populate(req.user, { path: "activity.cart.course.university", select: "name logoSrc location type establishedYear ", })
     return { statusCode: 200, message: `cart updated successfully`, data: req.user.activity.cart }
-})
+});
 export const wishList = errorWrapper(async (req, res, next) => {
     const { error, value } = Joi.object({ courseId: Joi.string().required(), action: Joi.string().valid('push', 'pull') }).validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
@@ -122,8 +122,10 @@ export const paySummary = errorWrapper(async (req, res) => {
         if (errorStack.length > 0) return { statusCode: 400, message: `Invalid products`, data: errorStack };
     }
     return { statusCode: 200, message: "Payment Summary", data: { items: items, totalPrice: items.reduce((acc, ele) => acc + ele.finalPrice, 0) } }
-})
+});
 export const checkout = errorWrapper(async (req, res, next) => {
+    const session = await startSession();
+    session.startTransaction();  // Start transaction
     const { error, value } = CheckoutSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { packageId, products, userCurrency } = value;
@@ -202,7 +204,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 newProducts.push(newProductDetails)
             }
             if (errorStack.length > 0) return { statusCode: 400, message: `Invalid products`, data: errorStack };
-            insertedProducts = await productModel.insertMany(newProducts);
+            insertedProducts = await productModel.insertMany(newProducts, { session });
             newProductIds = insertedProducts.map(product => product._id);
             break;
         default: return { statusCode: 500, message: `some internal server error`, data: null };
@@ -222,8 +224,74 @@ export const checkout = errorWrapper(async (req, res, next) => {
             status: "pending",
         })
         // add product details
-        await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } })
+        for (const product of newProductIds) {
+            const Product = await productModel.findById(product).session(session);
+            let course = await courseModel.findById(Product.course, "location.country").session(session);
+            await userModel.populate(req.user, { path: 'advisors.info', select: 'role expertiseCountry' });
+
+            let country = course.location.country;
+            let counsellors = [], processCoordinators = []
+            for (const ele of req.user.advisors) {
+                if (ele.info.role === "counsellor" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) counsellors.push(ele)
+                else if (ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) processCoordinators.push(ele)
+            }
+            switch (Product.category) {
+                case ProductCategoryEnum.ELITE:
+                case ProductCategoryEnum.PREMIUM:
+                    if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
+                    else {
+                        const Counsellor = await getNewAdvisor("counsellor", country);
+                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } }, { session });
+                        chatModel.create({ participants: [req.user._id, Counsellor._id] }, { session });
+                        req.user.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
+                        Product.advisors.push(Counsellor._id);
+                    }
+                    if (processCoordinators.length > 0) {
+                        if (!processCoordinators[0].assignedCountries.includes(country)) processCoordinators[0].assignedCountries.push(country);
+                        Product.advisors.push(processCoordinators[0].info._id);
+                        teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: Product._id } }, { session });
+                    } else {
+                        const ProcessCoordinator = await getNewAdvisor("processCoordinator", country);
+                        teamModel.findByIdAndUpdate(ProcessCoordinator._id, { $push: { applications: Product._id } }, { session });
+                        req.user.advisors.push({ info: ProcessCoordinator._id, assignedCountries: [country] });
+                        chatModel.create({ participants: [req.user._id, ProcessCoordinator._id] }, { session });
+                        Product.advisors.push(ProcessCoordinator._id);
+                    }
+                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }];
+                    Product.status = "Processing";
+                    Product.stage = "Waiting For Counsellor's Approval";
+                    break;
+                case ProductCategoryEnum.SOP_LOR:
+                    if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
+                    else {
+                        const Counsellor = await getNewAdvisor("counsellor", country);
+                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                        req.user.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
+                        Product.advisors.push(Counsellor._id);
+                    }
+                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Connection" }] }];
+                    Product.status = "Processing";
+                    Product.stage = "Waiting For Counsellor's Connection";
+                    break;
+
+                case ProductCategoryEnum.VISA:
+                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Visa expert Connection" }] }];
+                    Product.status = "Processing";
+                    Product.stage = "Waiting For Visa expert Connection";
+                    break;
+                case ProductCategoryEnum.LOAN:
+                    Product.log = [{ status: "Processing", stages: [{ name: "Waiting For loan expert Connection" }] }];
+                    Product.status = "Processing";
+                    Product.stage = "Waiting For loan expert Connection";
+                    break;
+            }
+            Product.order = order._id
+            await Product.save({ session });
+        }
+        await req.user.save({ session })
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
+        await session.commitTransaction();
+        session.endSession();
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
     }
     const orderOptions = {
@@ -251,10 +319,12 @@ export const checkout = errorWrapper(async (req, res, next) => {
         status: "pending",
         logs: [{ action: "new Order Created", details: JSON.stringify(orderOptions.notes) }],
     })
-    await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } })
-    await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
+    await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } }, { session })
+    await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
+    await session.commitTransaction();
+    session.endSession();
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
-})
+});
 export const reCheckout = errorWrapper(async (req, res, next) => {
     const { error, value } = Joi.object({ orderId: Joi.string().required() }).validate(req.query)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
@@ -282,7 +352,7 @@ export const reCheckout = errorWrapper(async (req, res, next) => {
     await order.save()
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { logs: { action: `order attempted for re-Checkout`, details: `orderId:${order._id}` } } })
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
-})
+});
 export const paymentVerification = async (req, res, next) => {
     const session = await startSession();
     try {
@@ -397,7 +467,7 @@ export const orderInfo = errorWrapper(async (req, res, next) => {
     await courseModel.populate(order, { path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" })
     await universityModel.populate(order, { path: "products.course.university", select: "name logoSrc location type establishedYear " })
     return { statusCode: 200, message: 'order info', data: order };
-})
+});
 export const addingProductsToOrder = errorWrapper(async (req, res, next) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "role expertiseCountry" })
     const { products } = req.body
@@ -510,7 +580,7 @@ export const requestCancellation = errorWrapper(async (req, res, next) => {
     await courseModel.populate(updatedApplication, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
     await universityModel.populate(updatedApplication, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return { statusCode: 200, message: 'Application cancellation Request sent to processCoordinator', data: updatedApplication };
-})
+});
 // ..............applications documents...................
 export const uploadInApplication = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId } = req.body;
@@ -546,7 +616,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next) => {
         }
     }
     return { statusCode: 200, message: 'Application checklist updated', data: application };
-})
+});
 export const deleteUploadedFromApplication = errorWrapper(async (req, res, next) => {
     const { applicationId, checklistItemId, documentId } = req.body;
     const doc = await Document.findById(documentId)
@@ -580,7 +650,7 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
         }
     }
     return { statusCode: 200, message: `doc deleted`, data: application };
-})
+});
 export const forceForwardApply = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body;
     const application = await productModel.findById(applicationId)
@@ -592,7 +662,7 @@ export const forceForwardApply = errorWrapper(async (req, res, next) => {
     req.user.logs.push({ action: `Application forwarded forcefully`, details: `applicationId:${applicationId}` })
     await req.user.save()
     return { statusCode: 200, message: `Applied Forcefully`, data: application };
-})
+});
 export const removeForceApply = errorWrapper(async (req, res, next) => {
     const { applicationId } = req.body;
     const application = await productModel.findById(applicationId)
@@ -604,4 +674,4 @@ export const removeForceApply = errorWrapper(async (req, res, next) => {
     req.user.logs.push({ action: `Removed forceful apply`, details: `applicationId:${applicationId}` })
     await req.user.save()
     return { statusCode: 200, message: `removed forced apply`, data: application };
-})
+});
