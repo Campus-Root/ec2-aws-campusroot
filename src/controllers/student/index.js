@@ -16,7 +16,7 @@ import { orderModel } from "../../models/Order.js";
 import { packageModel } from "../../models/Package.js";
 import sendMail from "../../utils/sendEMAIL.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
-export const generateRecommendations = errorWrapper(async (req, res, next) => {
+export const generateRecommendations = errorWrapper(async (req, res, next, session) => {
   // if (!req.user.verification[0].status) return { statusCode: 400, data: student , message:    `do verify your email to generate recommendations`};
   // if (!req.user.verification[1].status) return { statusCode: 400, data: student , message:    `do verify your phone number to generate recommendations`};
   const GRE = req.user.tests.find(ele => ele.name == "Graduate Record Examination")
@@ -108,7 +108,7 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
 
   return ({ statusCode: 200, message: "Recommendation hidden", data: req.user.recommendations });
 })
-export const dashboard = errorWrapper(async (req, res, next) => {
+export const dashboard = errorWrapper(async (req, res, next, session) => {
   await Promise.all([
     await orderModel.populate(req.user, { path: "orders", select: "paymentDetails Package status priceDetails cancellationReason cancellationDate logs products" }),
     await packageModel.populate(req.user, { path: "suggestedPackages purchasedPackages orders.Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" }),
@@ -150,14 +150,14 @@ export const dashboard = errorWrapper(async (req, res, next) => {
   return ({ statusCode: 200, message: `activity of user`, data: { activity: req.user.activity, orders: req.user.orders, suggestedPackages: req.user.suggestedPackages, purchasedPackages: req.user.purchasedPackages, recommendations: req.user.recommendations, checklist: checklist } });
 });
 //................download any user related Document...........
-export const downloadDocument = errorWrapper(async (req, res, next) => {
+export const downloadDocument = errorWrapper(async (req, res, next, session) => {
   const { documentId } = req.params;
   const document = await Document.findById(documentId);
   if (!document) return { statusCode: 400, data: null, message: `invalid document ID` };
   // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return { statusCode: 400, data: student , message:    `access denied`};
   return res.contentType(document.contentType).send(document.data);
 })
-export const allStudents = errorWrapper(async (req, res, next) => {
+export const allStudents = errorWrapper(async (req, res, next, session) => {
   const students = await studentModel.find({}, "firstName lastName displayPicSrc activity.admitReceived").populate("activity.admitReceived", "university course");
   await Promise.all([
     await universityModel.populate(students, { path: "activity.admitReceived.university", select: "name logoSrc location type ", }),
@@ -165,7 +165,7 @@ export const allStudents = errorWrapper(async (req, res, next) => {
   ])
   return ({ statusCode: 200, message: `all students`, data: students });
 })
-export const singleStudent = errorWrapper(async (req, res, next) => {
+export const singleStudent = errorWrapper(async (req, res, next, session) => {
   const { studentId } = req.params
   const student = await studentModel.findById(studentId, "firstName lastName displayPicSrc tests workExperience researchPapers education activity.products skills communities")
   await communityModel.populate(student, { path: "communities", select: "participants university posts", })
@@ -182,7 +182,7 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
   await userModel.populate(student, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
   return ({ statusCode: 200, message: `student details`, data: student });
 })
-export const deleteData = errorWrapper(async (req, res, next) => {
+export const deleteData = errorWrapper(async (req, res, next, session) => {
   await sendMail({
     to: req.user.email,
     subject: "Data Deletion",
@@ -260,7 +260,7 @@ export const deleteData = errorWrapper(async (req, res, next) => {
   return { statusCode: 200, message: "Requested to delete data", data: null }
 })
 
-export const deleteAccount = errorWrapper(async (req, res, next) => {
+export const deleteAccount = errorWrapper(async (req, res, next, session) => {
   req.user.active = false
   await req.user.save()
 

@@ -13,7 +13,7 @@ import { leadCreation, refreshToken } from "../../utils/CRMintegrations.js";
 import 'dotenv/config';
 import institutionModel from "../../models/IndianColleges.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
-export const listings = errorWrapper(async (req, res, next) => {
+export const listings = errorWrapper(async (req, res, next, session) => {
     const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
@@ -142,7 +142,7 @@ export const listings = errorWrapper(async (req, res, next) => {
             return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
     }
 })
-export const oneUniversity = errorWrapper(async (req, res, next) => {
+export const oneUniversity = errorWrapper(async (req, res, next, session) => {
     let university = await universityModel.findById(req.query.id, { universityLink: 0, generalRequirementLink: 0, completeProgramLink: 0 })
     if (!university) return res.status(400).json({ statusCode: 200, message: `university ID invalid`, data: null })
     university = await university.populate("userReviews", "rating user comment")
@@ -169,7 +169,7 @@ export const oneUniversity = errorWrapper(async (req, res, next) => {
     }
     return ({ statusCode: 200, message: `single university`, data: university })
 })
-export const oneCourse = errorWrapper(async (req, res, next) => {
+export const oneCourse = errorWrapper(async (req, res, next, session) => {
     let course = await courseModel
         .findById(req.query.id, {
             "tuitionFee.tuitionFeeLink": 0,
@@ -205,23 +205,23 @@ export const oneCourse = errorWrapper(async (req, res, next) => {
     }
     return ({ statusCode: 200, message: `single course`, data: course })
 })
-export const PublicProfile = errorWrapper(async (req, res, next) => {
+export const PublicProfile = errorWrapper(async (req, res, next, session) => {
     const { id } = req.params
     if (!id) return res.status(400).json({ success: false, message: "no id provided", data: null })
     const profile = await studentModel.findById(id, "firstName lastName displayPicSrc activity")
     if (!profile) return res.status(400).json({ success: false, message: "invalid id", data: null })
     return ({ statusCode: 200, message: "public profile", data: profile })
 })
-export const CommunityProfiles = errorWrapper(async (req, res, next) => {
+export const CommunityProfiles = errorWrapper(async (req, res, next, session) => {
     const { limit } = req.query
     const profiles = await studentModel.aggregate([{ $sample: { size: +limit || 10 } }, { $project: { _id: 1, displayPicSrc: 1, firstName: 1, lastName: 1, activity: 1 } }]);
     return ({ statusCode: 200, message: "public profiles", data: profiles })
 })
-export const counsellors = errorWrapper(async (req, res, next) => {
+export const counsellors = errorWrapper(async (req, res, next, session) => {
     const counsellors = await teamModel.find({ role: "counsellor" }, { firstName: 1, lastName: 1, numberOfStudentsAssisted: 1, displayPicSrc: 1 })
     return { statusCode: 200, message: `all counsellors`, data: counsellors }
 })
-export const uniNameRegex = errorWrapper(async (req, res, next) => {
+export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
     let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = []
     if (req.query.institutions == 1) institutionSearchResults = await institutionModel.find({ $or: [{ InstitutionName: { $regex: req.query.search, $options: "i" } }, { university: { $regex: req.query.search, $options: "i" } }, { Address: { $regex: req.query.search, $options: "i" } }, { State: { $regex: req.query.search, $options: "i" } }, { District: { $regex: req.query.search, $options: "i" } }] }, "InstitutionName State District university IEH.exists").sort({ isStartMatch: -1, InstitutionName: 1 }).limit(5);
@@ -289,7 +289,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next) => {
     // const uniSearchResults = await universityModel.find(uniKeyword, "name location community logoSrc").limit(5)
     return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults, institutions: institutionSearchResults } })
 })
-export const requestCallBack = errorWrapper(async (req, res, next) => {
+export const requestCallBack = errorWrapper(async (req, res, next, session) => {
     const { name, email, phone, studentID, queryDescription } = req.body
     let student, leadData, existingLead
     if (studentID) {

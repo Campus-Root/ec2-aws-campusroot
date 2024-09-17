@@ -4,7 +4,7 @@ import meetingModel from "../../models/meetings.js";
 import { oauth2Client } from "../../utils/oAuthClient.js";
 import { google } from "googleapis";
 import 'dotenv/config';
-export const bookSlot = errorWrapper(async (req, res, next) => {
+export const bookSlot = errorWrapper(async (req, res, next, session) => {
     const { startTime, endTime, attendees, timeZone, notes } = req.body
     const { teamMemberId } = req.params
     // if (req.user.verification[0].status === false) return { statusCode: 400, data: student , message:    `do verify your email to book a slot`};
@@ -57,13 +57,13 @@ export const bookSlot = errorWrapper(async (req, res, next) => {
     await userModel.populate(meeting, { path: "user member", select: "firstName lastName email displayPicSrc role" })
     return ({ statusCode: 200, message: `slot booking successful`, data: meeting });
 })
-export const modifySlot = errorWrapper(async (req, res, next) => {
+export const modifySlot = errorWrapper(async (req, res, next, session) => {
     const { meetingId, option, startTime, endTime, timeZone } = req.body
     let meeting = await meetingModel.findById(meetingId).populate("member", "googleTokens")
     if (!meeting || !meeting.data.id) return { statusCode: 400, data: null, message: "invalid meetingId" }
     oauth2Client.setCredentials(meeting.member.googleTokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    if (meeting.status === "cancelled") return {statusCode: 400, data: null, message: "cannot modify cancelled meeting"}
+    if (meeting.status === "cancelled") return { statusCode: 400, data: null, message: "cannot modify cancelled meeting" }
     let msg, response
     switch (option) {
         case "cancelEvent":
@@ -108,7 +108,7 @@ export const modifySlot = errorWrapper(async (req, res, next) => {
     await userModel.populate(meeting, { path: "user member", select: "firstName lastName email displayPicSrc role" })
     return ({ statusCode: 200, message: msg, data: meeting });
 })
-export const getEvents = errorWrapper(async (req, res, next) => {
+export const getEvents = errorWrapper(async (req, res, next, session) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens" })
     const { teamMemberId } = req.params
     let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)

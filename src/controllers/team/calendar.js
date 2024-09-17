@@ -3,11 +3,11 @@ import { teamModel } from "../../models/Team.js";
 import { oauth2Client } from "../../utils/oAuthClient.js";
 import { google } from "googleapis";
 
-export const generatingAuthUrl = errorWrapper(async (req, res, next) => {
+export const generatingAuthUrl = errorWrapper(async (req, res, next, session) => {
     const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/userinfo.email"] });
     return { statusCode: 200, message: `auth url`, data: url };
 })
-export const googleAuthentication = errorWrapper(async (req, res, next) => {
+export const googleAuthentication = errorWrapper(async (req, res, next, session) => {
     const { tokens } = await oauth2Client.getToken(req.query.code)
     oauth2Client.setCredentials(tokens);
     const oauth2 = google.oauth2({
@@ -36,7 +36,7 @@ export const googleAuthentication = errorWrapper(async (req, res, next) => {
     const list = await calendar.events.list(filter);
     return ({ statusCode: 200, message: `${user.role} calendar`, data: { numberOfItems: list.data.items.length, items: list.data.items } })
 })
-export const calendarEvents = errorWrapper(async (req, res, next) => {
+export const calendarEvents = errorWrapper(async (req, res, next, session) => {
     if (!req.user.googleTokens.access_token) return { statusCode: 400, data: null, message: `invalid google tokens` };
     oauth2Client.setCredentials(req.user.googleTokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });

@@ -26,7 +26,7 @@ export const validationErrorMiddleware = errorWrapper((req, res, next) => {
     if (!errors.isEmpty()) return { statusCode: 400, data: errors, message: `${errors.array()[0].msg}` };
     return next();
 })
-export const checkDisposableEmail = errorWrapper(async (req, res, next) => {
+export const checkDisposableEmail = errorWrapper(async (req, res, next, session) => {
     const { email } = req.body;
     const response = await fetch(`https://disposable.debounce.io/?email=${email}`);
     const data = await response.json();
@@ -36,7 +36,7 @@ export const checkDisposableEmail = errorWrapper(async (req, res, next) => {
     };
     next();
 });
-export const validatePayment = errorWrapper(async (req, res, next) => {
+export const validatePayment = errorWrapper(async (req, res, next, session) => {
     const { orderId } = req.body;
     if (!req.user.orders.includes(orderId)) return { statusCode: 400, data: orderId, message: `invalid orderId` };
     let order = await orderModel.findById(orderId).populate("products").populate("Package");
@@ -46,7 +46,7 @@ export const validatePayment = errorWrapper(async (req, res, next) => {
     };
     next();
 })
-export const validateProducts = errorWrapper(async (req, res, next) => {
+export const validateProducts = errorWrapper(async (req, res, next, session) => {
     const { error, value } = Joi.object({ orderId: Joi.string(), products: Joi.array().items(ProductSchema).min(1) }).validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { products } = value;

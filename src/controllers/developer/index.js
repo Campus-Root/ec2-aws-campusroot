@@ -336,7 +336,7 @@ export const retrive = async (req, res) => {
 }
 
 
-export const createCommunity = errorWrapper(async (req, res, next) => {
+export const createCommunity = errorWrapper(async (req, res, next, session) => {
     const { universityId } = req.body
     const university = await universityModel.findById(universityId)
     if (!university) return { statusCode: 400, data: null, message: `Invalid University Id` };
@@ -352,7 +352,7 @@ export const createCommunity = errorWrapper(async (req, res, next) => {
     await Promise.all([req.user.save(), university.save()]);
     return ({ statusCode: 200, message: `Community created`, data: community })
 })
-export const deleteCommunity = errorWrapper(async (req, res, next) => {
+export const deleteCommunity = errorWrapper(async (req, res, next, session) => {
     const { communityId } = req.params
     const community = await communityModel.findById(communityId)
     if (!community) return { statusCode: 400, data: null, message: `Community Doesn't Exist` };
@@ -363,12 +363,12 @@ export const deleteCommunity = errorWrapper(async (req, res, next) => {
     await communityModel.findByIdAndDelete(communityId)
     return ({ statusCode: 200, message: `community deleted`, data: null })
 })
-export const getallunis = errorWrapper(async (req, res, next) => {
+export const getallunis = errorWrapper(async (req, res, next, session) => {
     const universites = await universityModel.find({})
     return ({ statusCode: 200, message: `all unis`, data: universites })
 
 })
-export const pushunis = errorWrapper(async (req, res, next) => {
+export const pushunis = errorWrapper(async (req, res, next, session) => {
     const { data } = req.body, ret = []
 
     for (let ele of data) {

@@ -4,7 +4,7 @@ import { decrypt } from "../../utils/crypto.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 
 
-export const postChat = errorWrapper(async (req, res, next) => {
+export const postChat = errorWrapper(async (req, res, next, session) => {
     const { friendId } = req.params;
     const friend = await userModel.findById(friendId);
     if (!friend) return { statusCode: 400, data: null, message: `Invalid friendId` };
@@ -32,7 +32,7 @@ export const postChat = errorWrapper(async (req, res, next) => {
         return ({ statusCode: 200, message: `new chat initiated`, data: FullChat });
     }
 });
-export const fetchChats = errorWrapper(async (req, res, next) => {
+export const fetchChats = errorWrapper(async (req, res, next, session) => {
     let result = await chatModel
         .find({ "participants": { $eq: req.decoded.id } })
         .populate("participants", "firstName lastName displayPicSrc email userType role")
@@ -50,7 +50,7 @@ export const fetchChats = errorWrapper(async (req, res, next) => {
     }
     return ({ statusCode: 200, message: `all chats`, data: result })
 })
-export const newGroup = errorWrapper(async (req, res, next) => {
+export const newGroup = errorWrapper(async (req, res, next, session) => {
     const { participants, chatName, settings, displayPicSrc } = req.body
     if (!chatName) return { statusCode: 400, data: null, message: `Chat name is required` };
     if (participants.length < 3) return {
@@ -72,7 +72,7 @@ export const newGroup = errorWrapper(async (req, res, next) => {
     return ({ statusCode: 200, message: `new Group created`, data: FullChat })
 
 })
-export const editMembers = errorWrapper(async (req, res, next) => {
+export const editMembers = errorWrapper(async (req, res, next, session) => {
     const { chatId, action, userId } = req.body
     const chat = await chatModel.findById(chatId)
     if (!chat) return { statusCode: 400, data: null, message: `Invalid chatId` };
@@ -128,7 +128,7 @@ export const editMembers = errorWrapper(async (req, res, next) => {
     }
 
 })
-export const exitGroup = errorWrapper(async (req, res, next) => {
+export const exitGroup = errorWrapper(async (req, res, next, session) => {
     const { chatId } = req.params
     const chat = await chatModel.findById(chatId)
     if (!chat) return { statusCode: 400, data: null, message: `Invalid chatId` };
@@ -143,7 +143,7 @@ export const exitGroup = errorWrapper(async (req, res, next) => {
     await main.save()
     return ({ statusCode: 200, message: `exited from group successful`, data: null })
 })
-export const search = errorWrapper(async (req, res, next) => {
+export const search = errorWrapper(async (req, res, next, session) => {
     if (!req.query.search) return { statusCode: 400, data: null, message: `blank search` };
     const searchResults = await userModel.find({ $or: [{ firstName: { $regex: req.query.search, $options: "i" } }, { lastName: { $regex: req.query.search, $options: "i" } }] }, "firstName lastName displayPicSrc email userType").find({ _id: { $ne: req.decoded.id } })
     return ({ statusCode: 200, message: `uname`, data: searchResults })

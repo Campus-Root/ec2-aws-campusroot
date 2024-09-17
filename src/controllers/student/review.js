@@ -3,7 +3,7 @@ import universityModel from "../../models/University.js";
 import userModel from "../../models/User.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import 'dotenv/config';
-export const postReview = errorWrapper(async (req, res, next) => {
+export const postReview = errorWrapper(async (req, res, next, session) => {
     const university = await universityModel.findById(req.body.universityId);
     if (!university) return { statusCode: 400, data: null, message: `invalid university ID` };
     const post = await reviewsModel.create({ user: req.user._id, university: university._id, comment: req.body.comment, rating: req.body.rating, });
@@ -16,7 +16,7 @@ export const postReview = errorWrapper(async (req, res, next) => {
     await req.user.save()
     return ({ statusCode: 200, message: `review posted successfully`, data: post });
 })
-export const editReview = errorWrapper(async (req, res, next) => {
+export const editReview = errorWrapper(async (req, res, next, session) => {
     const { comment, rating, universityId, action, id } = req.body;
     const post = await reviewsModel.findById(id);
     if (post.user !== req.user._id) return { statusCode: 400, data: null, message: `invalid edit permissions` };

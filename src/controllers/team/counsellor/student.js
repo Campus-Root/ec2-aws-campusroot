@@ -6,7 +6,7 @@ import { CurrencySymbolEnum, DestinationTypeEnum, possibilityOfAdmitEnum, Produc
 import userModel from "../../../models/User.js";
 import { packageModel } from "../../../models/Package.js";
 
-export const switchStage = errorWrapper(async (req, res, next) => {
+export const switchStage = errorWrapper(async (req, res, next, session) => {
     const { studentId, stage, nextActionDate, note } = req.body
     if (!await studentModel.findById(studentId)) return { statusCode: 400, data: null, message: `invalid StudentId` };
     const student = req.user.students.find(ele => ele.profile.toString() == studentId)
@@ -29,7 +29,7 @@ export const switchStage = errorWrapper(async (req, res, next) => {
     await studentModel.populate(student, { path: "profile", select: "firstName lastName email displayPicSrc" },)
     return ({ statusCode: 200, message: `activity success`, data: student })
 })
-export const recommend = errorWrapper(async (req, res, next) => {
+export const recommend = errorWrapper(async (req, res, next, session) => {
     const { studentId, universityId, courseId, possibilityOfAdmit } = req.body
     const university = await universityModel.findById(universityId)
     if (!university) return { statusCode: 400, data: null, message: `Invalid UniversityId` };
@@ -61,7 +61,7 @@ export const recommend = errorWrapper(async (req, res, next) => {
     await universityModel.populate(newRecommend, { path: "course.university", select: "name logoSrc location type establishedYear " },)
     return ({ statusCode: 200, message: "Recommendations Generated", data: newRecommend });
 })
-export const deleteRecommend = errorWrapper(async (req, res, next) => {
+export const deleteRecommend = errorWrapper(async (req, res, next, session) => {
     const { studentId, recommendId } = req.body
     const student = await studentModel.findById(studentId)
     if (!student) return { statusCode: 400, data: null, message: `invalid StudentId` };
@@ -77,7 +77,7 @@ export const deleteRecommend = errorWrapper(async (req, res, next) => {
     await req.user.save()
     return ({ statusCode: 200, message: "recommendations deleted", data: null });
 })
-export const Package = errorWrapper(async (req, res, next) => {
+export const Package = errorWrapper(async (req, res, next, session) => {
     const { studentId, action, data } = req.body
     const student = await studentModel.findById(studentId, "advisors suggestedPackages")
     if (!student) return { statusCode: 400, data: null, message: `invalid StudentId` };
@@ -122,7 +122,7 @@ export const Package = errorWrapper(async (req, res, next) => {
                 },
                 duration: {
                     start: new Date(),
-                    end:  new Date(data.end) ?  new Date(data.end) : null
+                    end: new Date(data.end) ? new Date(data.end) : null
                 },
                 benefits: data.benefits,
                 products: data.products,

@@ -8,7 +8,7 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 import Joi from "joi";
 
-export const postMessages = errorWrapper(async (req, res, next) => {
+export const postMessages = errorWrapper(async (req, res, next, session) => {
 
     const { error, value } = Joi.object({ chatId: Joi.string().required(), content: Joi.string().allow(""), repliedTo: Joi.string().allow(""), fileIdentifier: Joi.string().allow("") }).validate(req.body)
     if (error) {
@@ -61,7 +61,7 @@ export const postMessages = errorWrapper(async (req, res, next) => {
     if (chat.lastMessage) chat.lastMessage.content = decrypt(chat.lastMessage.iv, chat.lastMessage.content)
     return ({ statusCode: 200, message: `messages`, data: { message: message, chat } })
 })
-export const fetchMessages = errorWrapper(async (req, res, next) => {
+export const fetchMessages = errorWrapper(async (req, res, next, session) => {
     const { chatId } = req.params
     const { page = 1, pageSize = 20 } = req.query;
     const chat = await chatModel.findById(chatId)
@@ -83,14 +83,14 @@ export const fetchMessages = errorWrapper(async (req, res, next) => {
     });
     return ({ statusCode: 200, message: `messages`, data: decryptedMessages, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
-export const downloadSharedDocument = errorWrapper(async (req, res, next) => {
+export const downloadSharedDocument = errorWrapper(async (req, res, next, session) => {
     const { id } = req.params
     const document = await Document.findById(id)
     if (!document) return { statusCode: 400, data: null, message: `invalid Document Id` };
     // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return { statusCode: 400, data: student , message:    `access denied`};
     return res.contentType(document.contentType).send(document.data);
 })
-export const seeMessages = errorWrapper(async (req, res, next) => {
+export const seeMessages = errorWrapper(async (req, res, next, session) => {
     const { chatId } = req.params
     const chat = await chatModel.findById(chatId).populate("unSeenMessages")
     if (!chat) return { statusCode: 400, data: null, message: `invalid chat id` };

@@ -16,7 +16,7 @@ import institutionModel from "../../models/IndianColleges.js";
 import Joi from "joi";
 import { uploadInProfileSchema } from "../../schemas/student.js";
 import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
-export const profile = errorWrapper(async (req, res, next) => {
+export const profile = errorWrapper(async (req, res, next, session) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
         await Document.populate(req.user,
@@ -47,7 +47,7 @@ export const profile = errorWrapper(async (req, res, next) => {
     delete profile.logs;
     return ({ statusCode: 200, message: `complete profile`, data: profile });
 })
-export const editEmail = errorWrapper(async (req, res, next) => {
+export const editEmail = errorWrapper(async (req, res, next, session) => {
     const { email } = req.body
     if (req.user.verification[0].status) return { statusCode: 400, data: null, message: `email already verified, contact Campus Root team for support` };
     const existingEmail = await userModel.find({ email: email }, "email")
@@ -77,7 +77,7 @@ export const editEmail = errorWrapper(async (req, res, next) => {
     await req.user.save()
     return ({ statusCode: 200, message: `mail sent for verification`, data: null });
 })
-export const editPhone = errorWrapper(async (req, res, next) => {
+export const editPhone = errorWrapper(async (req, res, next, session) => {
     const { phone } = req.body
     if (!phone.countryCode || !phone.number) return { statusCode: 400, data: null, message: `Enter a valid number` };
     const existingPhone = await studentModel.find({ $and: [{ "phone.countryCode": phone.countryCode }, { "phone.number": phone.number }] }, "phone")
@@ -98,7 +98,7 @@ export const editPhone = errorWrapper(async (req, res, next) => {
     await req.user.save()
     return ({ statusCode: 200, message: `otp sent for verification, verify it before it expires`, data: { expiry: req.user.verification[1].token.expiry } });
 })
-export const editProfile = errorWrapper(async (req, res, next) => {
+export const editProfile = errorWrapper(async (req, res, next, session) => {
     const { LeadSource, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, extraCurriculumActivities, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
     if (personalDetails) {
         req.user.personalDetails = personalDetails;
@@ -263,7 +263,7 @@ export const editProfile = errorWrapper(async (req, res, next) => {
     delete profile.activity;
     return ({ statusCode: 200, message: `profile edited successfully`, data: profile });
 })
-export const uploadInProfile = errorWrapper(async (req, res, next) => {
+export const uploadInProfile = errorWrapper(async (req, res, next, session) => {
     if (!req.file) return { statusCode: 400, data: null, message: `no file found` };
     const { error, value } = uploadInProfileSchema.validate(req.body)
     if (error) {
@@ -331,7 +331,7 @@ export const uploadInProfile = errorWrapper(async (req, res, next) => {
     ])
     return ({ statusCode: 200, message: `Document added to ${fieldPath}`, data: { docs: req.user.documents } });
 })
-export const deleteUploadedInProfile = errorWrapper(async (req, res, next) => {
+export const deleteUploadedInProfile = errorWrapper(async (req, res, next, session) => {
     const { error, value } = uploadInProfileSchema.validate(req.body)
     if (error) return { statusCode: 400, data: [value], message: error.details[0].message };
     const { fieldPath, documentId } = value;
@@ -372,7 +372,7 @@ export const deleteUploadedInProfile = errorWrapper(async (req, res, next) => {
     ])
     return { statusCode: 200, message: `Document deleted from ${fieldPath} `, data: req.user.documents };
 })
-export const verifyEmail = errorWrapper(async (req, res, next) => {
+export const verifyEmail = errorWrapper(async (req, res, next, session) => {
     let subject = "Verify Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
@@ -389,7 +389,7 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
     await req.user.save()
     return ({ statusCode: 200, message: `email sent for verification`, data: null });
 })
-export const sendUserOTP = errorWrapper(async (req, res, next) => {
+export const sendUserOTP = errorWrapper(async (req, res, next, session) => {
     const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
     if (req.user.phone.number && req.user.verification[1].status) return { statusCode: 400, data: null, message: "already verified" };
     req.user.verification[1].token = { data: otp, expiry: expiry, }
@@ -404,7 +404,7 @@ export const sendUserOTP = errorWrapper(async (req, res, next) => {
     await req.user.save()
     return ({ statusCode: 200, message: `otp sent for verification, verify before expiry`, data: { expiry: expiry } });
 })
-export const verifyUserOTP = errorWrapper(async (req, res, next) => {
+export const verifyUserOTP = errorWrapper(async (req, res, next, session) => {
     const { otp } = req.body
     const user = await studentModel.findById(req.user._id, "verification logs")
     if (user.verification[1].token.data !== otp) return { statusCode: 400, data: null, message: "invalid otp" }
@@ -419,7 +419,7 @@ export const verifyUserOTP = errorWrapper(async (req, res, next) => {
     await user.save()
     return ({ statusCode: 200, message: `phone verification successful`, data: user.verification });
 })
-export const requestCounsellor = errorWrapper(async (req, res, next) => {
+export const requestCounsellor = errorWrapper(async (req, res, next, session) => {
     const { country } = req.body
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     let alreadyExist = req.user.advisors.find(ele => ele.info.role === "counsellor" && ele.assignedCountries.includes(country))
@@ -488,7 +488,7 @@ export const requestCounsellor = errorWrapper(async (req, res, next) => {
     const advisor = req.user.advisors.find(ele => ele.info._id.toString() === Counsellors[0]._id.toString());
     return { statusCode: 200, message: `counsellor assigned`, data: { advisor: advisor, chat: chat } };
 })
-export const IEH = errorWrapper(async (req, res, next) => {
+export const IEH = errorWrapper(async (req, res, next, session) => {
     const { error, value } = Joi.object({ institutionId: Joi.string(), verificationDocName: Joi.string() }).validate(req.body)
     if (error) {
         unlinkSync(req.file.path ? req.file.path : "");

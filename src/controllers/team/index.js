@@ -9,7 +9,7 @@ import meetingModel from "../../models/meetings.js";
 import leadsModel from "../../models/leads.js";
 import { packageModel } from "../../models/Package.js";
 import { orderModel } from "../../models/Order.js";
-export const profile = errorWrapper(async (req, res, next) => {
+export const profile = errorWrapper(async (req, res, next, session) => {
     const profile = {
         _id: req.user._id,
         firstName: req.user.firstName,
@@ -20,7 +20,7 @@ export const profile = errorWrapper(async (req, res, next) => {
     }
     return ({ statusCode: 200, message: `all Details of Counsellor`, data: profile })
 })
-export const profileEdit = errorWrapper(async (req, res, next) => {
+export const profileEdit = errorWrapper(async (req, res, next, session) => {
     const { linkedIn } = req.body
     if (linkedIn) {
         req.user.linkedIn = linkedIn
@@ -40,14 +40,14 @@ export const profileEdit = errorWrapper(async (req, res, next) => {
     }
     return ({ statusCode: 200, message: `updated Details of Counsellor`, data: profile })
 })
-export const downloadDoc = errorWrapper(async (req, res, next) => {
+export const downloadDoc = errorWrapper(async (req, res, next, session) => {
     const { documentId } = req.params
     const document = await Document.findById(documentId)
     if (!document) return { statusCode: 400, data: null, message: `invalid Document Id` };
     // if (!document.viewers.includes(req.user._id) && document.user.toString() != req.user._id) return { statusCode: 400, data: student , message:    `invalid access to document`};
     return res.contentType(document.contentType).send(document.data);
 })
-export const singleStudentProfile = errorWrapper(async (req, res, next) => {
+export const singleStudentProfile = errorWrapper(async (req, res, next, session) => {
     const { id } = req.params;
     const student = await studentModel.findById(id);
     if (!student) return { statusCode: 400, data: null, message: `Invalid StudentId` };
@@ -61,7 +61,7 @@ export const singleStudentProfile = errorWrapper(async (req, res, next) => {
     await userModel.populate(student, [{ path: "advisors.info activity.meetings.user activity.meetings.member", select: "firstName lastName email displayPicSrc", },])
     return ({ statusCode: 200, message: `All details of Student`, data: student });
 });
-export const singleApplications = errorWrapper(async (req, res, next) => {
+export const singleApplications = errorWrapper(async (req, res, next, session) => {
     const { id } = req.params
     const application = await productModel.findById(id)
     if (!application) return { statusCode: 400, data: null, message: `invalid applicationId` };
@@ -71,7 +71,7 @@ export const singleApplications = errorWrapper(async (req, res, next) => {
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `single applications details`, data: application })
 })
-export const listings = errorWrapper(async (req, res, next) => {
+export const listings = errorWrapper(async (req, res, next, session) => {
     const { page, perPage = 20 } = req.body, filter = {}, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     switch (req.params.name) {
@@ -125,7 +125,7 @@ export const listings = errorWrapper(async (req, res, next) => {
         default: return { statusCode: 400, data: null, message: `invalid params` };
     }
 })
-export const newStudents = errorWrapper(async (req, res, next) => {
+export const newStudents = errorWrapper(async (req, res, next, session) => {
     const { page, perPage = 20 } = req.body, filter = {}, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     req.body.filterData.forEach(ele => { if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }] });

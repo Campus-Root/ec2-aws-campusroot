@@ -21,7 +21,7 @@ import { CartSchema, CheckoutSchema } from "../../schemas/student.js";
 import { startSession } from "mongoose"
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
-export const Cart = errorWrapper(async (req, res, next) => {
+export const Cart = errorWrapper(async (req, res, next, session) => {
     const { error, value } = CartSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { action, category, courseId, intake, itemId, itemIds } = value;
@@ -63,7 +63,7 @@ export const Cart = errorWrapper(async (req, res, next) => {
     await universityModel.populate(req.user, { path: "activity.cart.course.university", select: "name logoSrc location type establishedYear ", })
     return { statusCode: 200, message: `cart updated successfully`, data: req.user.activity.cart }
 });
-export const wishList = errorWrapper(async (req, res, next) => {
+export const wishList = errorWrapper(async (req, res, next, session) => {
     const { error, value } = Joi.object({ courseId: Joi.string().required(), action: Joi.string().valid('push', 'pull') }).validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { action, courseId } = value;
@@ -123,9 +123,7 @@ export const paySummary = errorWrapper(async (req, res) => {
     }
     return { statusCode: 200, message: "Payment Summary", data: { items: items, totalPrice: items.reduce((acc, ele) => acc + ele.finalPrice, 0) } }
 });
-export const checkout = errorWrapper(async (req, res, next) => {
-    const session = await startSession();
-    session.startTransaction();  // Start transaction
+export const checkout = errorWrapper(async (req, res, next, session) => {
     const { error, value } = CheckoutSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { packageId, products, userCurrency } = value;
@@ -289,9 +287,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
             await Product.save({ session });
         }
         await req.user.save({ session })
-        await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
-        await session.commitTransaction();
-        session.endSession();
+        await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
     }
     const orderOptions = {
@@ -321,11 +317,9 @@ export const checkout = errorWrapper(async (req, res, next) => {
     })
     await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } }, { session })
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
-    await session.commitTransaction();
-    session.endSession();
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 });
-export const reCheckout = errorWrapper(async (req, res, next) => {
+export const reCheckout = errorWrapper(async (req, res, next, session) => {
     const { error, value } = Joi.object({ orderId: Joi.string().required() }).validate(req.query)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { orderId } = value;
@@ -454,7 +448,7 @@ export const paymentVerification = async (req, res, next) => {
         return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
     }
 };
-export const orderInfo = errorWrapper(async (req, res, next) => {
+export const orderInfo = errorWrapper(async (req, res, next, session) => {
     const { orderId } = req.query;
     const order = await orderModel.findOne({ _id: orderId, student: req.user._id });
     if (!order) return { statusCode: 400, message: `invalid orderId or you might not have permission`, data: { orderId: orderId } };
@@ -468,7 +462,7 @@ export const orderInfo = errorWrapper(async (req, res, next) => {
     await universityModel.populate(order, { path: "products.course.university", select: "name logoSrc location type establishedYear " })
     return { statusCode: 200, message: 'order info', data: order };
 });
-export const addingProductsToOrder = errorWrapper(async (req, res, next) => {
+export const addingProductsToOrder = errorWrapper(async (req, res, next, session) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "role expertiseCountry" })
     const { products } = req.body
     let productIds = []
@@ -566,7 +560,7 @@ export const addingProductsToOrder = errorWrapper(async (req, res, next) => {
     await universityModel.populate(req.order, { path: "products.course.university", select: "name logoSrc location type establishedYear" })
     return { statusCode: 200, message: 'order', data: req.order };
 });
-export const requestCancellation = errorWrapper(async (req, res, next) => {
+export const requestCancellation = errorWrapper(async (req, res, next, session) => {
     const updatedApplication = await productModel.findOneAndUpdate({ _id: req.params.applicationId }, { $set: { cancellationRequest: true } }, { new: true });
     if (!updatedApplication) return { statusCode: 400, message: `Invalid application ID`, data: { applicationId: req.params.applicationId } };
     await Document.populate(updatedApplication, { path: "docChecklist.doc", select: "data", })
@@ -584,7 +578,7 @@ export const requestCancellation = errorWrapper(async (req, res, next) => {
     return { statusCode: 200, message: 'Application cancellation Request sent to processCoordinator', data: updatedApplication };
 });
 // ..............applications documents...................
-export const uploadInApplication = errorWrapper(async (req, res, next) => {
+export const uploadInApplication = errorWrapper(async (req, res, next, session) => {
     const { applicationId, checklistItemId } = req.body;
     const application = await productModel.findById(applicationId);
     if (!application) return { statusCode: 400, message: `invalid application ID`, data: { applicationId: applicationId } };
@@ -619,7 +613,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next) => {
     }
     return { statusCode: 200, message: 'Application checklist updated', data: application };
 });
-export const deleteUploadedFromApplication = errorWrapper(async (req, res, next) => {
+export const deleteUploadedFromApplication = errorWrapper(async (req, res, next, session) => {
     const { applicationId, checklistItemId, documentId } = req.body;
     const doc = await Document.findById(documentId)
     if (!doc) return { statusCode: 400, message: `invalid document ID`, data: { documentId: documentId } };
@@ -653,7 +647,7 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next)
     }
     return { statusCode: 200, message: `doc deleted`, data: application };
 });
-export const forceForwardApply = errorWrapper(async (req, res, next) => {
+export const forceForwardApply = errorWrapper(async (req, res, next, session) => {
     const { applicationId } = req.body;
     const application = await productModel.findById(applicationId)
     if (!application) return { statusCode: 400, message: `invalid ApplicationId`, data: { applicationId: applicationId } };
@@ -665,7 +659,7 @@ export const forceForwardApply = errorWrapper(async (req, res, next) => {
     await req.user.save()
     return { statusCode: 200, message: `Applied Forcefully`, data: application };
 });
-export const removeForceApply = errorWrapper(async (req, res, next) => {
+export const removeForceApply = errorWrapper(async (req, res, next, session) => {
     const { applicationId } = req.body;
     const application = await productModel.findById(applicationId)
     if (!application) return { statusCode: 400, message: `invalid ApplicationId`, data: { applicationId: applicationId } };

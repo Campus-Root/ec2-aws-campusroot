@@ -5,7 +5,7 @@ import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { teamModel } from "../../../models/Team.js";
 import { productModel } from "../../../models/Product.js";
 
-export const approval = errorWrapper(async (req, res, next) => {
+export const approval = errorWrapper(async (req, res, next, session) => {
     const { applicationId, action, justification } = req.body
     const application = await productModel.findById(applicationId);
     if (application.counsellor.toString() != req.user._id) return { statusCode: 400, data: null, message: `invalid access` };

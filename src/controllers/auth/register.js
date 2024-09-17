@@ -16,7 +16,7 @@ import qs from "qs";
 import { generateTokens } from "../../utils/redisTokens.js";
 import { createFolder } from "../../utils/CRMintegrations.js";
 import { registerSchema } from "../../schemas/student.js";
-export const StudentRegister = errorWrapper(async (req, res, next) => {
+export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
     const { error, value } = registerSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
@@ -60,7 +60,7 @@ export const StudentRegister = errorWrapper(async (req, res, next) => {
     req.AccessToken = newAccessToken;
     return { statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } };
 });
-export const verifyEmail = errorWrapper(async (req, res, next) => {
+export const verifyEmail = errorWrapper(async (req, res, next, session) => {
     const { email, emailVerificationString } = req.params;
     const user = await studentModel.findOne({ email: email });
     if (!user) return res.redirect(`${process.env.STUDENT_URL}email-verification/?success=false`);
@@ -83,14 +83,14 @@ export const verifyEmail = errorWrapper(async (req, res, next) => {
     await sendMail({ to: email, subject: subject, html: htmlToSend });
     return res.redirect(`${process.env.STUDENT_URL}email-verification/?success=true`);
 });
-export const TeamRegister = errorWrapper(async (req, res, next) => {
+export const TeamRegister = errorWrapper(async (req, res, next, session) => {
     const { email, firstName, lastName, password, role, expertiseCountry } = req.body;
     if (!email || !firstName || !lastName || !password || !role || !expertiseCountry.length) return { statusCode: 400, data: null, message: `Incomplete details` };
     const alreadyExists = await teamModel.findOne({ email: email });
     if (alreadyExists) return {
         statusCode: 400, data: null, message: `Email Already Registered`
     };
-    const user = await teamModel.create({ email, firstName, lastName, password: await bcrypt.hash(password, 12), role,expertiseCountry });
+    const user = await teamModel.create({ email, firstName, lastName, password: await bcrypt.hash(password, 12), role, expertiseCountry });
     user.logs.push({
         action: `${role} Registration done`,
         details: `traditional registration done`
@@ -106,7 +106,7 @@ export const TeamRegister = errorWrapper(async (req, res, next) => {
     await user.save();
     return ({ statusCode: 200, message: `${role} Registration successful`, data: { email, firstName, lastName, role } });
 });
-export const googleLogin = errorWrapper(async (req, res, next) => {
+export const googleLogin = errorWrapper(async (req, res, next, session) => {
     const { credential } = req.body;
     if (!credential) return next("credential undefined", 400)
     try {
@@ -187,7 +187,7 @@ export const googleLogin = errorWrapper(async (req, res, next) => {
         return { statusCode: 400, data: null, message: error.message }
     }
 })
-export const linkedLogin = errorWrapper(async (req, res, next) => {
+export const linkedLogin = errorWrapper(async (req, res, next, session) => {
     const { code, redirectUri } = req.body;
     try {
         const response = await axios.post(`https://www.linkedin.com/oauth/v2/accessToken`,

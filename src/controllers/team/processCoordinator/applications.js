@@ -9,7 +9,7 @@ import { applicationStagesEnum } from "../../../utils/enum.js";
 import userModel from "../../../models/User.js";
 import { productModel } from "../../../models/Product.js";
 import { deleteFileInWorkDrive } from "../../../utils/CRMintegrations.js";
-export const switchStage = errorWrapper(async (req, res, next) => {
+export const switchStage = errorWrapper(async (req, res, next, session) => {
     const { applicationId, status, stage, note } = req.body
     const application = await productModel.findById(applicationId)
     if (!application) return { statusCode: 400, data: null, message: `invalid applicationId` };
@@ -36,7 +36,7 @@ export const switchStage = errorWrapper(async (req, res, next) => {
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `stage shift success`, data: application })
 })
-export const addToChecklist = errorWrapper(async (req, res, next) => {
+export const addToChecklist = errorWrapper(async (req, res, next, session) => {
     const { applicationId, name, isChecked, desc } = req.body
     if (!name) return { statusCode: 400, data: null, message: `name of item is required` };
     const application = await productModel.findById(applicationId)
@@ -75,7 +75,7 @@ export const addToChecklist = errorWrapper(async (req, res, next) => {
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return { statusCode: 200, message: `item added to checklist`, data: application }
 })
-export const editItemInChecklist = errorWrapper(async (req, res, next) => {
+export const editItemInChecklist = errorWrapper(async (req, res, next, session) => {
     const { applicationId, checklistItemId, action, name, isChecked, desc, type } = req.body
     let application = await productModel.findById(applicationId);
     if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
@@ -119,7 +119,7 @@ export const editItemInChecklist = errorWrapper(async (req, res, next) => {
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `checklist updated successfully`, data: application })
 })
-export const cancellation = errorWrapper(async (req, res, next) => {
+export const cancellation = errorWrapper(async (req, res, next, session) => {
     const { applicationId, cancel } = req.body
     const application = await productModel.findById(applicationId)
     if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
@@ -143,7 +143,7 @@ export const cancellation = errorWrapper(async (req, res, next) => {
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: "cancellation request attended", data: application })
 })
-export const result = errorWrapper(async (req, res, next) => {
+export const result = errorWrapper(async (req, res, next, session) => {
     const { applicationId, result, note } = req.body
     const application = await productModel.findById(applicationId)
     if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
@@ -184,7 +184,7 @@ export const result = errorWrapper(async (req, res, next) => {
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `shift successful`, data: application })
 })
-export const revertResult = errorWrapper(async (req, res, next) => {
+export const revertResult = errorWrapper(async (req, res, next, session) => {
     const { applicationId } = req.body
     const application = await productModel.findById(applicationId)
     if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };

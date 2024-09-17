@@ -8,7 +8,7 @@ import fs from "fs"
 import Document from "../../models/Uploads.js";
 import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 
-export const joinInCommunity = errorWrapper(async (req, res, next) => {
+export const joinInCommunity = errorWrapper(async (req, res, next, session) => {
     const { communityId } = req.body
     const existingCommunity = await communityModel.findById(communityId)
     if (!existingCommunity) return { statusCode: 400, data: null, message: "invalid Community" }
@@ -27,14 +27,14 @@ export const joinInCommunity = errorWrapper(async (req, res, next) => {
     await universityModel.populate(community, { path: "university", select: "name logoSrc location type establishedYear" })
     return ({ statusCode: 200, message: `join success`, data: community })
 })
-export const fetchJoinedCommunities = errorWrapper(async (req, res, next) => {
+export const fetchJoinedCommunities = errorWrapper(async (req, res, next, session) => {
     const user = await userModel.findById(req.decoded.id)
     await communityModel.populate(user, { path: "communities", select: "participants university posts", },)
     await userModel.populate(user, { path: "communities.participants", select: "firstName lastName displayPicSrc", },)
     await universityModel.populate(user, { path: "communities.university", select: "name logoSrc location type establishedYear", },)
     return ({ statusCode: 200, message: `joined communities`, data: user.communities })
 })
-export const vacateCommunity = errorWrapper(async (req, res, next) => {
+export const vacateCommunity = errorWrapper(async (req, res, next, session) => {
     const { communityId } = req.body
     const existingCommunity = await communityModel.findById(communityId)
     if (!existingCommunity) return { statusCode: 400, data: null, message: "invalid CommunityId" }
@@ -50,7 +50,7 @@ export const vacateCommunity = errorWrapper(async (req, res, next) => {
     await Promise.all([communityModel.findOneAndUpdate({ _id: communityId }, { $pull: { participants: req.decoded.id } }), userModel.findOneAndUpdate({ _id: req.decoded.id }, { $pull: { communities: communityId } })])
     return ({ statusCode: 200, message: `left the community`, data: null })
 })
-export const fetchPosts = errorWrapper(async (req, res, next) => {
+export const fetchPosts = errorWrapper(async (req, res, next, session) => {
     const { page = 1, pageSize = 10 } = req.query;
     const totalPostsCount = await contextModel.countDocuments({ creator: req.decoded.id });
     const totalPages = Math.ceil(totalPostsCount / pageSize);
@@ -99,7 +99,7 @@ export const fetchPosts = errorWrapper(async (req, res, next) => {
     const posts = contexts.map(ele => ele.post);
     return ({ statusCode: 200, message: `all your posts`, data: posts, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 });
-export const myActivity = errorWrapper(async (req, res, next) => {
+export const myActivity = errorWrapper(async (req, res, next, session) => {
     const { page = 1, pageSize = 10 } = req.query;
     const contexts = await contextModel.find({ $or: [{ creator: req.decoded.id }, { "comments.user": req.decoded.id }, { "vote.user": req.decoded.id }] }, "post")
     const postIds = [...new Set(contexts.flatMap(ele => ele.post.toString()))];
@@ -153,7 +153,7 @@ export const myActivity = errorWrapper(async (req, res, next) => {
     }
     return ({ statusCode: 200, message: `all your posts`, data: Posts, additionalData: { totalPages: totalPages, currentPage: +page, pageSize: +pageSize } })
 })
-export const postsInCommunity = errorWrapper(async (req, res, next) => {
+export const postsInCommunity = errorWrapper(async (req, res, next, session) => {
     const { communityId } = req.params;
     const { page = 1, pageSize = 10 } = req.query;
     const community = await communityModel.findById(communityId).populate([{
@@ -197,7 +197,7 @@ export const postsInCommunity = errorWrapper(async (req, res, next) => {
     const totalPages = Math.ceil(totalPostsCount / pageSize);
     return ({ statusCode: 200, message: `all your posts`, data: community, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
-export const singlePost = errorWrapper(async (req, res, next) => {
+export const singlePost = errorWrapper(async (req, res, next, session) => {
     const { postId } = req.params
     const post = await postModel
         .findById(postId)
@@ -229,7 +229,7 @@ export const singlePost = errorWrapper(async (req, res, next) => {
         })
     return ({ statusCode: 200, message: `single post`, data: post })
 })
-export const feed = errorWrapper(async (req, res, next) => {
+export const feed = errorWrapper(async (req, res, next, session) => {
     const { page = 1, pageSize = 20 } = req.query;
     const user = await userModel.findById(req.decoded.id);
     const posts = await postModel.find({ community: { $in: user.communities } })
@@ -266,7 +266,7 @@ export const feed = errorWrapper(async (req, res, next) => {
     const totalPages = Math.ceil(totalPostsCount / pageSize);
     return ({ statusCode: 200, message: `all your feed`, data: posts, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
-export const query = errorWrapper(async (req, res, next) => {
+export const query = errorWrapper(async (req, res, next, session) => {
     const { action, body, header, fileIdentifier } = req.body
     const user = await userModel.findById(req.decoded.id)
     switch (action) {
@@ -413,7 +413,7 @@ export const query = errorWrapper(async (req, res, next) => {
         default: return { statusCode: 400, data: null, message: `invalid action:${action}` }
     }
 })
-export const response = errorWrapper(async (req, res, next) => {
+export const response = errorWrapper(async (req, res, next, session) => {
     const { action, body, header, contextId, fileIdentifier } = req.body
     const user = await userModel.findById(req.decoded.id)
     switch (action) {
@@ -551,7 +551,7 @@ export const response = errorWrapper(async (req, res, next) => {
         default: return { statusCode: 400, data: null, message: `invalid action:${action} ` }
     }
 })
-export const comment = errorWrapper(async (req, res, next) => {
+export const comment = errorWrapper(async (req, res, next, session) => {
     const { action, contextId, content, commentId } = req.body
     const context = await contextModel.findById(contextId)
     if (!context) return { statusCode: 400, data: null, message: `invalid contextId` }
@@ -597,7 +597,7 @@ export const comment = errorWrapper(async (req, res, next) => {
     ])
     return ({ statusCode: 200, message: `${action} comment successful`, data: context })
 })
-export const vote = errorWrapper(async (req, res, next) => {
+export const vote = errorWrapper(async (req, res, next, session) => {
     const { action, contextId } = req.body
     const context = await contextModel.findById(contextId)
     if (!context) return { statusCode: 400, data: null, message: `invalid contextId` }
