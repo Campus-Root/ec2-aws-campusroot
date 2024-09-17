@@ -562,6 +562,8 @@ export const addingProductsToOrder = errorWrapper(async (req, res, next) => {
     await req.user.save()
     await packageModel.populate(req.order, { path: "Package" })
     await productModel.populate(req.order, { path: "products" })
+    await courseModel.populate(req.order, { path: "products.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite startDate" })
+    await universityModel.populate(req.order, { path: "products.course.university", select: "name logoSrc location type establishedYear" })
     return { statusCode: 200, message: 'order', data: req.order };
 });
 export const requestCancellation = errorWrapper(async (req, res, next) => {
