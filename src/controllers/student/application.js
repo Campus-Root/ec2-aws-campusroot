@@ -288,6 +288,13 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
         }
         await req.user.save({ session })
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
+        
+        
+        await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
+        await productModel.populate(order, [{ path: "products" }])
+        await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
+        await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
+       
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
     }
     const orderOptions = {
@@ -317,6 +324,10 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
     })
     await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } }, { session })
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
+    await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
+    await productModel.populate(order, [{ path: "products" }])
+    await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
+    await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 });
 export const reCheckout = errorWrapper(async (req, res, next, session) => {
