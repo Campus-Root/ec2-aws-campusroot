@@ -224,7 +224,12 @@ export const counsellors = errorWrapper(async (req, res, next, session) => {
 export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
     let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = []
-    if (req.query.institutions == 1) institutionSearchResults = await institutionModel.find({ $or: [{ InstitutionName: { $regex: req.query.search, $options: "i" } }, { university: { $regex: req.query.search, $options: "i" } }, { Address: { $regex: req.query.search, $options: "i" } }, { State: { $regex: req.query.search, $options: "i" } }, { District: { $regex: req.query.search, $options: "i" } }] }, "InstitutionName State District university IEH.exists").sort({ isStartMatch: -1, InstitutionName: 1 }).limit(5);
+    if (req.query.institutions == 1) {
+        institutionSearchResults = await institutionModel.find({
+            $text: { $search: req.query.search }  // Using text search instead of regex
+        }, "InstitutionName State District university IEH.exists")
+            .sort({ isStartMatch: -1, InstitutionName: 1 })  // Sorting by isStartMatch and InstitutionName
+    }
     if (req.query.universities == 1) {
         const searchPattern = req.query.search.replace(" ", "|");
         const countryFilter = req.query.country ? { "location.country": req.query.country } : {};
@@ -261,7 +266,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
                 }
             },
             { $sort: { isStartMatch: -1, name: 1 } },
-            { $limit: 5 },
+            { $limit:20 },
             {
                 $project: {
                     name: 1,
