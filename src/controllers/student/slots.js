@@ -90,7 +90,7 @@ export const modifySlot = errorWrapper(async (req, res, next, session) => {
                 end: { dateTime: new Date(endTime), timeZone: timeZone, },
                 sequence: latestEvent.data.sequence + 1, // Use the latest sequence number
             };
-            const response = await calendar.events.update({
+            response = await calendar.events.update({
                 calendarId: 'primary',
                 eventId: meeting.data.id,
                 requestBody: updatedEvent,
