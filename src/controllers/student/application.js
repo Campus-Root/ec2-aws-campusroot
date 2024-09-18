@@ -17,7 +17,7 @@ import { packageModel } from "../../models/Package.js";
 import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
 import { priceModel } from "../../models/prices.js";
-import { CartSchema, CheckoutSchema } from "../../schemas/student.js";
+import { CartSchema, CheckoutSchema, uploadApplicationSchema } from "../../schemas/student.js";
 import { startSession } from "mongoose"
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
@@ -590,24 +590,34 @@ export const requestCancellation = errorWrapper(async (req, res, next, session) 
 });
 // ..............applications documents...................
 export const uploadInApplication = errorWrapper(async (req, res, next, session) => {
-    const { applicationId, checklistItemId } = req.body;
+    if (!req.file) return { statusCode: 400, data: null, message: `no file found` };
+    const { error, value } = uploadApplicationSchema.validate(req.body)
+    if (error) {
+        if (req.file && req.file.path) unlinkSync(req.file.path);
+        return { statusCode: 400, data: [value], message: error.details[0].message };
+    }
+    const { applicationId, checklistItemId,fileIdentifier } = value;
     const application = await productModel.findById(applicationId);
     if (!application) return { statusCode: 400, message: `invalid application ID`, data: { applicationId: applicationId } };
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
     if (!checklistItem) return { statusCode: 400, message: `invalid checklist ID`, data: { checklistItemId: checklistItemId } };
-    const { originalname, path, mimetype } = req.file;
-    const data = fs.readFileSync(path);
-    const upload = { name: originalname, data: data, contentType: mimetype, user: req.user._id, viewers: [req.user._id, application.processCoordinator], type: "Application" }
-    if (application.counsellor) upload.viewers.push(application.counsellor)
-    const newDoc = await Document.create(upload);
-    fs.unlinkSync(path);
+
+    const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier || "", folder_ID: req.user.docData.folder })
+
+
+    if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+    if (!uploadedFileResponse.data.new) return { statusCode: 200, message: `file updated`, data: null }
+    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "General", viewers: [] };
+    const newDoc = await Document.create(docDetails);
+   
     checklistItem.doc = newDoc._id
     req.user.logs.push({
         action: `document uploaded in checklist`,
         details: `applicationId:${applicationId}&checklistItemId:${checklistItemId}`
     })
-    await req.user.save()
     await Promise.all([
+        req.user.save(),
         await application.save(),
         await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
         await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
@@ -625,7 +635,9 @@ export const uploadInApplication = errorWrapper(async (req, res, next, session) 
     return { statusCode: 200, message: 'Application checklist updated', data: application };
 });
 export const deleteUploadedFromApplication = errorWrapper(async (req, res, next, session) => {
-    const { applicationId, checklistItemId, documentId } = req.body;
+    const { error, value } = uploadInProfileSchema.validate(req.body)
+    if (error) return { statusCode: 400, data: [value], message: error.details[0].message };
+    const { applicationId, checklistItemId, documentId } = value;
     const doc = await Document.findById(documentId)
     if (!doc) return { statusCode: 400, message: `invalid document ID`, data: { documentId: documentId } };
     const application = await productModel.findById(applicationId);
@@ -638,10 +650,10 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next,
     checklistItem.isChecked = false
     req.user.logs.push({ action: `document deleted in application`, details: `applicationId:${applicationId}` })
     await Promise.all([
-        await application.save(),
-        await req.user.save(),
-        await deleteFileInWorkDrive(doc.data.resource_id),
-        await Document.findByIdAndDelete(documentId),
+        application.save(),
+        req.user.save(),
+        deleteFileInWorkDrive(doc.data.resource_id),
+        Document.findByIdAndDelete(documentId),
         await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
         await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
         await Document.populate(application, { path: "docChecklist.doc", select: "data", })

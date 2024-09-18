@@ -61,3 +61,9 @@ export const uploadInProfileSchema = Joi.object({
     fileIdentifier: Joi.string().allow(''),
     documentId: Joi.string().allow(''),
 });
+export const uploadApplicationSchema= Joi.object({
+    applicationId:Joi.string().required(),
+    checklistItemId: Joi.string().required(),
+    fileIdentifier: Joi.string().allow(''),
+    documentId: Joi.string().allow('')
+});
