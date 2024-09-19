@@ -361,7 +361,8 @@ export const reCheckout = errorWrapper(async (req, res, next, session) => {
 export const paymentVerification = async (req, res, next) => {
     const session = await startSession();
     try {
-        session.startTransaction();  // Start transaction
+        session.startTransaction(); 
+        console.log("session started"); // Start transaction
         const { razorpay_order_id } = req.body;
         const order = await orderModel.findOneAndUpdate(
             { "paymentDetails.razorpay_order_id": razorpay_order_id },
@@ -377,6 +378,7 @@ export const paymentVerification = async (req, res, next) => {
             },
             { new: true, session }
         );
+        console.log("order set"); 
         const student = await studentModel.findById(order.student, "advisors").session(session);
         await userModel.populate(student, { path: 'advisors.info', select: 'role expertiseCountry' });
         const hasPackageId = Boolean(order.Package);
@@ -446,16 +448,19 @@ export const paymentVerification = async (req, res, next) => {
 
             studentModel.findByIdAndUpdate(order.student, { $addToSet: { "activity.products": order.products } }, { session });
         }
+        console.log("has package"); 
         if (hasPackageId) studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } }, { session });
         await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } }, { session });
         await student.save({ session });
         await session.commitTransaction();  // Commit the transaction
+        console.log("session done"); 
     } catch (error) {
         await session.abortTransaction();
         return res.status(500).json({ success: false, message: 'Transaction failed', error: error.message });
     }
     finally {
         session.endSession();
+        console.log("success"); 
         return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
     }
 };
