@@ -1,7 +1,7 @@
 import express from "express";
 
 import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack } from "../controllers/public/index.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, conditionalAuth } from "../middleware/auth.js";
 import { limiter } from "../middleware/ratelimiter.js";
 
 
@@ -12,7 +12,7 @@ const router = express.Router();
 
 // router.post("/all_universities/", allUniversities);
 // router.post("/all_courses", allCourses)
-router.post("/listings/:name", limiter, listings);
+router.post("/listings/:name", limiter, conditionalAuth((req, res, next) => req.body.page > 2, authMiddleware), listings);
 router.get("/single_university", oneUniversity);
 router.get("/single_course", oneCourse);
 

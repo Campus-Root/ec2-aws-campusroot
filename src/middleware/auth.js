@@ -20,9 +20,17 @@ export const authMiddleware = async (req, res, next) => {
         }
         return next();
     } catch (error) {
-     return res.status(500).json({ success: false, message: 'Internal server error', data: null });
+        return res.status(500).json({ success: false, message: 'Internal server error', data: null });
     }
 }
+export const conditionalAuth = (conditionFn, middleware) => {
+    return (req, res, next) => {
+      if (conditionFn(req)) {  // Call the condition function with `req`
+        return middleware(req, res, next); // Execute middleware if condition is true
+      }
+      next(); // Skip middleware if condition is false
+    };
+  };
 export const isTeam = (req, res, next) => {
     if (req.user.userType === "member") return next();
     return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
