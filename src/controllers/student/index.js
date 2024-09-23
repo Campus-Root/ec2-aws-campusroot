@@ -63,7 +63,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
     details: `recommendations${req.user.recommendations.data.length}`
   })
   await req.user.save();
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite startDate" })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate" })
   await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear" })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -88,7 +88,7 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
   if (!recommendation) return { statusCode: 400, data: null, message: `invalid recommendationId` };
   recommendation.notInterested = true;
   await req.user.save();
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite" })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite" })
   await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear " })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
