@@ -77,11 +77,13 @@ export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session
             details: ``
         })
     }
+
     const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
+    user.phoneLoginOtp = {}
     await user.save({ session })
-    res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions)
+    res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", user.email, cookieOptions)
     req.AccessToken = newAccessToken;
     return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
 })
