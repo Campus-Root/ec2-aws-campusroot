@@ -2,10 +2,12 @@ import Joi from "joi";
 import { DestinationTypeEnum, LanguageTypeEnum, ProductCategoryEnum } from "../utils/enum.js";
 
 export const loginSchema = Joi.object({
-    email: Joi.string().required(),
-    password: Joi.string().required(),
+    email: Joi.string(),
+    password: Joi.string(),
+    countryCode: Joi.string(),
+    phoneNumber: Joi.string(),
     DeviceToken: Joi.string().allow('')
-}).required()
+}).xor('email', 'phoneNumber').xor('password', 'countryCode').and('email', 'password').and('phoneNumber', 'countryCode')
 
 export const CartSchema = Joi.object({
     action: Joi.string().valid('add', 'remove', 'update').required(),
@@ -61,8 +63,8 @@ export const uploadInProfileSchema = Joi.object({
     fileIdentifier: Joi.string().allow(''),
     documentId: Joi.string().allow(''),
 });
-export const uploadApplicationSchema= Joi.object({
-    applicationId:Joi.string().required(),
+export const uploadApplicationSchema = Joi.object({
+    applicationId: Joi.string().required(),
     checklistItemId: Joi.string().required(),
     fileIdentifier: Joi.string().allow(''),
     documentId: Joi.string().allow('')

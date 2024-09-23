@@ -14,6 +14,10 @@ const Student = mongoose.Schema(
             }
         }],
         phone: { countryCode: { type: String }, number: { type: String } },
+        phoneLoginOtp: {
+            data: { type: String },
+            expiry: { type: Date }, // expiry date
+        },
         LeadSource: { type: String },
         IEH: {
             institution: { type: mongoose.Types.ObjectId, ref: 'institution' },
