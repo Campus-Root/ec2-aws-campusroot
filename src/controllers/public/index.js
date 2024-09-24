@@ -12,6 +12,7 @@ import leadsModel from "../../models/leads.js";
 import { leadCreation, refreshToken } from "../../utils/CRMintegrations.js";
 import 'dotenv/config';
 import institutionModel from "../../models/IndianColleges.js";
+import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next, session) => {
     const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
@@ -266,7 +267,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
                 }
             },
             { $sort: { isStartMatch: -1, name: 1 } },
-            { $limit:20 },
+            { $limit: 20 },
             {
                 $project: {
                     name: 1,
@@ -304,41 +305,35 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
         if (!student) return { statusCode: 400, data: null, message: 'invalid studentId' };
         // if (!student.verification[0].status && !email) return { statusCode: 400, data: student , message:    'please do verify your email before requesting a call'};
         // if (!student.verification[1].status && !phone) return { statusCode: 400, data: student , message:    'please do verify your phone number before requesting a call'};
+        const RSA = await getNewAdvisor(role = "remoteStudentAdvisor");
         leadData = {
             student: studentID,
             queryDescription,
             name: `${student.firstName} ${student.lastName}`,
             email: student.verification[0].status ? student.email : email,
-            phone: student.verification[1].status ? student.phone : phone
+            phone: student.verification[1].status ? student.phone : phone,
+            remoteStudentAdvisor: RSA._id
         }
         let newLead = await leadsModel.create(leadData);
-        const rsa = await teamModel.aggregate([{ $match: { role: "remoteStudentAdvisor" } }, { $project: { _id: 1, leads: 1, leads: { $size: "$leads" } } }, { $sort: { leads: 1 } }, { $limit: 1 }]);
-        await teamModel.findOneAndUpdate({ _id: rsa[0]._id }, { $push: { leads: newLead._id } }, { new: true });
-        newLead.remoteStudentAdvisor = rsa[0]._id;
+        await teamModel.findOneAndUpdate({ _id: RSA._id }, { $push: { leads: newLead._id } });
         const accessToken = await refreshToken()
         let crmData = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
-        if (crmData[0].code != "SUCCESS") return {
-            statusCode: 400, data: null, message: crmData[0].code
-        };
+        if (crmData[0].code != "SUCCESS") return { statusCode: 400, data: null, message: crmData[0].code };
         newLead.crmId = crmData[0].details.id
         await newLead.save()
         return ({ statusCode: 200, message: 'We have received your request, we will reach out to you shortly', data: null });
     }
-    if (!email || !phone.number || !phone.countryCode || !name || !queryDescription) return {
-        statusCode: 400, data: null, message: 'Incomplete details'
-    };
+    if (!email || !phone.number || !phone.countryCode || !name || !queryDescription) return { statusCode: 400, data: null, message: 'Incomplete details' };
     existingLead = await leadsModel.find({ "phone.countryCode": phone.countryCode, "phone.number": phone.number })
     if (existingLead.length > 0) return ({ statusCode: 200, message: 'We have already received your request, we will reach out to you shortly', data: null });
     if (!leadData) leadData = { queryDescription, name, email, phone }
     let newLead = await leadsModel.create(leadData);
-    const rsa = await teamModel.aggregate([{ $match: { role: "remoteStudentAdvisor" } }, { $project: { _id: 1, leads: 1, leads: { $size: "$leads" } } }, { $sort: { leads: 1 } }, { $limit: 1 }]);
-    await teamModel.findOneAndUpdate({ _id: rsa[0]._id }, { $push: { leads: newLead._id } }, { new: true });
-    newLead.remoteStudentAdvisor = rsa[0]._id;
+    const rsa = await getNewAdvisor(role = "remoteStudentAdvisor");
+    await teamModel.findOneAndUpdate({ _id: rsa._id }, { $push: { leads: newLead._id } }, { new: true });
+    newLead.remoteStudentAdvisor = rsa._id;
     const accessToken = await refreshToken()
     let crmData = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
-    if (crmData[0].code != "SUCCESS") return {
-        statusCode: 400, data: null, message: crmData[0].code
-    };
+    if (crmData[0].code != "SUCCESS") return { statusCode: 400, data: null, message: crmData[0].code };
     newLead.crmId = crmData[0].details.id
     await newLead.save()
     return ({ statusCode: 200, message: 'We have received your request, we will reach out to you shortly', data: null });

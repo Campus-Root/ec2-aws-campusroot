@@ -16,6 +16,9 @@ import qs from "qs";
 import { generateTokens } from "../../utils/redisTokens.js";
 import { createFolder } from "../../utils/CRMintegrations.js";
 import { registerSchema } from "../../schemas/student.js";
+import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
+import leadsModel from "../../models/leads.js";
+import chatModel from "../../models/Chat.js";
 export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
     const { error, value } = registerSchema.validate(req.body)
@@ -34,6 +37,26 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     }]
     student.verification = verification
     student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
+
+    const RSA = await getNewAdvisor(role = "remoteStudentAdvisor");
+    const leadObject = await leadsModel.create({
+        name: `${firstName} ${lastName}`,
+        queryDescription: "Registration initiated",
+        student: student._id,
+        remoteStudentAdvisor: RSA._id,
+        leadSource: "WebSite Visit",
+        leadStatus: [{
+            status: "New Lead",
+            followUp_Status: { type: String },
+            nextFollowUp: { type: Date, default: new Date() }
+        }],
+        leadRating: "medium priority",
+        logs: [{ action: "lead Initiated" }]
+    })
+    await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
+    await chatModel.create({ participants: [student._id, RSA._id] }, { session });
+    student.advisors.push({ info: RSA._id, assignedCountries: [country] });
+
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
@@ -161,10 +184,24 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
                 const source = fs.readFileSync(filePath, "utf-8").toString();
                 const template = Handlebars.compile(source);
-                const replacement = { userName: `${firstName} ${lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${verification[0].token.data}` }
+                const replacement = { userName: `${student.firstName} ${student.lastName}`, URL: `${process.env.SERVER_URL}/api/v1/auth/verify/${email}/${verification[0].token.data}` }
                 const htmlToSend = template(replacement);
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
+            const RSA = await getNewAdvisor(role = "remoteStudentAdvisor");
+            const leadObject = await leadsModel.create({
+                name: `${student.firstName} ${student.lastName}`,
+                queryDescription: "Registration initiated",
+                student: student._id,
+                remoteStudentAdvisor: RSA._id,
+                leadSource: "WebSite Visit",
+                leadStatus: [{ status: "New Lead", }],
+                leadRating: "medium priority",
+                logs: [{ action: "lead Initiated" }]
+            })
+            await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
+            await chatModel.create({ participants: [student._id, RSA._id] }, { session });
+            student.advisors.push({ info: RSA._id, assignedCountries: [] });
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
             const doc = await createFolder(given_name + '-' + family_name + '-' + student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
@@ -176,7 +213,6 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 modified_by_zuid: doc.attributes.modified_by_zuid
             }
             await student.save();
-            // await chatModel.create({ participants: [student._id, Counsellors[0]._id] });
             res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
             req.AccessToken = newAccessToken;
             return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken: newAccessToken, role: student.userType } });

@@ -288,13 +288,10 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
         }
         await req.user.save({ session })
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
-        
-        
         await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
         await productModel.populate(order, [{ path: "products" }])
         await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
         await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
-       
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
     }
     const orderOptions = {
@@ -361,8 +358,7 @@ export const reCheckout = errorWrapper(async (req, res, next, session) => {
 export const paymentVerification = async (req, res, next) => {
     const session = await startSession();
     try {
-        session.startTransaction(); 
-        console.log("session started"); // Start transaction
+        session.startTransaction();
         const { razorpay_order_id } = req.body;
         const order = await orderModel.findOneAndUpdate(
             { "paymentDetails.razorpay_order_id": razorpay_order_id },
@@ -378,7 +374,6 @@ export const paymentVerification = async (req, res, next) => {
             },
             { new: true, session }
         );
-        console.log("order set"); 
         const student = await studentModel.findById(order.student, "advisors").session(session);
         await userModel.populate(student, { path: 'advisors.info', select: 'role expertiseCountry' });
         const hasPackageId = Boolean(order.Package);
@@ -448,19 +443,16 @@ export const paymentVerification = async (req, res, next) => {
 
             studentModel.findByIdAndUpdate(order.student, { $addToSet: { "activity.products": order.products } }, { session });
         }
-        console.log("has package"); 
         if (hasPackageId) studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } }, { session });
         await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } }, { session });
         await student.save({ session });
         await session.commitTransaction();  // Commit the transaction
-        console.log("session done"); 
     } catch (error) {
         await session.abortTransaction();
         return res.status(500).json({ success: false, message: 'Transaction failed', error: error.message });
     }
     finally {
         session.endSession();
-        console.log("success"); 
         return res.status(200).json({ success: true, message: 'Order processed successfully', data: { reference: order._id } });
     }
 };
@@ -505,16 +497,11 @@ export const addingProductsToOrder = errorWrapper(async (req, res, next, session
                 if (!isNaN(intakeExists[0]?.deadlineMonth)) newProductDetails.deadline = new Date(new Date().getFullYear(), intakeExists[0].deadlineMonth, 1);  // adding deadline
                 if (counsellors.length > 0) newProductDetails.advisors.push(counsellors[0]._id);
                 else {
-                    const Counsellors = await teamModel.aggregate([
-                        { $match: { role: "counsellor", expertiseCountry: country } },
-                        { $project: { _id: 1, students: 1, studentsCount: { $size: "$students" } } },
-                        { $sort: { studentsCount: 1 } },
-                        { $limit: 1 }
-                    ]);
-                    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-                    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
-                    req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
-                    newProductDetails.advisors.push(Counsellors[0]._id)
+                    const Counsellor = await getNewAdvisor("counsellor", country);
+                    await teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                    await chatModel.create({ participants: [req.user._id, Counsellor._id] });
+                    req.user.advisors.push({ info: Counsellor._id, assignedCountries: [country] })
+                    newProductDetails.advisors.push(Counsellor._id)
                 } // adding counsellor
                 let processCoordinators = req.user.advisors.filter(ele => ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country)));
                 if (processCoordinators.length > 0) {
@@ -523,26 +510,21 @@ export const addingProductsToOrder = errorWrapper(async (req, res, next, session
                     await teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: newProductDetails._id } })
                 }
                 else {
-                    const processCoordinators = await teamModel.aggregate([{ $match: { role: "processCoordinator", expertiseCountry: country } }, { $project: { _id: 1, applications: 1, applicationsCount: { $cond: { if: { $isArray: "$applications" }, then: { $size: "$applications" }, else: 0 } } } }, { $sort: { applicationsCount: 1 } }, { $limit: 1 }]);
-                    await teamModel.findByIdAndUpdate(processCoordinators[0]._id, { $push: { applications: newProductDetails._id } });
-                    req.user.advisors.push({ info: processCoordinators[0]._id, assignedCountries: [country] })
-                    await chatModel.create({ participants: [req.user._id, processCoordinators[0]._id] });
-                    newProductDetails.advisors.push(processCoordinators[0]._id)
+                    const ProcessCoordinator = await getNewAdvisor("processCoordinator", country);
+                    await teamModel.findByIdAndUpdate(ProcessCoordinator._id, { $push: { applications: newProductDetails._id } });
+                    req.user.advisors.push({ info: ProcessCoordinator._id, assignedCountries: [country] })
+                    await chatModel.create({ participants: [req.user._id, ProcessCoordinator._id] });
+                    newProductDetails.advisors.push(ProcessCoordinator._id)
                 }// adding processCoordinator
                 break;
             case ProductCategoryEnum.SOP_LOR:
                 if (counsellors.length > 0) newProductDetails.advisors.push(counsellors[0]._id);
                 else {
-                    const Counsellors = await teamModel.aggregate([
-                        { $match: { role: "counsellor", expertiseCountry: country } },
-                        { $project: { _id: 1, students: 1, studentsCount: { $size: "$students" } } },
-                        { $sort: { studentsCount: 1 } },
-                        { $limit: 1 }
-                    ]);
-                    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-                    await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
-                    req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
-                    newProductDetails.advisors.push(Counsellors[0]._id)
+                    const Counsellor = await getNewAdvisor("counsellor", country);
+                    await teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                    await chatModel.create({ participants: [req.user._id, Counsellor._id] });
+                    req.user.advisors.push({ info: Counsellor._id, assignedCountries: [country] })
+                    newProductDetails.advisors.push(Counsellor._id)
                 } // adding counsellor
                 newProductDetails.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Connection" }] }];
                 newProductDetails.status = "Processing";
@@ -601,7 +583,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next, session) 
         if (req.file && req.file.path) unlinkSync(req.file.path);
         return { statusCode: 400, data: [value], message: error.details[0].message };
     }
-    const { applicationId, checklistItemId,fileIdentifier } = value;
+    const { applicationId, checklistItemId, fileIdentifier } = value;
     const application = await productModel.findById(applicationId);
     if (!application) return { statusCode: 400, message: `invalid application ID`, data: { applicationId: applicationId } };
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
@@ -615,7 +597,6 @@ export const uploadInApplication = errorWrapper(async (req, res, next, session) 
     const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
     const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "General", viewers: [] };
     const newDoc = await Document.create(docDetails);
-   
     checklistItem.doc = newDoc._id
     req.user.logs.push({
         action: `document uploaded in checklist`,

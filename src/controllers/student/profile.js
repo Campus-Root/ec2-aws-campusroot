@@ -435,17 +435,16 @@ export const requestCounsellor = errorWrapper(async (req, res, next, session) =>
         await userModel.populate(alreadyExistButDifferentCountry, { path: "info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
         return ({ statusCode: 200, message: `counsellor assigned for multiple countries`, data: { advisor: alreadyExistButDifferentCountry, chat: null } });
     }
-    const Counsellors = await teamModel.aggregate([{ $match: { role: "counsellor", expertiseCountry: country } }, { $project: { _id: 1, students: 1, students: { $size: "$students" } } }, { $sort: { students: 1 } }, { $limit: 1 }]);
-    await teamModel.findByIdAndUpdate(Counsellors[0]._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
-    req.user.advisors.push({ info: Counsellors[0]._id, assignedCountries: [country] })
-    const chat = await chatModel.create({ participants: [req.user._id, Counsellors[0]._id] });
+    const Counsellor = await getNewAdvisor("counsellor", country);
+    await teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+    req.user.advisors.push({ info: Counsellor._id, assignedCountries: [country] })
+    const chat = await chatModel.create({ participants: [req.user._id, Counsellor._id] });
     req.user.logs.push({
         action: `${country} counsellor assigned`,
-        details: `counsellorId:${Counsellors[0]}&country:${country}}`
+        details: `counsellorId:${Counsellor._id}&country:${country}}`
     })
-
     sendMail({
-        to: Counsellors[0].email,
+        to: Counsellor.email,
         subject: "Student is requesting your service",
         html: `
             <html lang="en">
@@ -474,18 +473,17 @@ export const requestCounsellor = errorWrapper(async (req, res, next, session) =>
                 <body>
                     <div class="container">
                         <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
-                        <h3>Dear ${Counsellors[0].firstName} ${Counsellors[0].lastName},</h3>
+                        <h3>Dear ${Counsellor.firstName} ${Counsellor.lastName},</h3>
                         <h2>Student is waiting for your guidance!</h2>
                     </div>
                 </body>
             </html>
         `
     });
-
     await req.user.save()
     await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" })
     await userModel.populate(chat, { path: "participants", select: "firstName lastName displayPicSrc email userType role" });
-    const advisor = req.user.advisors.find(ele => ele.info._id.toString() === Counsellors[0]._id.toString());
+    const advisor = req.user.advisors.find(ele => ele.info._id.toString() === Counsellor._id.toString());
     return { statusCode: 200, message: `counsellor assigned`, data: { advisor: advisor, chat: chat } };
 })
 export const IEH = errorWrapper(async (req, res, next, session) => {
