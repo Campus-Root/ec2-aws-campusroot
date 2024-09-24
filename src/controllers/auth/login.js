@@ -11,6 +11,7 @@ import Joi from "joi";
 import { loginSchema } from "../../schemas/student.js";
 import { deleteTokens, generateTokens } from "../../utils/redisTokens.js";
 import { sendOTP } from "../../utils/sendSMS.js";
+import { fileURLToPath } from "url";
 export const Login = errorWrapper(async (req, res, next, session) => {
     const { error, value } = loginSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
