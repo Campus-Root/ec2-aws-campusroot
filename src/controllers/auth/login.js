@@ -93,18 +93,14 @@ export const forgotPassword = errorWrapper(async (req, res, next, session) => {
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { email } = value;
     const user = await userModel.findOne({ email: email })
-    if (!user) {
-        return { statusCode: 400, message: `invalid email. Please Register`, data: null }
-    }
-    if (!user.password) {
-        return { statusCode: 400, message: `Login with Oauth`, data: null }
-    }
+    if (!user) return { statusCode: 400, message: `invalid email. Please Register`, data: null }
+    if (!user.password) return { statusCode: 400, message: `Login with Oauth`, data: null }
     const otp = Math.random().toString().substr(2, 4)
     let subject = "CAMPUSROOT Ed.tech Pvt. Ltd. - One-Time Password"
-    const __filename = new URL(import.meta.url).pathname;
-    const filePath = path.join(__filename, '../../../static/forgotPassword.html');
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
     const source = fs.readFileSync(filePath, "utf-8").toString();
-    const template = Handlebars.compile(source)
+    const template = Handlebars.compile(source);
     const replacement = { otp: otp }
     const htmlToSend = template(replacement)
     await sendMail({ to: email, subject: subject, html: htmlToSend });
