@@ -33,8 +33,8 @@ export const registerSchema = Joi.object({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     password: Joi.string().required(),
-    country: Joi.string().valid(...Object.values(DestinationTypeEnum)).required(),
-    language: Joi.string().valid(...Object.values(LanguageTypeEnum)).required(),
+    country: Joi.array().items(Joi.string().valid(...Object.values(DestinationTypeEnum))).required(),
+    // language: Joi.string().valid(...Object.values(LanguageTypeEnum)).required(),
 });
 
 export const uploadInProfileSchema = Joi.object({

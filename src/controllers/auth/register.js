@@ -20,12 +20,12 @@ import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import leadsModel from "../../models/leads.js";
 import chatModel from "../../models/Chat.js";
 export const StudentRegister = errorWrapper(async (req, res, next, session) => {
-    const { firstName, lastName, email, password, displayPicSrc, country, language, DeviceToken } = req.body;
+    const { firstName, lastName, email, password, displayPicSrc, country, DeviceToken } = req.body;
     const { error, value } = registerSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const alreadyExists = await studentModel.findOne({ email: email });
     if (alreadyExists) return { statusCode: 400, data: null, message: `Email already registered` };
-    const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country, language: language } });
+    const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country } }, { session });
     const verification = [{
         type: "email",
         status: false,
@@ -37,26 +37,20 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     }]
     student.verification = verification
     student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
-
-    const RSA = await getNewAdvisor(role = "remoteStudentAdvisor");
+    const RSA = await getNewAdvisor("remoteStudentAdvisor");
     const leadObject = await leadsModel.create({
         name: `${firstName} ${lastName}`,
         queryDescription: "Registration initiated",
         student: student._id,
         remoteStudentAdvisor: RSA._id,
         leadSource: "WebSite Visit",
-        leadStatus: [{
-            status: "New Lead",
-            followUp_Status: { type: String },
-            nextFollowUp: { type: Date, default: new Date() }
-        }],
+        leadStatus: [{ status: "New Lead" }],
         leadRating: "medium priority",
         logs: [{ action: "lead Initiated" }]
-    })
+    }, { session })
     await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
     await chatModel.create({ participants: [student._id, RSA._id] }, { session });
     student.advisors.push({ info: RSA._id, assignedCountries: [country] });
-
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
@@ -78,7 +72,7 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
         download_url: doc.attributes.download_url,
         modified_by_zuid: doc.attributes.modified_by_zuid
     }
-    await student.save();
+    await student.save({ session });
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
     req.AccessToken = newAccessToken;
     return { statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } };
@@ -156,7 +150,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
             if (student.socialAuth?.google?.id) {
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 student.logs.push({ action: `Logged in using Google auth` });
-                await student.save();
+                await student.save({ session });
                 res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
                 req.AccessToken = newAccessToken;
                 return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
@@ -168,13 +162,13 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 if (email_verified) student.verification[0].status = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
-                await student.save();
+                await student.save({ session });
                 res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
                 req.AccessToken = newAccessToken;
                 return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
             }
         } else {
-            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, preference: { language: "English" } });
+            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub } });
             student.verification = verification
             student.suggestedPackages = ["66b8414fcfe5abb913e9b1bd"]  // adding suggested package by default
             student.verification[0].status = email_verified;
@@ -188,7 +182,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 const htmlToSend = template(replacement);
                 await sendMail({ to: email, subject: subject, html: htmlToSend });
             }
-            const RSA = await getNewAdvisor(role = "remoteStudentAdvisor");
+            const RSA = await getNewAdvisor("remoteStudentAdvisor");
             const leadObject = await leadsModel.create({
                 name: `${student.firstName} ${student.lastName}`,
                 queryDescription: "Registration initiated",
@@ -212,7 +206,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 download_url: doc.attributes.download_url,
                 modified_by_zuid: doc.attributes.modified_by_zuid
             }
-            await student.save();
+            await student.save({ session });
             res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
             req.AccessToken = newAccessToken;
             return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken: newAccessToken, role: student.userType } });

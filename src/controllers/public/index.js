@@ -305,7 +305,7 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
         if (!student) return { statusCode: 400, data: null, message: 'invalid studentId' };
         // if (!student.verification[0].status && !email) return { statusCode: 400, data: student , message:    'please do verify your email before requesting a call'};
         // if (!student.verification[1].status && !phone) return { statusCode: 400, data: student , message:    'please do verify your phone number before requesting a call'};
-        const RSA = await getNewAdvisor(role = "remoteStudentAdvisor");
+        const RSA = await getNewAdvisor("remoteStudentAdvisor");
         leadData = {
             student: studentID,
             queryDescription,
@@ -328,7 +328,7 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
     if (existingLead.length > 0) return ({ statusCode: 200, message: 'We have already received your request, we will reach out to you shortly', data: null });
     if (!leadData) leadData = { queryDescription, name, email, phone }
     let newLead = await leadsModel.create(leadData);
-    const rsa = await getNewAdvisor(role = "remoteStudentAdvisor");
+    const rsa = await getNewAdvisor("remoteStudentAdvisor");
     await teamModel.findOneAndUpdate({ _id: rsa._id }, { $push: { leads: newLead._id } }, { new: true });
     newLead.remoteStudentAdvisor = rsa._id;
     const accessToken = await refreshToken()
