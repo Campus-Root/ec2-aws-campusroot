@@ -110,7 +110,7 @@ const Student = mongoose.Schema(
                 degreeProgram: { type: String },// enum btech,bedu,bsc.... 
                 gradingSystem: { type: String },// enum % grade gpa cgpa
                 affiliatedUniversity: { type: String },
-                totalScore: { type: Number }, // for grade A+..., for Percent 0-100, gpa 0-10
+                totalScore: { type: String }, // for grade A+..., for Percent 0-100, gpa 0-10
                 startDate: { type: Date },
                 endDate: { type: Date, },
                 backlogs: { type: Number },
@@ -125,7 +125,7 @@ const Student = mongoose.Schema(
                 degreeProgram: { type: String },// enum mtech,medu,msc.... 
                 gradingSystem: { type: String },// enum % grade gpa cgpa
                 affiliatedUniversity: { type: String },
-                totalScore: { type: Number }, // for grade A+..., for Percent 0-100, gpa 0-10
+                totalScore: { type: String }, // for grade A+..., for Percent 0-100, gpa 0-10
                 startDate: { type: Date },
                 endDate: { type: Date, },
                 backlogs: { type: Number },
