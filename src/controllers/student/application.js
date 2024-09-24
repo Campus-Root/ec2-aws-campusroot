@@ -357,10 +357,11 @@ export const reCheckout = errorWrapper(async (req, res, next, session) => {
 });
 export const paymentVerification = async (req, res, next) => {
     const session = await startSession();
+    let order
     try {
         session.startTransaction();
         const { razorpay_order_id } = req.body;
-        const order = await orderModel.findOneAndUpdate(
+        order = await orderModel.findOneAndUpdate(
             { "paymentDetails.razorpay_order_id": razorpay_order_id },
             {
                 $set: {
