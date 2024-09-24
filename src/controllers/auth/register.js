@@ -25,7 +25,8 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const alreadyExists = await studentModel.findOne({ email: email });
     if (alreadyExists) return { statusCode: 400, data: null, message: `Email already registered` };
-    const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country } }, { session });
+    
+    const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country } } );
     const verification = [{
         type: "email",
         status: false,
@@ -38,7 +39,7 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     student.verification = verification
     student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
     const RSA = await getNewAdvisor("remoteStudentAdvisor");
-    const leadObject = await leadsModel.create({
+    const leadObject = await leadsModel.create([{
         name: `${firstName} ${lastName}`,
         queryDescription: "Registration initiated",
         student: student._id,
@@ -47,10 +48,10 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
         leadStatus: [{ status: "New Lead" }],
         leadRating: "medium priority",
         logs: [{ action: "lead Initiated" }]
-    }, { session })
-    await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
-    await chatModel.create({ participants: [student._id, RSA._id] }, { session });
-    student.advisors.push({ info: RSA._id, assignedCountries: [country] });
+    }], )
+    await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, );
+    await chatModel.create({ participants: [student._id, RSA._id] }, );
+    student.advisors.push({ info: RSA._id, assignedCountries: country });
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
@@ -72,7 +73,7 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
         download_url: doc.attributes.download_url,
         modified_by_zuid: doc.attributes.modified_by_zuid
     }
-    await student.save({ session });
+    await student.save();
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
     req.AccessToken = newAccessToken;
     return { statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } };
