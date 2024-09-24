@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.4c6e4cd2.css",
-    "main.js": "/static/js/main.c4afaa48.js",
+    "main.css": "/static/css/main.b975863d.css",
+    "main.js": "/static/js/main.0de5918e.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
     "static/media/homepage1.png": "/static/media/homepage1.c981a28fe27fd3b3dc50.png",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
@@ -13,6 +13,7 @@
     "static/media/homepage2.png": "/static/media/homepage2.046126c6ce976c29685d.png",
     "static/media/img3.png": "/static/media/img3.904681ed045aa4f037f8.png",
     "static/media/Maskgroup.png": "/static/media/Maskgroup.c195e3e145f54285ab51.png",
+    "static/media/loginImg.png": "/static/media/loginImg.0e5f692bda6d44a27e7b.png",
     "static/media/airecommend.png": "/static/media/airecommend.9aac3f261c26cf311f79.png",
     "static/media/section2.png": "/static/media/section2.97560adabd86f2040c36.png",
     "static/media/calendar.gif": "/static/media/calendar.15b8535a4830419c950f.gif",
@@ -33,15 +34,18 @@
     "static/media/facebook-icon.gif": "/static/media/facebook-icon.a673d075840558e5b412.gif",
     "static/media/emailVerified.png": "/static/media/emailVerified.ed8f7ae8cf592cff857f.png",
     "static/media/flight.png": "/static/media/flight.d5d4d255ee1b03cb0f03.png",
+    "static/media/successMsg.png": "/static/media/successMsg.e4040059b4a6a28ed150.png",
+    "static/media/errorMsg.png": "/static/media/errorMsg.ed110c65e51c4b30c87c.png",
+    "static/media/flightRight.png": "/static/media/flightRight.a0f6d75ec75cf74c0034.png",
     "static/media/CampusrootLogo.png": "/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png",
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
-    "main.4c6e4cd2.css.map": "/static/css/main.4c6e4cd2.css.map",
-    "main.c4afaa48.js.map": "/static/js/main.c4afaa48.js.map",
+    "main.b975863d.css.map": "/static/css/main.b975863d.css.map",
+    "main.0de5918e.js.map": "/static/js/main.0de5918e.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.4c6e4cd2.css",
-    "static/js/main.c4afaa48.js"
+    "static/css/main.b975863d.css",
+    "static/js/main.0de5918e.js"
   ]
 }
