@@ -43,7 +43,7 @@ export const Login = errorWrapper(async (req, res, next, session) => {
         }
     } else if (phoneNumber && countryCode) {
         // Find user by phoneNumber and countryCode if they exist
-        user = await userModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode }).session(session);
+        user = await userModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode });
         if (!user) {
             let student = await studentModel.create({ "phone.number": phoneNumber, "phone.countryCode": countryCode })
             const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
@@ -55,7 +55,7 @@ export const Login = errorWrapper(async (req, res, next, session) => {
             student.verification = verification
             student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
             const RSA = await getNewAdvisor("remoteStudentAdvisor");
-            const leadObject = await leadsModel.create([{
+            const leadObject = await leadsModel.create({
                 queryDescription: "Registration initiated",
                 student: student._id,
                 remoteStudentAdvisor: RSA._id,
@@ -63,11 +63,11 @@ export const Login = errorWrapper(async (req, res, next, session) => {
                 leadStatus: [{ status: "New Lead" }],
                 leadRating: "medium priority",
                 logs: [{ action: "lead Initiated" }]
-            }], { session });
+            });
 
 
-            await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
-            await chatModel.create([{ participants: [student._id, RSA._id] }], { session });
+            await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } });
+            await chatModel.create([{ participants: [student._id, RSA._id] }]);
             student.advisors.push({ info: RSA._id, assignedCountries: [] });
             const doc = await createFolder(student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
             student.docData = {
@@ -81,7 +81,7 @@ export const Login = errorWrapper(async (req, res, next, session) => {
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
 
             student.logs.push({ action: `OTP sent for registration`, details: `` });
-            await student.save({ session });
+            await student.save();
             return ({ statusCode: 200, message: `otp sent for registration, verify before expiry`, data: { expiry: expiry } });
         }
         const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
