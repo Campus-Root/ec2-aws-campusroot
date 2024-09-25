@@ -60,7 +60,7 @@ export const Login = errorWrapper(async (req, res, next, session) => {
             student.verification = verification
             student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
             const RSA = await getNewAdvisor("remoteStudentAdvisor");
-            const leadObject = await leadsModel.create([{
+            const leadObject = await leadsModel.create({
                 queryDescription: "Registration initiated",
                 student: student._id,
                 remoteStudentAdvisor: RSA._id,
@@ -68,9 +68,9 @@ export const Login = errorWrapper(async (req, res, next, session) => {
                 leadStatus: [{ status: "New Lead" }],
                 leadRating: "medium priority",
                 logs: [{ action: "lead Initiated" }]
-            }],)
+            })
             await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
-            await chatModel.create({ participants: [student._id, RSA._id] }, { session });
+            await chatModel.create([{ participants: [student._id, RSA._id] }], { session });
             student.advisors.push({ info: RSA._id, assignedCountries: [] });
             const doc = await createFolder(student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
             student.docData = {
