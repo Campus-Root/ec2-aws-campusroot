@@ -44,7 +44,7 @@ export const Login = errorWrapper(async (req, res, next, session) => {
         // Find user by phoneNumber and countryCode if they exist
         user = await userModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode }).session(session);
         if (!user) {
-            student = await studentModel.create({ "phone.number": phoneNumber, "phone.countryCode": countryCode })
+            let student = await studentModel.create({ "phone.number": phoneNumber, "phone.countryCode": countryCode })
             const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
             student.phoneLoginOtp = { data: otp, expiry: expiry, }
             const verification = [{
