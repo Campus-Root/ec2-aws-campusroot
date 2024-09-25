@@ -45,22 +45,17 @@ export const Login = errorWrapper(async (req, res, next, session) => {
         // Find user by phoneNumber and countryCode if they exist
         user = await userModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode }).session(session);
         if (!user) {
-            let student = await studentModel.create({ "phone.number": phoneNumber, "phone.countryCode": countryCode })
+            let student = await studentModel.create([{ "phone.number": phoneNumber, "phone.countryCode": countryCode }], { session })
             const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
             student.phoneLoginOtp = { data: otp, expiry: expiry, }
-            const verification = [{
-                type: "email",
-                status: false,
-                token: { data: null, expiry: new Date() }
-            }, {
-                type: "phone",
-                status: false,
-                token: { data: null, expiry: new Date() }
-            }]
+            const verification = [
+                { type: "email", status: false, token: { data: null, expiry: new Date() } },
+                { type: "phone", status: false, token: { data: null, expiry: new Date() } }
+            ];
             student.verification = verification
             student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
             const RSA = await getNewAdvisor("remoteStudentAdvisor");
-            const leadObject = await leadsModel.create({
+            const leadObject = await leadsModel.create([{
                 queryDescription: "Registration initiated",
                 student: student._id,
                 remoteStudentAdvisor: RSA._id,
@@ -68,7 +63,9 @@ export const Login = errorWrapper(async (req, res, next, session) => {
                 leadStatus: [{ status: "New Lead" }],
                 leadRating: "medium priority",
                 logs: [{ action: "lead Initiated" }]
-            })
+            }], { session });
+
+
             await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
             await chatModel.create([{ participants: [student._id, RSA._id] }], { session });
             student.advisors.push({ info: RSA._id, assignedCountries: [] });
@@ -83,10 +80,7 @@ export const Login = errorWrapper(async (req, res, next, session) => {
             const smsResponse = await sendOTP({ to: student.phone.countryCode + student.phone.number, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
 
-            student.logs.push({
-                action: `otp sent for register`,
-                details: ``
-            })
+            student.logs.push({ action: `OTP sent for registration`, details: `` });
             await student.save({ session });
             return ({ statusCode: 200, message: `otp sent for registration, verify before expiry`, data: { expiry: expiry } });
         }
