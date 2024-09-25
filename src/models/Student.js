@@ -74,6 +74,7 @@ const Student = mongoose.Schema(
         }],
         education: {
             school: {
+                custom: { type: Boolean },
                 instituteName: { type: String, },
                 city: { type: String },
                 state: { type: String },
@@ -86,6 +87,7 @@ const Student = mongoose.Schema(
                 endDate: { type: Date },
             },
             plus2: {
+                custom: { type: Boolean },
                 instituteName: { type: String, },
                 city: { type: String },
                 state: { type: String },
@@ -101,7 +103,7 @@ const Student = mongoose.Schema(
                 isCompleted: { type: Boolean }
             },
             underGraduation: {
-                custom: { type: Boolean, default: false },
+                custom: { type: Boolean },
                 instituteName: { type: String, },
                 city: { type: String },
                 state: { type: String },
@@ -117,6 +119,7 @@ const Student = mongoose.Schema(
                 isCompleted: { type: Boolean },
             },
             postGraduation: {
+                custom: { type: Boolean },
                 instituteName: { type: String, },
                 city: { type: String },
                 state: { type: String },

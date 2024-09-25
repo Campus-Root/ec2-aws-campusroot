@@ -25,8 +25,7 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const alreadyExists = await studentModel.findOne({ email: email });
     if (alreadyExists) return { statusCode: 400, data: null, message: `Email already registered` };
-    
-    const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country } } );
+    const student = await studentModel.create({ firstName, lastName, email, password: await bcrypt.hash(password, 12), displayPicSrc, preference: { country: country } });
     const verification = [{
         type: "email",
         status: false,
@@ -48,9 +47,9 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
         leadStatus: [{ status: "New Lead" }],
         leadRating: "medium priority",
         logs: [{ action: "lead Initiated" }]
-    }], )
-    await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, );
-    await chatModel.create({ participants: [student._id, RSA._id] }, );
+    }],)
+    await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } },);
+    await chatModel.create({ participants: [student._id, RSA._id] },);
     student.advisors.push({ info: RSA._id, assignedCountries: country });
     let subject = "Confirm Your Email to Activate Your CampusRoot Account"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -65,7 +64,7 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
         details: "traditional registration done"
     })
     const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'], DeviceToken)
-    const doc = await createFolder(firstName + '-' + lastName + '-' + student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
+    const doc = await createFolder(student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
     student.docData = {
         folder: doc.id,
         name: doc.attributes.name,
@@ -76,7 +75,7 @@ export const StudentRegister = errorWrapper(async (req, res, next, session) => {
     await student.save();
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
     req.AccessToken = newAccessToken;
-    return { statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType } };
+    return { statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType, missingFields: ["phone", "education", "coursePreference", "tests"] } };
 });
 export const verifyEmail = errorWrapper(async (req, res, next, session) => {
     const { email, emailVerificationString } = req.params;
@@ -151,10 +150,21 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
             if (student.socialAuth?.google?.id) {
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 student.logs.push({ action: `Logged in using Google auth` });
+                let missingFields = []
+
+                if (!student?.phone?.countryCode && !student?.phone?.number) missingFields.push("phone");
+                if (!student?.preference?.country) missingFields.push("country");
+                if (!student?.preference?.courses) missingFields.push("coursePreference");
+                if (!student?.education || Object.keys(student.education).length < 1) missingFields.push("education");
+                if (!student?.tests || student.tests.length < 1) missingFields.push("tests");
+
+
+
+
                 await student.save({ session });
                 res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
                 req.AccessToken = newAccessToken;
-                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
+                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType, missingFields: missingFields } });
             } else {
                 student.firstName = student.firstName || given_name || null;
                 student.lastName = student.lastName || family_name || null;
@@ -162,11 +172,20 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 student.socialAuth.google = { id: sub };
                 if (email_verified) student.verification[0].status = email_verified;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
+
+                let missingFields = []
+
+                if (!student?.phone?.countryCode && !student?.phone?.number) missingFields.push("phone");
+                if (!student?.preference?.country) missingFields.push("country");
+                if (!student?.preference?.courses) missingFields.push("coursePreference");
+                if (!student?.education || Object.keys(student.education).length < 1) missingFields.push("education");
+                if (!student?.tests || student.tests.length < 1) missingFields.push("tests");
+
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 await student.save({ session });
                 res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
                 req.AccessToken = newAccessToken;
-                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
+                return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType, missingFields: missingFields } });
             }
         } else {
             student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub } });
@@ -210,7 +229,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
             await student.save({ session });
             res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions);
             req.AccessToken = newAccessToken;
-            return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken: newAccessToken, role: student.userType } });
+            return ({ statusCode: 200, message: `Google Registration Successful`, data: { AccessToken: newAccessToken, role: student.userType, missingFields: ["country", "phone", "education", "coursePreference", "tests"] } });
         }
     }
     catch (error) {

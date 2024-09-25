@@ -12,6 +12,10 @@ import { loginSchema } from "../../schemas/student.js";
 import { deleteTokens, generateTokens } from "../../utils/redisTokens.js";
 import { sendOTP } from "../../utils/sendSMS.js";
 import { fileURLToPath } from "url";
+import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
+import leadsModel from "../../models/leads.js";
+import { teamModel } from "../../models/Team.js";
+import chatModel from "../../models/Chat.js";
 export const Login = errorWrapper(async (req, res, next, session) => {
     const { error, value } = loginSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
@@ -38,7 +42,52 @@ export const Login = errorWrapper(async (req, res, next, session) => {
     } else if (phoneNumber && countryCode) {
         // Find user by phoneNumber and countryCode if they exist
         user = await userModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode }).session(session);
-        if (!user) return { statusCode: 401, message: `Invalid phone number. Please try again`, data: null };
+        if (!user) {
+            student = await studentModel.create({ "phone.number": phoneNumber, "phone.countryCode": countryCode })
+            const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
+            student.phoneLoginOtp = { data: otp, expiry: expiry, }
+            const verification = [{
+                type: "email",
+                status: false,
+                token: { data: null, expiry: new Date() }
+            }, {
+                type: "phone",
+                status: false,
+                token: { data: null, expiry: new Date() }
+            }]
+            student.verification = verification
+            student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]  // adding suggested package by default
+            const RSA = await getNewAdvisor("remoteStudentAdvisor");
+            const leadObject = await leadsModel.create([{
+                queryDescription: "Registration initiated",
+                student: student._id,
+                remoteStudentAdvisor: RSA._id,
+                leadSource: "WebSite Visit",
+                leadStatus: [{ status: "New Lead" }],
+                leadRating: "medium priority",
+                logs: [{ action: "lead Initiated" }]
+            }],)
+            await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } }, { session });
+            await chatModel.create({ participants: [student._id, RSA._id] }, { session });
+            student.advisors.push({ info: RSA._id, assignedCountries: [] });
+            const doc = await createFolder(student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
+            student.docData = {
+                folder: doc.id,
+                name: doc.attributes.name,
+                parent: doc.attributes.parent_id,
+                download_url: doc.attributes.download_url,
+                modified_by_zuid: doc.attributes.modified_by_zuid
+            }
+            const smsResponse = await sendOTP({ to: student.phone.countryCode + student.phone.number, otp: otp, region: "International" });
+            if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
+
+            student.logs.push({
+                action: `otp sent for register`,
+                details: ``
+            })
+            await student.save({ session });
+            return ({ statusCode: 200, message: `otp sent for registration, verify before expiry`, data: { expiry: expiry } });
+        }
         const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
         user.phoneLoginOtp = { data: otp, expiry: expiry, }
         const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
@@ -54,9 +103,17 @@ export const Login = errorWrapper(async (req, res, next, session) => {
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
     await user.save({ session })
+    let missingFields = []
+    if (user.userType === "student") {
+        if (!user?.phone?.countryCode && !user?.phone?.number) missingFields.push("phone");
+        if (!user?.preference?.country) missingFields.push("country");
+        if (!user?.preference?.courses) missingFields.push("coursePreference");
+        if (!user?.education || Object.keys(user.education).length < 1) missingFields.push("education");
+        if (!user?.tests || user.tests.length < 1) missingFields.push("tests");
+    }
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", email, cookieOptions)
     req.AccessToken = newAccessToken;
-    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
+    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType, missingFields: missingFields } }
 });
 export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session) => {
     const { error, value } = Joi.object({
@@ -78,7 +135,13 @@ export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session
             details: ``
         })
     }
-
+    let missingFields = []
+    if (!user?.firstName || !user?.lastName) missingFields.push("name");
+    if (!user?.email) missingFields.push("email");
+    if (!user?.preference?.country) missingFields.push("country");
+    if (!user?.preference?.courses) missingFields.push("coursePreference");
+    if (!user?.education || Object.keys(user.education).length < 1) missingFields.push("education");
+    if (!user?.tests || user.tests.length < 1) missingFields.push("tests");
     const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
@@ -86,7 +149,7 @@ export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session
     await user.save({ session })
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions).cookie("CampusRoot_Email", user.email, cookieOptions)
     req.AccessToken = newAccessToken;
-    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
+    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType, missingFields: missingFields } }
 })
 
 export const forgotPassword = errorWrapper(async (req, res, next, session) => {

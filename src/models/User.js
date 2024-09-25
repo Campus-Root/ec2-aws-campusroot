@@ -5,8 +5,8 @@ import validator from "validator";
 const userSchema = mongoose.Schema({
   firstName: { type: String, trim: true, },
   lastName: { type: String, trim: true, },
-  displayPicSrc: { type: String, default: "" },
-  email: { type: String, required: [true, "Please provide email"], unique: true, validate: { validator: validator.isEmail, message: "please provide valid email", }, trim: true, },
+  displayPicSrc: { type: String, default: "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg" },
+  email: { type: String, required: [true, "Please provide email"], validate: { validator: validator.isEmail, message: "please provide valid email", }, trim: true, },
   about: { type: String },
   password: { type: String, trim: true },
   socialAuth: { google: { id: { type: String } } },
