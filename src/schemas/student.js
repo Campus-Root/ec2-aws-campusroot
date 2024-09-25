@@ -7,7 +7,7 @@ export const loginSchema = Joi.object({
     countryCode: Joi.string(),
     phoneNumber: Joi.string(),
     DeviceToken: Joi.string().allow('')
-}).xor('email', 'phoneNumber').xor('password', 'countryCode').and('email', 'password').and('phoneNumber', 'countryCode')
+}).xor('email', 'phoneNumber').and('email', 'password').and('phoneNumber', 'countryCode')
 
 export const CartSchema = Joi.object({
     action: Joi.string().valid('add', 'remove', 'update').required(),
