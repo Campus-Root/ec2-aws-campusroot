@@ -129,6 +129,17 @@ export const Login = errorWrapper(async (req, res, next) => {
     if (!user) {
         user = await studentModel.create(finder)
         user.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]
+        otp = {
+            emailLoginOtp: {
+                data: null,
+                expiry: new Date(),
+            },
+            phoneLoginOtp: {
+                data: null,
+                expiry: new Date(),
+            }
+        }
+        user.otp = otp
         const RSA = await getNewAdvisor("remoteStudentAdvisor");
         const leadObject = await leadsModel.create({
             queryDescription: "Registration initiated",
