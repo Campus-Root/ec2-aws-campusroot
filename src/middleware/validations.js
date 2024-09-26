@@ -17,10 +17,12 @@ export const validationErrorMiddleware = errorWrapper((req, res, next) => {
 })
 export const checkDisposableEmail = errorWrapper(async (req, res, next, session) => {
     const { email } = req.body;
-    const response = await fetch(`https://disposable.debounce.io/?email=${email}`);
-    const data = await response.json();
-    if (data.disposable == "true") return { statusCode: 400, data: null, message: `Please do not use throw away email` };
-    if (data.success == "0") return { statusCode: 400, data: null, message: `Invalid email Id` };
+    if (email) {
+        const response = await fetch(`https://disposable.debounce.io/?email=${email}`);
+        const data = await response.json();
+        if (data.disposable == "true") return { statusCode: 400, data: null, message: `Please do not use throw away email` };
+        if (data.success == "0") return { statusCode: 400, data: null, message: `Invalid email Id` };
+    }
     next();
 });
 export const validatePayment = errorWrapper(async (req, res, next, session) => {
