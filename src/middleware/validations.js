@@ -10,17 +10,6 @@ import crypto from "crypto";
 import { ProductCategoryEnum } from '../utils/enum.js';
 import Joi from 'joi';
 import { ProductSchema } from '../schemas/student.js';
-export const validateCredentials = [
-    body('email')
-        .isEmail()
-        .normalizeEmail()
-        .withMessage('Invalid email address'),
-    body('password')
-        .isLength({ min: 8, max: 25 })
-        .withMessage('Password must be 8 - 25 characters long')
-        .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z\d]).{8,}$/)
-        .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
-];
 export const validationErrorMiddleware = errorWrapper((req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return { statusCode: 400, data: errors, message: `${errors.array()[0].msg}` };
@@ -31,9 +20,7 @@ export const checkDisposableEmail = errorWrapper(async (req, res, next, session)
     const response = await fetch(`https://disposable.debounce.io/?email=${email}`);
     const data = await response.json();
     if (data.disposable == "true") return { statusCode: 400, data: null, message: `Please do not use throw away email` };
-    if (data.success == "0") return {
-        statusCode: 400, data: null, message: `Invalid email Id`
-    };
+    if (data.success == "0") return { statusCode: 400, data: null, message: `Invalid email Id` };
     next();
 });
 export const validatePayment = errorWrapper(async (req, res, next, session) => {

@@ -5,19 +5,6 @@ import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, De
 const Student = mongoose.Schema(
     {
         active: { type: Boolean, default: true },
-        verification: [{
-            type: { type: String }, // "email"  // "phone"
-            status: { type: Boolean, default: false },
-            token: {
-                data: { type: String },
-                expiry: { type: Date }, // expiry date
-            }
-        }],
-        phone: { countryCode: { type: String }, number: { type: String } },
-        phoneLoginOtp: {
-            data: { type: String },
-            expiry: { type: Date }, // expiry date
-        },
         LeadSource: { type: String },
         IEH: {
             institution: { type: mongoose.Types.ObjectId, ref: 'institution' },

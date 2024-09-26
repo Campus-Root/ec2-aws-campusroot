@@ -78,7 +78,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
         case "students":
             req.body.filterData.forEach(ele => { if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }] });
             filter["advisors.info"] = req.user._id
-            const listOfStudents = await studentModel.find(filter, "firstName lastName email displayPicSrc phone verification recommendations preference").skip(skip).limit(perPage);
+            const listOfStudents = await studentModel.find(filter, "firstName lastName email displayPicSrc phone recommendations preference").skip(skip).limit(perPage);
             // await courseModel.populate(listOfStudents, [{ path: "applications.course", select: "name unisName startDate" }])
             const studentsWithStages = req.user.students.reduce((acc, item) => {
                 acc[item.profile.toString()] = item.stage;
@@ -130,7 +130,7 @@ export const newStudents = errorWrapper(async (req, res, next, session) => {
     let totalPages = 0, totalDocs
     req.body.filterData.forEach(ele => { if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }] });
     filter["advisors"] = { $size: 0 }
-    const listOfStudents = await studentModel.find(filter, "firstName lastName email displayPicSrc phone verification preference").skip(skip).limit(perPage);
+    const listOfStudents = await studentModel.find(filter, "firstName lastName email displayPicSrc phone preference").skip(skip).limit(perPage);
     totalDocs = await studentModel.countDocuments(filter)
     totalPages = Math.ceil(totalDocs / perPage);
     return ({ statusCode: 200, message: `students list`, data: { list: listOfStudents, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })

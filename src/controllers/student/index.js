@@ -17,8 +17,6 @@ import { packageModel } from "../../models/Package.js";
 import sendMail from "../../utils/sendEMAIL.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next, session) => {
-  // if (!req.user.verification[0].status) return { statusCode: 400, data: student , message:    `do verify your email to generate recommendations`};
-  // if (!req.user.verification[1].status) return { statusCode: 400, data: student , message:    `do verify your phone number to generate recommendations`};
   const GRE = req.user.tests.find(ele => ele.name == "Graduate Record Examination")
   if (GRE == undefined) return { statusCode: 400, data: null, message: "add GRE test details" }
   const totalScore = GRE.scores.find(ele => ele.description === "totalScore")

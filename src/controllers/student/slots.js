@@ -7,15 +7,9 @@ import 'dotenv/config';
 export const bookSlot = errorWrapper(async (req, res, next, session) => {
     const { startTime, endTime, attendees, timeZone, notes } = req.body
     const { teamMemberId } = req.params
-    // if (req.user.verification[0].status === false) return { statusCode: 400, data: student , message:    `do verify your email to book a slot`};
-    // if (req.user.verification[1].status === false) return { statusCode: 400, data: student , message:    `do verify your phone number to book a slot`};
     if (!new Date(startTime)) return { statusCode: 400, data: null, message: "invalid startTime" }
-    if (!new Date(endTime)) return {
-        statusCode: 400, data: null, message: "invalid endTime"
-    }
-    if (!timeZone) return {
-        statusCode: 400, data: null, message: "invalid timeZone"
-    }
+    if (!new Date(endTime)) return { statusCode: 400, data: null, message: "invalid endTime" }
+    if (!timeZone) return { statusCode: 400, data: null, message: "invalid timeZone" }
     await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens role" })
     let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)
     if (!teamMember) return { statusCode: 400, data: null, message: `invalid teamMember parameter` };
@@ -27,9 +21,7 @@ export const bookSlot = errorWrapper(async (req, res, next, session) => {
             break;
         case "processCoordinator": sessionName = `Application Processing Session - ${req.user.firstName} ${req.user.lastName}`
             break;
-        default: return {
-            statusCode: 400, data: null, message: `invalid teamMemberId`
-        };
+        default: return { statusCode: 400, data: null, message: `invalid teamMemberId` };
     }
     oauth2Client.setCredentials(teamMember.info.googleTokens);
     let event = {
@@ -49,10 +41,7 @@ export const bookSlot = errorWrapper(async (req, res, next, session) => {
     meet.status = "upcoming"
     const meeting = await meetingModel.create(meet)
     req.user.activity.meetings.push(meeting._id)
-    req.user.logs.push({
-        action: `slot booked at ${startTime}`,
-        details: `meetingId:${meeting._id}`
-    })
+    req.user.logs.push({ action: `slot booked at ${startTime}`, details: `meetingId:${meeting._id}` })
     await req.user.save()
     await userModel.populate(meeting, { path: "user member", select: "firstName lastName email displayPicSrc role" })
     return ({ statusCode: 200, message: `slot booking successful`, data: meeting });

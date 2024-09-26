@@ -303,15 +303,13 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
         if (existingLead && existingLead.length > 0) return ({ statusCode: 200, message: 'We have already received your request, we will reach out to you shortly', data: null });
         student = await studentModel.findById(studentID)
         if (!student) return { statusCode: 400, data: null, message: 'invalid studentId' };
-        // if (!student.verification[0].status && !email) return { statusCode: 400, data: student , message:    'please do verify your email before requesting a call'};
-        // if (!student.verification[1].status && !phone) return { statusCode: 400, data: student , message:    'please do verify your phone number before requesting a call'};
         const RSA = await getNewAdvisor("remoteStudentAdvisor");
         leadData = {
             student: studentID,
             queryDescription,
             name: `${student.firstName} ${student.lastName}`,
-            email: student.verification[0].status ? student.email : email,
-            phone: student.verification[1].status ? student.phone : phone,
+            email: student.email ? student.email : email,
+            phone: student.phone ? student.phone : phone,
             remoteStudentAdvisor: RSA._id
         }
         let newLead = await leadsModel.create(leadData);

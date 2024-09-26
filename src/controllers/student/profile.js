@@ -1,14 +1,9 @@
-import { readFileSync, unlinkSync } from "fs";
+import { unlinkSync } from "fs";
 import Document from "../../models/Uploads.js";
-import { studentModel } from "../../models/Student.js";
 import userModel from "../../models/User.js";
 import sendMail from "../../utils/sendEMAIL.js"
 import { errorWrapper } from "../../middleware/errorWrapper.js";
-import { sendOTP } from "../../utils/sendSMS.js";
 import 'dotenv/config';
-import Handlebars from "handlebars";
-import path from "path";
-import { fileURLToPath } from "url";
 import { isValidObjectId } from "mongoose";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
@@ -47,57 +42,6 @@ export const profile = errorWrapper(async (req, res, next, session) => {
     const profile = { ...req.user._doc }
     delete profile.logs;
     return ({ statusCode: 200, message: `complete profile`, data: profile });
-})
-export const editEmail = errorWrapper(async (req, res, next, session) => {
-    const { email } = req.body
-    if (req.user.verification[0].status) return { statusCode: 400, data: null, message: `email already verified, contact Campus Root team for support` };
-    const existingEmail = await userModel.find({ email: email }, "email")
-    if (existingEmail.length > 0) return {
-        statusCode: 400, data: null, message: `email already exists, Enter a new email`
-    };
-    req.user.email = email;
-    req.user.verification[0].token = {
-        data: (Math.random() + 1).toString(16).substring(2),
-        expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    }
-    req.user.verification[0].status = false
-    let subject = "Email verification"
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
-    const source = readFileSync(filePath, "utf-8").toString();
-    const template = Handlebars.compile(source)
-    const replacement = { userName: `${req.user.firstName} ${req.user.lastName}`, URL: `${process.env.SERVER_URL}api/v1/auth/verify/${email}/${req.user.verification[0].token.data}` }
-    const htmlToSend = template(replacement)
-    await sendMail({
-        to: req.user.email, subject: subject, html: htmlToSend
-    });
-    req.user.logs.push({
-        action: "email updated updated & mail sent for verification",
-        details: "email updated in profile"
-    })
-    await req.user.save()
-    return ({ statusCode: 200, message: `mail sent for verification`, data: null });
-})
-export const editPhone = errorWrapper(async (req, res, next, session) => {
-    const { phone } = req.body
-    if (!phone.countryCode || !phone.number) return { statusCode: 400, data: null, message: `Enter a valid number` };
-    const existingPhone = await studentModel.find({ $and: [{ "phone.countryCode": phone.countryCode }, { "phone.number": phone.number }] }, "phone")
-    if (existingPhone.length > 0) return {
-        statusCode: 400, data: null, message: `phone number already exists, Enter a new number`
-    };
-    req.user.phone = phone
-    req.user.verification[1].token = { data: Math.floor(100000 + Math.random() * 900000), expiry: new Date(new Date().getTime() + 5 * 60000) }
-    var smsResponse = await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
-    // var smsResponse = (req.user.phone.countryCode === "+91") ? await sendOTP({ to: req.user.phone.number, otp: req.user.verification[1].token.data, region: "Indian" }) : await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: req.user.verification[1].token.data, region: "International" });
-    if (!smsResponse.return) {
-        return { statusCode: 400, data: null, message: "Otp not sent" }
-    }
-    req.user.logs.push({
-        action: `profile info updated & otp sent for verification`,
-        details: `phone updated in profile`
-    })
-    await req.user.save()
-    return ({ statusCode: 200, message: `otp sent for verification, verify it before it expires`, data: { expiry: req.user.verification[1].token.expiry } });
 })
 export const editProfile = errorWrapper(async (req, res, next, session) => {
     const { LeadSource, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, extraCurriculumActivities, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
@@ -372,53 +316,6 @@ export const deleteUploadedInProfile = errorWrapper(async (req, res, next, sessi
             { path: "documents.workExperiences", select: "data", },])
     ])
     return { statusCode: 200, message: `Document deleted from ${fieldPath} `, data: req.user.documents };
-})
-export const verifyEmail = errorWrapper(async (req, res, next, session) => {
-    let subject = "Verify Your Email to Activate Your CampusRoot Account"
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const filePath = path.join(__dirname, '../../../static/emailTemplate.html');
-    const source = readFileSync(filePath, "utf-8").toString();
-    const template = Handlebars.compile(source)
-    req.user.verification[0].status = false
-    req.user.verification[0].token = { data: (Math.random() + 1).toString(16).substring(2), expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
-    const replacement = {
-        userName: `${req.user.firstName} ${req.user.lastName} `, URL: `${process.env.SERVER_URL}api/v1/auth/verify/${req.user.email}/${req.user.verification[0].token.data}`
-    }
-    const htmlToSend = template(replacement)
-    await sendMail({ to: req.user.email, subject: subject, html: htmlToSend });
-    req.user.logs.push({ action: `Email sent for verification`, details: `` });
-    await req.user.save()
-    return ({ statusCode: 200, message: `email sent for verification`, data: null });
-})
-export const sendUserOTP = errorWrapper(async (req, res, next, session) => {
-    const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
-    if (req.user.phone.number && req.user.verification[1].status) return { statusCode: 400, data: null, message: "already verified" };
-    req.user.verification[1].token = { data: otp, expiry: expiry, }
-    const smsResponse = await sendOTP({ to: req.user.phone.countryCode + req.user.phone.number, otp: otp, region: "International" });
-    if (!smsResponse.return) {
-        return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
-    }
-    req.user.logs.push({
-        action: `otp sent for verification`,
-        details: ``
-    })
-    await req.user.save()
-    return ({ statusCode: 200, message: `otp sent for verification, verify before expiry`, data: { expiry: expiry } });
-})
-export const verifyUserOTP = errorWrapper(async (req, res, next, session) => {
-    const { otp } = req.body
-    const user = await studentModel.findById(req.user._id, "verification logs")
-    if (user.verification[1].token.data !== otp) return { statusCode: 400, data: null, message: "invalid otp" }
-    if (new Date() > new Date(user.verification[1].token.expiry)) return {
-        statusCode: 400, data: null, message: "otp expired, generate again"
-    }
-    user.verification[1].status = true
-    user.logs.push({
-        action: `otp verification successful`,
-        details: ``
-    })
-    await user.save()
-    return ({ statusCode: 200, message: `phone verification successful`, data: user.verification });
 })
 export const requestCounsellor = errorWrapper(async (req, res, next, session) => {
     const { country } = req.body

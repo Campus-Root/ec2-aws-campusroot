@@ -3,12 +3,10 @@ import { DestinationTypeEnum, LanguageTypeEnum, ProductCategoryEnum } from "../u
 
 export const loginSchema = Joi.object({
     email: Joi.string(),
-    password: Joi.string(),
     countryCode: Joi.string(),
     phoneNumber: Joi.string(),
     DeviceToken: Joi.string().allow('')
-}).xor('email', 'phoneNumber').and('email', 'password').and('phoneNumber', 'countryCode')
-
+}).xor('email', 'phoneNumber').and('phoneNumber', 'countryCode')
 export const CartSchema = Joi.object({
     action: Joi.string().valid('add', 'remove', 'update').required(),
     category: Joi.string().valid(...Object.values(ProductCategoryEnum)),
@@ -28,15 +26,22 @@ export const CheckoutSchema = Joi.object({
     products: Joi.array().items(ProductSchema).min(0),
     userCurrency: Joi.string()
 }).required();
-export const registerSchema = Joi.object({
-    email: Joi.string().required(),
-    firstName: Joi.string().required(),
-    lastName: Joi.string().required(),
-    password: Joi.string().required(),
-    country: Joi.array().items(Joi.string().valid(...Object.values(DestinationTypeEnum))).required(),
-    // language: Joi.string().valid(...Object.values(LanguageTypeEnum)).required(),
-});
-
+// export const registerSchema = Joi.object({
+//     email: Joi.string().required(),
+//     firstName: Joi.string().required(),
+//     lastName: Joi.string().required(),
+//     password: Joi.string().required(),
+//     country: Joi.array().items(Joi.string().valid(...Object.values(DestinationTypeEnum))).required(),
+//     // language: Joi.string().valid(...Object.values(LanguageTypeEnum)).required(),
+// });
+export const OTPVerificationSchema = Joi.object({
+    type: Joi.string().required(),
+    email: Joi.string(),
+    countryCode: Joi.string(),
+    phoneNumber: Joi.string(),
+    otp: Joi.string().required(),
+    DeviceToken: Joi.string().allow('')
+}).xor("email", "phoneNumber").and("phoneNumber", "countryCode");
 export const uploadInProfileSchema = Joi.object({
     fieldPath: Joi.string().valid(
         "personal.resume",

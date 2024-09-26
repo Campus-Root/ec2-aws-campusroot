@@ -7,11 +7,22 @@ const userSchema = mongoose.Schema({
   lastName: { type: String, trim: true, },
   displayPicSrc: { type: String, default: "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg" },
   email: { type: String, validate: { validator: validator.isEmail, message: "please provide valid email", }, trim: true, },
+  phone: { countryCode: { type: String }, number: { type: String } },
   about: { type: String },
   password: { type: String, trim: true },
   socialAuth: { google: { id: { type: String } } },
   communities: [{ type: mongoose.Types.ObjectId, ref: "community", }],
-  otp: { type: String },
+  otp: {
+    emailLoginOtp: {
+      data: { type: String },
+      expiry: { type: Date }, // expiry date
+    },
+    phoneLoginOtp: {
+      data: { type: String },
+      expiry: { type: Date }, // expiry date
+    }
+  },
+
   logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
   failedLoginAttempts: { type: Number },
   nextLoginTime: { type: Date },

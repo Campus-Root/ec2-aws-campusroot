@@ -1,20 +1,16 @@
 import express from "express";
-import { Login, forgotPassword, Logout, verifyOtp, verifyStudentLoginOTP } from "../controllers/auth/login.js";
-import { StudentRegister, TeamRegister, googleLogin, linkedLogin, verifyEmail } from "../controllers/auth/register.js";
+import { Login, Logout, verifyStudentLoginOTP } from "../controllers/auth/login.js";
+import { TeamRegister, googleLogin, linkedLogin } from "../controllers/auth/register.js";
 import { authMiddleware, isAdmin } from "../middleware/auth.js";
-import { checkDisposableEmail, validateCredentials, validationErrorMiddleware } from "../middleware/validations.js";
+import { checkDisposableEmail} from "../middleware/validations.js";
 
 const router = express.Router();
 //        {{localhost:5000}}/api/v1/auth
 
-router.post("/login", Login);
+router.post("/login", checkDisposableEmail, Login);
 router.post("/phone-login", verifyStudentLoginOTP);
-router.post("/student-register", validateCredentials, validationErrorMiddleware, checkDisposableEmail, StudentRegister);
-router.get("/verify/:email/:emailVerificationString", verifyEmail)
 router.post("/team-register", authMiddleware, isAdmin, TeamRegister);
-router.post("/logout",authMiddleware,Logout)
-router.post("/forgot-password", forgotPassword);
-router.post("/verify-otp", verifyOtp);
+router.post("/logout", authMiddleware, Logout)
 router.post("/google/login", googleLogin)
 router.post("/linkedin/login", linkedLogin)
 export default router;
