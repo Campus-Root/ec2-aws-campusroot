@@ -8,7 +8,7 @@ const router = express.Router();
 //        {{localhost:5000}}/api/v1/auth
 
 router.post("/login", checkDisposableEmail, Login);
-router.post("/phone-login", verifyStudentLoginOTP);
+router.post("/verify-login", verifyStudentLoginOTP);
 router.post("/team-register", authMiddleware, isAdmin, TeamRegister);
 router.post("/logout", authMiddleware, Logout)
 router.post("/google/login", googleLogin)
