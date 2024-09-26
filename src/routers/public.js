@@ -2,7 +2,7 @@ import express from "express";
 
 import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack } from "../controllers/public/index.js";
 import { authMiddleware, conditionalAuth } from "../middleware/auth.js";
-import { limiter } from "../middleware/ratelimiter.js";
+import rateLimit from "express-rate-limit";
 
 
 
@@ -12,7 +12,7 @@ const router = express.Router();
 
 // router.post("/all_universities/", allUniversities);
 // router.post("/all_courses", allCourses)
-router.post("/listings/:name", limiter, conditionalAuth((req, res, next) => req.body.page > 2, authMiddleware), listings);
+router.post("/listings/:name", rateLimit({ windowMs: 15 * 60 * 1000, message: "Too many requests from this IP, please try again later" }), conditionalAuth((req, res, next) => req.body.page > 2, authMiddleware), listings);
 router.get("/single_university", oneUniversity);
 router.get("/single_course", oneCourse);
 
