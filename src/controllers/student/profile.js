@@ -12,6 +12,8 @@ import Joi from "joi";
 import { loginSchema, uploadInProfileSchema } from "../../schemas/student.js";
 import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
+import { sendOTP } from "../../utils/sendSMS.js";
+import path from "path";
 export const profile = errorWrapper(async (req, res, next, session) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
