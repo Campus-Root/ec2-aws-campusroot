@@ -387,7 +387,7 @@ export const requestCounsellor = errorWrapper(async (req, res, next, session) =>
     return { statusCode: 200, message: `counsellor assigned`, data: { advisor: advisor, chat: chat } };
 })
 export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
-    const user = await userModel.findById(req.user._id, "otp");
+    const user = await userModel.findById(req.user._id, "otp logs phone email");
     if (!user) return { statusCode: 401, message: `Invalid user`, data: null };
     const { error, value } = loginSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
