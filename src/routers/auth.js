@@ -1,13 +1,13 @@
 import express from "express";
-import { Login, Logout, verifyStudentLoginOTP } from "../controllers/auth/login.js";
+import { Login, Logout, TeamLogin, verifyStudentLoginOTP } from "../controllers/auth/login.js";
 import { TeamRegister, googleLogin, linkedLogin } from "../controllers/auth/register.js";
 import { authMiddleware, isAdmin } from "../middleware/auth.js";
 import { checkDisposableEmail } from "../middleware/validations.js";
 import { customRateLimiter } from "../middleware/ratelimiter.js";
 
 const router = express.Router();
-//        {{localhost:5000}}/api/v1/auth
-
+//        {{localhost:5000}}/api/v1/auth/team-login
+router.post("/team-login", checkDisposableEmail, TeamLogin)
 router.post("/login", checkDisposableEmail, customRateLimiter, Login);
 router.post("/verify-user", verifyStudentLoginOTP);
 router.post("/team-register", authMiddleware, isAdmin, TeamRegister);

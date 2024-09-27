@@ -178,12 +178,29 @@ export const Login = errorWrapper(async (req, res, next) => {
             break;
     }
     user.logs.push({ action: `otp sent for login`, details: `` })
-    user.save()
+    await user.save()
     return ({ statusCode: 200, message: `otp sent for login, verify before expiry`, data: { expiry: expiry } });
 }
 
 );
-
+export const TeamLogin = errorWrapper(async (req, res, next) => {
+    const { error, value } = Joi.object({ email: Joi.string().required() }).validate(req.body);
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { email } = value;
+    const user = await userModel.findOne({ email: email });
+    if (!user) return { statusCode: 401, message: `Invalid email ID. Please try again using valid email`, data: null };
+    const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 10 * 60000);
+    user.otp.emailLoginOtp = { data: otp, expiry: expiry }
+    let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
+    const source = fs.readFileSync(filePath, "utf-8").toString();
+    const template = Handlebars.compile(source);
+    sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+    user.logs.push({ action: `otp sent for login`, details: `` })
+    await user.save()
+    return { statusCode: 200, message: `otp sent for login, verify before expiry`, data: { expiry: expiry } };
+});
 export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session) => {
     const { error, value } = OTPVerificationSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
@@ -206,17 +223,18 @@ export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session
     if (new Date() > new Date(user.otp[token]["expiry"])) return { statusCode: 400, data: null, message: "otp expired, generate again" }
     user.otp[token]["data"] == null
     let missingFields = [];
-    if (!user?.firstName || !user?.lastName) missingFields.push("name");
-    if (!user?.email) missingFields.push("email");
-    if (!user?.phone || !user?.phone?.number || !user?.phone?.countryCode) missingFields.push("phone");
-    if (!user?.preference || !user?.preference?.country || user.preference.country.length === 0) missingFields.push("country");
-    if (!user?.preference || !user?.preference?.courses || user.preference.courses.length === 0) missingFields.push("coursePreference");
-    if (JSON.stringify(user.education) === JSON.stringify({ school: {}, plus2: {}, underGraduation: {}, postGraduation: {} })) missingFields.push("education");
-    if (!user?.tests || user.tests.length === 0) missingFields.push("tests");
+    if (user.userType === "student") {
+        if (!user?.firstName || !user?.lastName) missingFields.push("name");
+        if (!user?.email) missingFields.push("email");
+        if (!user?.phone || !user?.phone?.number || !user?.phone?.countryCode) missingFields.push("phone");
+        if (!user?.preference || !user?.preference?.country || user.preference.country.length === 0) missingFields.push("country");
+        if (!user?.preference || !user?.preference?.courses || user.preference.courses.length === 0) missingFields.push("coursePreference");
+        if (JSON.stringify(user.education) === JSON.stringify({ school: {}, plus2: {}, underGraduation: {}, postGraduation: {} })) missingFields.push("education");
+        if (!user?.tests || user.tests.length === 0) missingFields.push("tests");
+    }
     const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
     user.failedLoginAttempts = 0
     user.logs.push({ action: "Logged In" })
-    user.phoneLoginOtp = {}
     await user.save({ session })
     res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions)
     req.AccessToken = newAccessToken;
