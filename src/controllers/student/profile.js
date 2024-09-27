@@ -424,7 +424,7 @@ export const verifyStudentOTP = errorWrapper(async (req, res, next, session) => 
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { otp, type } = value;
     let token = (type == "email") ? "emailLoginOtp" : "phoneLoginOtp";
-    let user = await userModel.findById(req.user._id, "otp").session(session);
+    let user = await userModel.findById(req.user._id).session(session);
     if (!user) return { statusCode: 401, message: `Invalid ${type}. Please try again`, data: null };
     if (user.otp[token]["data"] !== otp) return { statusCode: 400, data: null, message: "invalid otp" }
     if (new Date() > new Date(user.otp[token]["expiry"])) return { statusCode: 400, data: null, message: "otp expired, generate again" }
