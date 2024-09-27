@@ -9,7 +9,7 @@ import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
 import institutionModel from "../../models/IndianColleges.js";
 import Joi from "joi";
-import { uploadInProfileSchema } from "../../schemas/student.js";
+import { loginSchema, uploadInProfileSchema } from "../../schemas/student.js";
 import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 export const profile = errorWrapper(async (req, res, next, session) => {
@@ -383,6 +383,61 @@ export const requestCounsellor = errorWrapper(async (req, res, next, session) =>
     await userModel.populate(chat, { path: "participants", select: "firstName lastName displayPicSrc email userType role" });
     const advisor = req.user.advisors.find(ele => ele.info._id.toString() === Counsellor._id.toString());
     return { statusCode: 200, message: `counsellor assigned`, data: { advisor: advisor, chat: chat } };
+})
+export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
+    const user = await userModel.findById(req.user._id, "otp");
+    if (!user) return { statusCode: 401, message: `Invalid user`, data: null };
+    const { error, value } = loginSchema.validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { email, phoneNumber, countryCode } = value;
+    const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 10 * 60000);
+    let type = (email) ? "email" : "phone";
+    switch (type) {
+        case "email":
+            user.email = email
+            user.otp.emailLoginOtp = { data: otp, expiry: expiry }
+            let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
+            const __dirname = path.dirname(fileURLToPath(import.meta.url));
+            const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
+            const source = fs.readFileSync(filePath, "utf-8").toString();
+            const template = Handlebars.compile(source);
+            sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+            break;
+        case "phone":
+            user.phone = { countryCode: countryCode, number: phoneNumber }
+            user.otp.phoneLoginOtp = { data: otp, expiry: expiry, }
+            const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
+            if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
+            break;
+    }
+    user.logs.push({ action: `otp sent for verification`, details: `` })
+    user.save()
+    return { statusCode: 200, message: `otp sent for verification, verify before expiry`, data: { expiry: expiry } };
+}
+
+);
+
+export const verifyStudentOTP = errorWrapper(async (req, res, next, session) => {
+    const { error, value } = Joi.object({ type: Joi.string().required(), otp: Joi.string().required() }).validate(req.body)
+    if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
+    const { otp, type } = value;
+    let token = (type == "email") ? "emailLoginOtp" : "phoneLoginOtp";
+    let user = await userModel.findById(req.user._id, "otp").session(session);
+    if (!user) return { statusCode: 401, message: `Invalid ${type}. Please try again`, data: null };
+    if (user.otp[token]["data"] !== otp) return { statusCode: 400, data: null, message: "invalid otp" }
+    if (new Date() > new Date(user.otp[token]["expiry"])) return { statusCode: 400, data: null, message: "otp expired, generate again" }
+    user.otp[token]["data"] == null
+    let missingFields = [];
+    if (!user?.firstName || !user?.lastName) missingFields.push("name");
+    if (!user?.email) missingFields.push("email");
+    if (!user?.phone || !user?.phone?.number || !user?.phone?.countryCode) missingFields.push("phone");
+    if (!user?.preference || !user?.preference?.country || user.preference.country.length === 0) missingFields.push("country");
+    if (!user?.preference || !user?.preference?.courses || user.preference.courses.length === 0) missingFields.push("coursePreference");
+    if (JSON.stringify(user.education) === JSON.stringify({ school: {}, plus2: {}, underGraduation: {}, postGraduation: {} })) missingFields.push("education");
+    if (!user?.tests || user.tests.length === 0) missingFields.push("tests");
+    user.logs.push({ action: `${type} verified` })
+    await user.save({ session })
+    return { statusCode: 200, message: `verification Successful`, data: { missingFields: missingFields } }
 })
 export const IEH = errorWrapper(async (req, res, next, session) => {
     const { error, value } = Joi.object({ institutionId: Joi.string(), verificationDocName: Joi.string() }).validate(req.body)
