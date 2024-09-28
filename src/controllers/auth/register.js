@@ -106,6 +106,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
         if (student) {
             if (student.socialAuth?.google?.id) {
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
+                student.otp.emailLoginOtp.verified = true;
                 student.logs.push({ action: `Logged in using Google auth` });
                 let missingFields = [];
                 if (!student?.firstName || !student?.lastName) missingFields.push("name");
@@ -124,6 +125,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 student.lastName = student.lastName || family_name || null;
                 student.displayPicSrc = (student.displayPicSrc != "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg") ? student.displayPicSrc : picture;
                 student.socialAuth.google = { id: sub };
+                student.otp.emailLoginOtp.verified = true;
                 student.logs.push({ action: `Logged in using Google auth. displayPicSrc and email details updated` });
                 let missingFields = []
                 if (!student?.firstName || !student?.lastName) missingFields.push("name");
@@ -140,7 +142,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 return ({ statusCode: 200, message: `Google Authentication Successful`, data: { AccessToken: newAccessToken, role: student.userType, missingFields: missingFields } });
             }
         } else {
-            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub } });
+            student = await studentModel.create({ firstName: given_name || null, lastName: family_name || null, email: email, displayPicSrc: picture, "socialAuth.google": { id: sub }, "otp.emailLoginOtp.verified": true });
             student.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID] // adding suggested package by default
             const RSA = await getNewAdvisor("remoteStudentAdvisor");
             const leadObject = await leadsModel.create({
