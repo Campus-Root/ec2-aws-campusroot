@@ -14,6 +14,7 @@ import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMint
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { sendOTP } from "../../utils/sendSMS.js";
 import path from "path";
+import { fileURLToPath } from "url";
 export const profile = errorWrapper(async (req, res, next, session) => {
     await Promise.all([
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
@@ -396,20 +397,20 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
     let type = (email) ? "email" : "phone";
     switch (type) {
         case "email":
-            user.email = email
             user.otp.emailLoginOtp = { data: otp, expiry: expiry }
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
             const __dirname = path.dirname(fileURLToPath(import.meta.url));
             const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
             const source = fs.readFileSync(filePath, "utf-8").toString();
             const template = Handlebars.compile(source);
-            sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+            await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+            user.email = email
             break;
         case "phone":
-            user.phone = { countryCode: countryCode, number: phoneNumber }
             user.otp.phoneLoginOtp = { data: otp, expiry: expiry, }
             const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
+            user.phone = { countryCode: countryCode, number: phoneNumber }
             break;
     }
     user.logs.push({ action: `otp sent for verification`, details: `` })
