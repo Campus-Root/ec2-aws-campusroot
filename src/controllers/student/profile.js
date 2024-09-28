@@ -428,7 +428,8 @@ export const verifyStudentOTP = errorWrapper(async (req, res, next, session) => 
     if (!user) return { statusCode: 401, message: `Invalid ${type}. Please try again`, data: null };
     if (user.otp[token]["data"] !== otp) return { statusCode: 400, data: null, message: "invalid otp" }
     if (new Date() > new Date(user.otp[token]["expiry"])) return { statusCode: 400, data: null, message: "otp expired, generate again" }
-    user.otp[token]["data"] == null
+    user.otp[token]["data"] = null
+    user.otp[token]["verified"] = true
     let missingFields = [];
     if (!user?.firstName || !user?.lastName) missingFields.push("name");
     if (!user?.email) missingFields.push("email");

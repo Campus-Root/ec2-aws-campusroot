@@ -10,7 +10,7 @@ export const authMiddleware = async (req, res, next) => {
         const source = req.headers['user-agent']; // Use device token or user-agent string as the identifier
         const { success, message, decoded, accessToken, refreshToken } = await verifyTokens(source, token, req.cookies.CampusRoot_Refresh)
         if (!success) return res.status(401).json({ success: false, message: 'Token Verification Failed', data: message });
-        let user = await userModel.findOne({ _id: decoded.id }).select("-password -failedLoginAttempts -nextLoginTime -socialAuth");
+        let user = await userModel.findOne({ _id: decoded.id }).select("-password -failedLoginAttempts -nextLoginTime -socialAuth -otp.emailLoginOtp.data -otp.emailLoginOtp.expiry -otp.phoneLoginOtp.data --otp.phoneLoginOtp.expiry");
         if (!user) return res.status(401).json({ success: false, message: `Invalid Tokens`, data: null });
         req.decoded = decoded;
         req.user = user;
@@ -25,12 +25,12 @@ export const authMiddleware = async (req, res, next) => {
 }
 export const conditionalAuth = (conditionFn, middleware) => {
     return (req, res, next) => {
-      if (conditionFn(req)) {  // Call the condition function with `req`
-        return middleware(req, res, next); // Execute middleware if condition is true
-      }
-      next(); // Skip middleware if condition is false
+        if (conditionFn(req)) {  // Call the condition function with `req`
+            return middleware(req, res, next); // Execute middleware if condition is true
+        }
+        next(); // Skip middleware if condition is false
     };
-  };
+};
 export const isTeam = (req, res, next) => {
     if (req.user.userType === "member") return next();
     return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });

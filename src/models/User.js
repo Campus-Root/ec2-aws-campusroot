@@ -14,15 +14,16 @@ const userSchema = mongoose.Schema({
   communities: [{ type: mongoose.Types.ObjectId, ref: "community", }],
   otp: {
     emailLoginOtp: {
-      data: { type: String },
-      expiry: { type: Date }, // expiry date
+      data: { type: String, default: "" },
+      expiry: { type: Date, default: new Date() }, // expiry date
+      verified: { type: Boolean, default: false },
     },
     phoneLoginOtp: {
-      data: { type: String },
-      expiry: { type: Date }, // expiry date
+      data: { type: String, default: "" },
+      expiry: { type: Date, default: new Date() }, // expiry date
+      verified: { type: Boolean, default: false },
     }
   },
-
   logs: [{ action: { type: String }, time: { type: Date, default: new Date() }, details: { type: String } }],
   failedLoginAttempts: { type: Number },
   nextLoginTime: { type: Date },
