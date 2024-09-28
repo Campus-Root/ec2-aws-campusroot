@@ -18,15 +18,8 @@ const institutionSchema = mongoose.Schema({
 // Add text index for efficient search
 institutionSchema.index({
     InstitutionName: "text",
-    // university: "text"
 }, {
-    weights: {
-        InstitutionName: 5,  // Assigning higher weight to more important fields
-        // university: 4,
-        // Address: 3,
-        // State: 2,
-        // District: 1
-    }
+    weights: { InstitutionName: 5 }
 });
 
 // Add compound index for sorting

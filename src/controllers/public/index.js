@@ -226,10 +226,28 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
     let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = []
     if (req.query.institutions == 1) {
-        institutionSearchResults = await institutionModel.find({
-            $text: { $search: req.query.search }  // Using text search instead of regex
-        }, "InstitutionName State District university IEH.exists")
-            .sort({ isStartMatch: -1, InstitutionName: 1 })  // Sorting by isStartMatch and InstitutionName
+
+        const [regexResults, textResults] = await Promise.all([
+            institutionModel.find(
+                { InstitutionName: { $regex: req.query.search, $options: "i" } },
+                "InstitutionName State District university IEH.exists"
+            ),
+            institutionModel.find(
+                { $text: { $search: req.query.search } },
+                "InstitutionName State District university IEH.exists"
+            )
+        ]);
+        if (regexResults.length <= 3) {
+            institutionSearchResults = [...regexResults, ...textResults].reduce((acc, curr) => {
+                if (!acc.find(item => item._id.equals(curr._id))) acc.push(curr);
+                return acc;
+            }, []);
+            institutionSearchResults.sort((a, b) => a.InstitutionName.localeCompare(b.InstitutionName));
+        }
+        else {
+            institutionSearchResults = [...regexResults]
+        }
+
     }
     if (req.query.universities == 1) {
         const searchPattern = req.query.search.replace(" ", "|");
