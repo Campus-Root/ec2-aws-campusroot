@@ -1,4 +1,4 @@
-import { unlinkSync } from "fs";
+import { unlinkSync, readFileSync } from "fs";
 import Document from "../../models/Uploads.js";
 import userModel from "../../models/User.js";
 import sendMail from "../../utils/sendEMAIL.js"
@@ -401,7 +401,7 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
             const __dirname = path.dirname(fileURLToPath(import.meta.url));
             const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
-            const source = fs.readFileSync(filePath, "utf-8").toString();
+            const source = readFileSync(filePath, "utf-8").toString();
             const template = Handlebars.compile(source);
             await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
             user.email = email
