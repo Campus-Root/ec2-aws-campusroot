@@ -4,6 +4,7 @@ import userModel from "../../models/User.js";
 import sendMail from "../../utils/sendEMAIL.js"
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import 'dotenv/config';
+import Handlebars from "handlebars";
 import { isValidObjectId } from "mongoose";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
