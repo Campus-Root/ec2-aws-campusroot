@@ -1,6 +1,6 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import 'dotenv/config'
-import fs from "fs";
+import { readFileSync } from "fs";
 import Handlebars from "handlebars";
 import userModel from "../../models/User.js";
 import sendMail from "../../utils/sendEMAIL.js";
@@ -129,7 +129,7 @@ export const Login = errorWrapper(async (req, res, next) => {
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
             const __dirname = path.dirname(fileURLToPath(import.meta.url));
             const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
-            const source = fs.readFileSync(filePath, "utf-8").toString();
+            const source = readFileSync(filePath, "utf-8").toString();
             const template = Handlebars.compile(source);
             const emailResponse = await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
             if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
@@ -165,7 +165,7 @@ export const Login = errorWrapper(async (req, res, next) => {
             modified_by_zuid: doc.attributes.modified_by_zuid
         }
     }
-    user.otp[type].data = otp  
+    user.otp[type].data = otp
     user.otp[type].expiry = expiry
     user.logs.push({ action: `otp sent for login`, details: `` })
     await user.save()
@@ -183,7 +183,7 @@ export const TeamLogin = errorWrapper(async (req, res, next) => {
     let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
-    const source = fs.readFileSync(filePath, "utf-8").toString();
+    const source = readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source);
     const emailResponse = await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
     if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }

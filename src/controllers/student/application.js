@@ -2,7 +2,6 @@ import Joi from "joi";
 import courseModel from "../../models/Course.js";
 import chatModel from "../../models/Chat.js"
 import universityModel from "../../models/University.js";
-import fs from "fs";
 import Document from "../../models/Uploads.js";
 import { teamModel } from "../../models/Team.js";
 import { studentModel } from "../../models/Student.js";

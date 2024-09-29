@@ -2,7 +2,6 @@ import chatModel from "../../models/Chat.js";
 import messageModel from "../../models/Message.js";
 import Document from "../../models/Uploads.js";
 import userModel from "../../models/User.js";
-import fs from "fs"
 import { decrypt, encrypt } from "../../utils/crypto.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
