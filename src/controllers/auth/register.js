@@ -1,5 +1,4 @@
 import { studentModel } from "../../models/Student.js";
-import bcrypt from "bcrypt";
 import 'dotenv/config';
 import { teamModel } from "../../models/Team.js";
 import sendMail from "../../utils/sendEMAIL.js";
@@ -73,13 +72,13 @@ import chatModel from "../../models/Chat.js";
 //     return { statusCode: 200, message: `student registration successful`, data: { AccessToken: newAccessToken, role: student.role || student.userType, missingFields: ["phone", "education", "coursePreference", "tests"] } };
 // });
 export const TeamRegister = errorWrapper(async (req, res, next, session) => {
-    const { email, firstName, lastName, password, role, expertiseCountry } = req.body;
-    if (!email || !firstName || !lastName || !password || !role || !expertiseCountry.length) return { statusCode: 400, data: null, message: `Incomplete details` };
+    const { email, firstName, lastName, role, expertiseCountry } = req.body;
+    if (!email || !firstName || !lastName  || !role || !expertiseCountry.length) return { statusCode: 400, data: null, message: `Incomplete details` };
     const alreadyExists = await teamModel.findOne({ email: email });
     if (alreadyExists) return {
         statusCode: 400, data: null, message: `Email Already Registered`
     };
-    const user = await teamModel.create({ email, firstName, lastName, password: await bcrypt.hash(password, 12), role, expertiseCountry });
+    const user = await teamModel.create({ email, firstName, lastName, role, expertiseCountry });
     user.logs.push({
         action: `${role} Registration done`,
         details: `traditional registration done`

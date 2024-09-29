@@ -1,5 +1,4 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js";
-import bcrypt from "bcrypt"
 import 'dotenv/config'
 import fs from "fs";
 import Handlebars from "handlebars";
@@ -119,11 +118,26 @@ export const Login = errorWrapper(async (req, res, next) => {
     let user, finder, type
     if (email) {
         finder = { email: email }
-        type = "email"
+        type = "emailLoginOtp"
     }
     else if (phoneNumber && countryCode) {
         finder = { "phone.number": phoneNumber, "phone.countryCode": countryCode }
-        type = "phone"
+        type = "phoneLoginOtp"
+    }
+    switch (type) {
+        case "email":
+            let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
+            const __dirname = path.dirname(fileURLToPath(import.meta.url));
+            const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
+            const source = fs.readFileSync(filePath, "utf-8").toString();
+            const template = Handlebars.compile(source);
+            const emailResponse = await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+            if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
+            break;
+        case "phone":
+            const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
+            if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
+            break;
     }
     user = await userModel.findOne(finder);
     if (!user) {
@@ -151,22 +165,8 @@ export const Login = errorWrapper(async (req, res, next) => {
             modified_by_zuid: doc.attributes.modified_by_zuid
         }
     }
-    switch (type) {
-        case "email":
-            user.otp.emailLoginOtp = { data: otp, expiry: expiry }
-            let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
-            const __dirname = path.dirname(fileURLToPath(import.meta.url));
-            const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
-            const source = fs.readFileSync(filePath, "utf-8").toString();
-            const template = Handlebars.compile(source);
-            sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
-            break;
-        case "phone":
-            user.otp.phoneLoginOtp = { data: otp, expiry: expiry, }
-            const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
-            if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
-            break;
-    }
+    user.otp[type].data = otp  
+    user.otp[type].expiry = expiry
     user.logs.push({ action: `otp sent for login`, details: `` })
     await user.save()
     return ({ statusCode: 200, message: `otp sent for login, verify before expiry`, data: { expiry: expiry } });
@@ -180,13 +180,14 @@ export const TeamLogin = errorWrapper(async (req, res, next) => {
     const user = await userModel.findOne({ email: email });
     if (!user) return { statusCode: 401, message: `Invalid email ID. Please try again using valid email`, data: null };
     const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 10 * 60000);
-    user.otp.emailLoginOtp = { data: otp, expiry: expiry }
     let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
     const source = fs.readFileSync(filePath, "utf-8").toString();
     const template = Handlebars.compile(source);
-    sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+    const emailResponse = await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+    if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
+    user.otp.emailLoginOtp = { data: otp, expiry: expiry } //, verified: false
     user.logs.push({ action: `otp sent for login`, details: `` })
     await user.save()
     return { statusCode: 200, message: `otp sent for login, verify before expiry`, data: { expiry: expiry } };
