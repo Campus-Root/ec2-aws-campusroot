@@ -122,7 +122,7 @@ export const paySummary = errorWrapper(async (req, res) => {
     }
     return { statusCode: 200, message: "Payment Summary", data: { items: items, totalPrice: items.reduce((acc, ele) => acc + ele.finalPrice, 0) } }
 });
-export const checkout = errorWrapper(async (req, res, next, session) => {
+export const checkout = errorWrapper(async (req, res, next) => {
     const { error, value } = CheckoutSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { packageId, products, userCurrency } = value;
@@ -201,7 +201,7 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
                 newProducts.push(newProductDetails)
             }
             if (errorStack.length > 0) return { statusCode: 400, message: `Invalid products`, data: errorStack };
-            insertedProducts = await productModel.insertMany(newProducts, { session });
+            insertedProducts = await productModel.insertMany(newProducts);
             newProductIds = insertedProducts.map(product => product._id);
             break;
         default: return { statusCode: 500, message: `some internal server error`, data: null };
@@ -222,8 +222,8 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
         })
         // add product details
         for (const product of newProductIds) {
-            const Product = await productModel.findById(product).session(session);
-            let course = await courseModel.findById(Product.course, "location.country").session(session);
+            const Product = await productModel.findById(product);
+            let course = await courseModel.findById(Product.course, "location.country");
             await userModel.populate(req.user, { path: 'advisors.info', select: 'role expertiseCountry' });
             let country = course.location.country;
             let counsellors = [], processCoordinators = []
@@ -237,20 +237,20 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
                     if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
                     else {
                         const Counsellor = await getNewAdvisor("counsellor", country);
-                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } }, { session });
-                        chatModel.create({ participants: [req.user._id, Counsellor._id] }, { session });
+                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                        chatModel.create({ participants: [req.user._id, Counsellor._id] });
                         req.user.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
                         Product.advisors.push(Counsellor._id);
                     }
                     if (processCoordinators.length > 0) {
                         if (!processCoordinators[0].assignedCountries.includes(country)) processCoordinators[0].assignedCountries.push(country);
                         Product.advisors.push(processCoordinators[0].info._id);
-                        teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: Product._id } }, { session });
+                        teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: Product._id } });
                     } else {
                         const ProcessCoordinator = await getNewAdvisor("processCoordinator", country);
-                        teamModel.findByIdAndUpdate(ProcessCoordinator._id, { $push: { applications: Product._id } }, { session });
+                        teamModel.findByIdAndUpdate(ProcessCoordinator._id, { $push: { applications: Product._id } });
                         req.user.advisors.push({ info: ProcessCoordinator._id, assignedCountries: [country] });
-                        chatModel.create({ participants: [req.user._id, ProcessCoordinator._id] }, { session });
+                        chatModel.create({ participants: [req.user._id, ProcessCoordinator._id] });
                         Product.advisors.push(ProcessCoordinator._id);
                     }
                     Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }];
@@ -282,10 +282,10 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
                     break;
             }
             Product.order = order._id
-            await Product.save({ session });
+            await Product.save();
         }
-        await req.user.save({ session })
-        await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, "activity.products": { $each: newProductIds }, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
+        await req.user.save()
+        await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, "activity.products": { $each: newProductIds }, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
         await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
         await productModel.populate(order, [{ path: "products" }])
         await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
@@ -317,15 +317,15 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
         status: "pending",
         logs: [{ action: "new Order Created", details: JSON.stringify(orderOptions.notes) }],
     })
-    await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } }, { session })
-    await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
+    await productModel.updateMany({ _id: { $in: newProductIds } }, { $set: { order: order._id } })
+    await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
     await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
     await productModel.populate(order, [{ path: "products" }])
     await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
     await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 });
-export const reCheckout = errorWrapper(async (req, res, next, session) => {
+export const reCheckout = errorWrapper(async (req, res, next) => {
     const { error, value } = Joi.object({ orderId: Joi.string().required() }).validate(req.query)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { orderId } = value;
@@ -353,7 +353,7 @@ export const reCheckout = errorWrapper(async (req, res, next, session) => {
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { logs: { action: `order attempted for re-Checkout`, details: `orderId:${order._id}` } } })
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 });
-export const paymentVerification = errorWrapper(async (req, res, next, session) => {
+export const paymentVerification = errorWrapper(async (req, res, next) => {
     const { razorpay_order_id } = req.body;
     let order = await orderModel.findOneAndUpdate(
         { "paymentDetails.razorpay_order_id": razorpay_order_id },
@@ -367,16 +367,16 @@ export const paymentVerification = errorWrapper(async (req, res, next, session) 
             },
             $push: { "logs": { action: "payment made", details: razorpay_order_id } }
         },
-        { new: true, session }
+        { new: true }
     );
-    const student = await studentModel.findById(order.student, "advisors").session(session);
+    const student = await studentModel.findById(order.student, "advisors");
     await userModel.populate(student, { path: 'advisors.info', select: 'role expertiseCountry' });
     const hasPackageId = Boolean(order.Package);
     const hasProducts = Array.isArray(order.products) && order.products.length > 0;
     if (hasProducts) {
         for (const product of order.products) {
-            const Product = await productModel.findById(product).session(session);
-            let course = await courseModel.findById(Product.course, "location.country").session(session);
+            const Product = await productModel.findById(product);
+            let course = await courseModel.findById(Product.course, "location.country");
             let country = course.location.country;
             let counsellors = [], processCoordinators = []
             for (const ele of student.advisors) {
@@ -389,20 +389,20 @@ export const paymentVerification = errorWrapper(async (req, res, next, session) 
                     if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
                     else {
                         const Counsellor = await getNewAdvisor("counsellor", country);
-                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } }, { session });
-                        chatModel.create({ participants: [student._id, Counsellor._id] }, { session });
+                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                        chatModel.create({ participants: [student._id, Counsellor._id] });
                         student.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
                         Product.advisors.push(Counsellor._id);
                     }
                     if (processCoordinators.length > 0) {
                         if (!processCoordinators[0].assignedCountries.includes(country)) processCoordinators[0].assignedCountries.push(country);
                         Product.advisors.push(processCoordinators[0].info._id);
-                        teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: Product._id } }, { session });
+                        teamModel.findByIdAndUpdate(processCoordinators[0].info._id, { $push: { applications: Product._id } });
                     } else {
                         const ProcessCoordinator = await getNewAdvisor("processCoordinator", country);
-                        teamModel.findByIdAndUpdate(ProcessCoordinator._id, { $push: { applications: Product._id } }, { session });
+                        teamModel.findByIdAndUpdate(ProcessCoordinator._id, { $push: { applications: Product._id } });
                         student.advisors.push({ info: ProcessCoordinator._id, assignedCountries: [country] });
-                        chatModel.create({ participants: [student._id, ProcessCoordinator._id] }, { session });
+                        chatModel.create({ participants: [student._id, ProcessCoordinator._id] });
                         Product.advisors.push(ProcessCoordinator._id);
                     }
                     Product.log = [{ status: "Processing", stages: [{ name: "Waiting For Counsellor's Approval" }] }];
@@ -433,14 +433,14 @@ export const paymentVerification = errorWrapper(async (req, res, next, session) 
                     Product.stage = "Waiting For loan expert Connection";
                     break;
             }
-            await Product.save({ session });
+            await Product.save();
         }
 
-        await studentModel.findByIdAndUpdate(order.student, { $push: { "activity.products": { $each: newProductIds } } }, { session });
+        await studentModel.findByIdAndUpdate(order.student, { $push: { "activity.products": { $each: newProductIds } } });
     }
-    if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $push: { purchasedPackages: order.Package } }, { session });
-    await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } }, { session });
-    await student.save({ session });
+    if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $push: { purchasedPackages: order.Package } });
+    await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } });
+    await student.save();
     return { statusCode: 200, message: 'Order processed successfully', data: { reference: order._id } }
 });
 export const orderInfo = errorWrapper(async (req, res, next, session) => {
