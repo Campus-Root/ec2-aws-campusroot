@@ -443,10 +443,7 @@ export const verifyStudentOTP = errorWrapper(async (req, res, next, session) => 
     if (!user?.tests || user.tests.length === 0) missingFields.push("tests");
     user.logs.push({ action: `${type} verified` })
     await user.save({ session })
-    let Otp = new Map();
-    console.log(user.otp[token]);
-    Otp.set(`${token}`, user.otp[token]);
-    return { statusCode: 200, message: `verification Successful`, data: { missingFields: missingFields, token: Otp } };
+    return { statusCode: 200, message: `verification Successful`, data: { missingFields: missingFields, [token]: user.otp[token] } };
 })
 export const IEH = errorWrapper(async (req, res, next, session) => {
     const { error, value } = Joi.object({ institutionId: Joi.string(), verificationDocName: Joi.string() }).validate(req.body)
