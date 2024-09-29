@@ -3,6 +3,7 @@ import 'dotenv/config';
 let HOST = process.env.EMAIL_SMTP_HOST, AUTH = process.env.EMAIL_SMTP_AUTH, PASS = process.env.EMAIL_SMTP_PASS;
 
 async function sendMail(emailData) {
+    let info
     try {
         console.log("nodemailer started");
         let transporter = nodemailer.createTransport({
@@ -15,7 +16,7 @@ async function sendMail(emailData) {
             },
         });
         console.log("transporter created");
-        let info = await transporter.sendMail({
+        info = await transporter.sendMail({
             from: `"ONE WINDOW" <${AUTH}>`, // sender address
             to: emailData.to, // list of receivers
             subject: emailData.subject, // Subject line
@@ -23,9 +24,15 @@ async function sendMail(emailData) {
         });
 
         console.log("Message sent: %s", info.messageId);
-        return info
     } catch (error) {
         console.error(error);
+        return { status: false, ...error }
+    }
+    finally {
+        return {
+            status: true,
+            ...info
+        }
     }
 }
 export default sendMail;

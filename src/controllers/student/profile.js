@@ -403,7 +403,8 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
             const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
             const source = readFileSync(filePath, "utf-8").toString();
             const template = Handlebars.compile(source);
-            await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+            const emailResponse = await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
+            if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
             user.email = email
             break;
         case "phone":
