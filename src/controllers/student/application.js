@@ -436,7 +436,7 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
             await Product.save();
         }
 
-        await studentModel.findByIdAndUpdate(order.student, { $push: { "activity.products": { $each: newProductIds } } });
+        await studentModel.findByIdAndUpdate(order.student, { $push: { "activity.products": { $each: order.products } } });
     }
     if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $push: { purchasedPackages: order.Package } });
     await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } });
