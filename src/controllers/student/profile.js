@@ -444,7 +444,8 @@ export const verifyStudentOTP = errorWrapper(async (req, res, next, session) => 
     user.logs.push({ action: `${type} verified` })
     await user.save({ session })
     let Otp = new Map();
-    Otp.set(token, user.otp[token]);
+    console.log(user.otp[token]);
+    Otp.set(`${token}`, user.otp[token]);
     return { statusCode: 200, message: `verification Successful`, data: { missingFields: missingFields, token: Otp } };
 })
 export const IEH = errorWrapper(async (req, res, next, session) => {
