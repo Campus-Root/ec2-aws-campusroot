@@ -225,7 +225,6 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
             const Product = await productModel.findById(product).session(session);
             let course = await courseModel.findById(Product.course, "location.country").session(session);
             await userModel.populate(req.user, { path: 'advisors.info', select: 'role expertiseCountry' });
-
             let country = course.location.country;
             let counsellors = [], processCoordinators = []
             for (const ele of req.user.advisors) {
@@ -286,7 +285,7 @@ export const checkout = errorWrapper(async (req, res, next, session) => {
             await Product.save({ session });
         }
         await req.user.save({ session })
-        await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
+        await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, "activity.products": { $each: newProductIds }, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } }, { session })
         await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
         await productModel.populate(order, [{ path: "products" }])
         await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
@@ -441,9 +440,9 @@ export const paymentVerification = async (req, res, next) => {
                 await Product.save({ session });
             }
 
-            studentModel.findByIdAndUpdate(order.student, { $addToSet: { "activity.products": order.products } }, { session });
+            await studentModel.findByIdAndUpdate(order.student, { $push: { "activity.products": { $each: newProductIds } } }, { session });
         }
-        if (hasPackageId) studentModel.findByIdAndUpdate(order.student, { $addToSet: { purchasedPackages: order.Package } }, { session });
+        if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $push: { purchasedPackages: order.Package } }, { session });
         await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } }, { session });
         await student.save({ session });
         await session.commitTransaction();  // Commit the transaction
