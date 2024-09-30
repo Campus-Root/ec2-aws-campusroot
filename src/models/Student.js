@@ -139,18 +139,8 @@ const Student = mongoose.Schema(
         }],
         workExperience: [{
             companyName: { type: String, },
-            sector: {
-                type: String, enum: {
-                    values: Object.values(IndustryTypeEnum),
-                    message: "Invalid Type of Industry"
-                }
-            },
-            type: {
-                type: String, enum: {
-                    values: Object.values(WorkStyleEnum),
-                    message: "Invalid Type of WorkType"
-                }
-            },
+            sector: { type: String, },
+            type: { type: String },
             designation: { type: String },
             startDate: { type: Date, },
             endDate: { type: Date, },
@@ -160,12 +150,7 @@ const Student = mongoose.Schema(
         researchPapers: [{
             title: { type: String, },
             publication: { type: String, },
-            fieldOfStudy: {
-                type: String, enum: {
-                    values: Object.values(IndustryTypeEnum),
-                    message: "Invalid Type of Industry"
-                }
-            },
+            fieldOfStudy: { type: String },
             publishedDate: { type: Date, },
         }],
         recommendations: {
