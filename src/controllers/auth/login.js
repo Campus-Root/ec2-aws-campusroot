@@ -135,7 +135,7 @@ export const Login = errorWrapper(async (req, res, next) => {
             if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
             break;
         case "phone":
-            const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
+            const smsResponse = await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             break;
     }

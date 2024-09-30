@@ -410,7 +410,7 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
             break;
         case "phone":
             user.otp.phoneLoginOtp = { data: otp, expiry: expiry, }
-            const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
+            const smsResponse = await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             user.phone = { countryCode: countryCode, number: phoneNumber }
             break;
