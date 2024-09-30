@@ -5,7 +5,6 @@ let HOST = process.env.EMAIL_SMTP_HOST, AUTH = process.env.EMAIL_SMTP_AUTH, PASS
 async function sendMail(emailData) {
     let info
     try {
-        console.log("nodemailer started");
         let transporter = nodemailer.createTransport({
             host: HOST,
             port: 465,
@@ -15,14 +14,12 @@ async function sendMail(emailData) {
                 pass: PASS,
             },
         });
-        console.log("transporter created");
         info = await transporter.sendMail({
             from: `"ONE WINDOW" <${AUTH}>`, // sender address
             to: emailData.to, // list of receivers
             subject: emailData.subject, // Subject line
             html: emailData.html, // html body
         });
-
         console.log("Message sent: %s", info.messageId);
     } catch (error) {
         console.error(error);

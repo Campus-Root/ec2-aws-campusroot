@@ -29,7 +29,6 @@ export const sendOTP = async (data) => {
                 const authToken = SMS_TWILIO_TOKEN;
                 const client = new twilio(accountSid, authToken);
                 const resp = await client.messages.create({ body: `Dear customer, use this as One Time Password ${otp}. This OTP will be valid for the next 5 mins.`, from: SMS_TWILIO_NUMBER, to: to })
-                console.log(resp);
                 return { return: true, message: ["otp sent"], data: resp }
             default:
                 return { return: false, message: "otp not sent as region is invalid", data: null }
@@ -39,7 +38,6 @@ export const sendOTP = async (data) => {
         return { return: false, message: "otp not sent", data: error }
     }
 };
-// console.log(await sendOTP({ to: "+919959964639", otp: "0000", region: "International" }))
 
 
 
