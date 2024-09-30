@@ -125,7 +125,7 @@ export const Login = errorWrapper(async (req, res, next) => {
         type = "phoneLoginOtp"
     }
     switch (type) {
-        case "email":
+        case "emailLoginOtp":
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
             const __dirname = path.dirname(fileURLToPath(import.meta.url));
             const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
@@ -134,7 +134,7 @@ export const Login = errorWrapper(async (req, res, next) => {
             const emailResponse = await sendMail({ to: email, subject: subject, html: template({ otp: otp }) });
             if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
             break;
-        case "phone":
+        case "phoneLoginOtp":
             const smsResponse = await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             break;
