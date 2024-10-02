@@ -223,18 +223,17 @@ export const counsellors = errorWrapper(async (req, res, next, session) => {
     return { statusCode: 200, message: `all counsellors`, data: counsellors }
 })
 export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
-    if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
+    let { page = 1, perPage = 5, search, institutions, universities, disciplines, subDisciplines, location, country, state } = req.query, skip = (page - 1) * perPage;
+    let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = [], countrySearchResults = [], stateSearchResults = [], citySearchResults = [], totalPages = 0
+    if (!search) return res.status(400).json({ success: false, message: `blank search`, data: null })
     const specialCharRegex = /[^a-zA-Z0-9\s]/;
-    if (specialCharRegex.test(req.query.search)) return res.status(400).json({ success: false, message: 'Invalid search. Special characters are not allowed.', data: null });
-    let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = [], locationSearchResults = {}
-    const { page = 1, perPage = 5 } = req.query, skip = (page - 1) * perPage; // Number of items per page
-    let totalPages = 0, country, state, city
-    if (req.query.institutions == 1) {
+    if (specialCharRegex.test(search)) return res.status(400).json({ success: false, message: 'Invalid search. Special characters are not allowed.', data: null });
 
+    if (institutions == 1) {
         const [regexResults, textResults, totalDocs] = await Promise.all([
-            institutionModel.find({ InstitutionName: { $regex: req.query.search, $options: "i" } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
-            institutionModel.find({ $text: { $search: req.query.search } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
-            institutionModel.countDocuments({ InstitutionName: { $regex: req.query.search, $options: "i" } })
+            institutionModel.find({ InstitutionName: { $regex: search, $options: "i" } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
+            institutionModel.find({ $text: { $search: search } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
+            institutionModel.countDocuments({ InstitutionName: { $regex: search, $options: "i" } })
         ]);
         if (regexResults.length <= 3) {
             institutionSearchResults = [...regexResults, ...textResults].reduce((acc, curr) => {
@@ -246,9 +245,9 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
         else institutionSearchResults = [...regexResults]
         totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
     }
-    if (req.query.universities == 1) {
-        const searchPattern = req.query.search.replace(" ", "|");
-        const countryFilter = req.query.country ? { "location.country": req.query.country } : {};
+    if (universities == 1) {
+        const searchPattern = search.replace(" ", "|");
+        const countryFilter = country ? { "location.country": country } : {};
         const uniKeyword = {
             $or: [
                 { name: { $regex: searchPattern, $options: "i" } },
@@ -259,7 +258,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
         };
         const [regexResults, textResults, totalDocs] = await Promise.all([
             universityModel.find(uniKeyword, "name location community logoSrc code").skip(skip).limit(perPage),
-            universityModel.find({ $text: { $search: req.query.search } }, "name location community logoSrc code").skip(skip).limit(perPage),
+            universityModel.find({ $text: { $search: search } }, "name location community logoSrc code").skip(skip).limit(perPage),
             universityModel.countDocuments(uniKeyword)
         ]);
         if (regexResults.length <= 3) {
@@ -272,21 +271,25 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
         else uniSearchResults = [...regexResults]
         totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
     }
-    if (req.query.disciplines == 1) {
-        const { arr, totalDocs } = disciplineRegexMatch(req.query.search, skip, perPage)
+    if (disciplines == 1) {
+        const { arr, totalDocs } = disciplineRegexMatch(search, skip, perPage)
         disciplineSearchResults = arr
         totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
     }
-    if (req.query.subDisciplines == 1) {
-        const { arr, totalDocs } = subDisciplineRegexMatch(req.query.search, skip, perPage)
+    if (subDisciplines == 1) {
+        const { arr, totalDocs } = subDisciplineRegexMatch(search, skip, perPage)
         subDisciplineSearchResults = arr
         totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
     }
-    if (req.query.location == 1) {
-        const { countries, states, cities, totalDocs } = locationRegexMatch(req.query.search, skip, perPage)
-        country = countries
-        state = states
-        city = cities
+    if (location == 1) {
+        const hint = {
+            country: country && country.length > 0 ? country : null,
+            state: state && state.length > 0 ? state : null
+        }
+        const { countries, states, cities, totalDocs } = locationRegexMatch(search, skip, perPage, hint)
+        countrySearchResults = countries
+        stateSearchResults = states
+        citySearchResults = cities
         totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
     }
     // const uniKeyword = {
@@ -301,7 +304,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
     // };
     // if (req.query.country) uniKeyword["location.country"] = req.query.country
     // const uniSearchResults = await universityModel.find(uniKeyword, "name location community logoSrc").limit(5)
-    return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults, institutions: institutionSearchResults, country, state, city, totalPages } });
+    return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults, institutions: institutionSearchResults, country: countrySearchResults, state: stateSearchResults, city: citySearchResults, totalPages } });
 })
 export const requestCallBack = errorWrapper(async (req, res, next, session) => {
     const { name, email, phone, studentID, queryDescription } = req.body

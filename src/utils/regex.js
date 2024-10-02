@@ -30,32 +30,53 @@ export const searchSimilarWords = (inputWord) => {
 
     return bestSimilarity >= 0.5 ? bestMatches.slice(0, 5) : [];
 };
-export const locationRegexMatch = (search, skip = 0, perPage = 5) => {
+export const locationRegexMatch = (search, skip = 0, perPage = 5, hint = {}) => {
     const regex = new RegExp(search, "i");
-
     const result = {
         countries: new Set(),
         states: new Set(),
         cities: new Set()
     };
-
-    // Iterate through countries and states in one pass
-    for (const [country, states] of Object.entries(destinationList)) {
-        // Check for country match
-        if (regex.test(country)) result.countries.add(country);
-        // Iterate through states and cities
-        for (const [state, cities] of Object.entries(states)) {
-            // Check for state match
-            if (regex.test(state)) result.states.add(state);
-            // Check for city match
-            cities.forEach(city => { if (regex.test(city)) result.cities.add(city) })
-        }
+    const hasCountry = hint.country && Array.isArray(hint.country);
+    const hasState = hint.state && Array.isArray(hint.state);
+    switch (true) {
+        case hasCountry && hasState:
+            hint.state.forEach(state => result.cities.add(...Object.values(destinationList[hint.country][state]).filter(city => regex.test(city))));
+            break;
+        case hasState:
+            for (const [country, states] of Object.entries(destinationList)) {
+                hint.state.forEach(state => { if (states[state]) result.cities.add(...states[state].filter(city => regex.test(city))); });
+            }
+            break;
+        case hasCountry:
+            hint.country.forEach(country => {
+                if (destinationList[country]) {
+                    result.states.add(...Object.keys(destinationList[country]).filter(state => regex.test(state)));
+                    result.cities.add(...Object.values(destinationList[country]).flat().filter(city => regex.test(city)));
+                }
+            });
+            break;
+        default:
+            // If no hint, iterate over the entire destination list
+            for (const [country, states] of Object.entries(destinationList)) {
+                if (regex.test(country)) result.countries.add(country);
+                for (const [state, cities] of Object.entries(states)) {
+                    if (regex.test(state)) result.states.add(state);
+                    cities.forEach(city => { if (regex.test(city)) result.cities.add(city) });
+                }
+            }
+            break;
     }
-    const totalDocs = Math.max(Array.from(result.countries).length, Array.from(result.states).length, Array.from(result.cities).length);
+
+    const countriesArray = Array.from(result.countries);
+    const statesArray = Array.from(result.states);
+    const citiesArray = Array.from(result.cities);
+    const totalDocs = Math.max(countriesArray.length, statesArray.length, citiesArray.length);
+
     return {
-        countries: Array.from(result.countries).slice(skip, skip + perPage),
-        states: Array.from(result.states).slice(skip, skip + perPage),
-        cities: Array.from(result.cities).slice(skip, skip + perPage),
+        countries: countriesArray.slice(Number(skip), Number(skip) + Number(perPage)),
+        states: statesArray.slice(Number(skip), Number(skip) + Number(perPage)),
+        cities: citiesArray.slice(Number(skip), Number(skip) + Number(perPage)),
         totalDocs
     };
 };
