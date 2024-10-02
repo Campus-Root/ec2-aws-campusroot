@@ -224,13 +224,11 @@ export const counsellors = errorWrapper(async (req, res, next, session) => {
 })
 export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
     if (!req.query.search) return res.status(400).json({ success: false, message: `blank search`, data: null })
-        const specialCharRegex = /[^a-zA-Z0-9\s]/;
-    if (specialCharRegex.test(req.query.search)) {
-        return res.status(400).json({ success: false, message: 'Invalid search. Special characters are not allowed.', data: null });
-    }
+    const specialCharRegex = /[^a-zA-Z0-9\s]/;
+    if (specialCharRegex.test(req.query.search)) return res.status(400).json({ success: false, message: 'Invalid search. Special characters are not allowed.', data: null });
     let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = [], locationSearchResults = {}
     const { page = 1, perPage = 5 } = req.query, skip = (page - 1) * perPage; // Number of items per page
-    let totalPages = 0, pages, country, state, city
+    let totalPages = 0, country, state, city
     if (req.query.institutions == 1) {
 
         const [regexResults, textResults, totalDocs] = await Promise.all([
