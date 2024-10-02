@@ -67,7 +67,9 @@ const universitySchema = mongoose.Schema(
     },
     { timestamps: true }
 );
-
-
+universitySchema.index({
+    name: "text",
+    code: "text"
+});
 const universityModel = mongoose.model("university", universitySchema);
 export default universityModel

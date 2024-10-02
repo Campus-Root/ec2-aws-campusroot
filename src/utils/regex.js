@@ -1,12 +1,16 @@
 import { subDisciplineEnum, disciplineEnum, keywords } from "./enum.js"
 import { destinationList } from "./lists.js";
-export const disciplineRegexMatch = (search) => {
+export const disciplineRegexMatch = (search, skip = 0, perPage = 5) => {
     const regex = new RegExp(search, "i");
-    return Object.values(disciplineEnum).filter(ele => regex.test(ele)).slice(0, 5);
+    const arr = Object.values(disciplineEnum).filter(ele => regex.test(ele))
+    const totalDocs = arr.length;
+    return { arr: arr.slice(skip, skip + perPage), totalDocs };
 }
-export const subDisciplineRegexMatch = (search) => {
+export const subDisciplineRegexMatch = (search, skip = 0, perPage = 5) => {
     const regex = new RegExp(search, "i");
-    return Object.values(subDisciplineEnum).filter(ele => regex.test(ele)).slice(0, 5);
+    const arr = Object.values(subDisciplineEnum).filter(ele => regex.test(ele))
+    const totalDocs = arr.length;
+    return { arr: arr.slice(skip, skip + perPage), totalDocs };
 }
 export const searchSimilarWords = (inputWord) => {
     let bestMatches = [];
@@ -26,7 +30,7 @@ export const searchSimilarWords = (inputWord) => {
 
     return bestSimilarity >= 0.5 ? bestMatches.slice(0, 5) : [];
 };
-export const locationRegexMatch = (search) => {
+export const locationRegexMatch = (search, skip = 0, perPage = 5) => {
     const regex = new RegExp(search, "i");
 
     const result = {
@@ -47,11 +51,11 @@ export const locationRegexMatch = (search) => {
             cities.forEach(city => { if (regex.test(city)) result.cities.add(city) })
         }
     }
-
-    // Limit each result array to 5 items
+    const totalDocs = Math.max(Array.from(result.countries).length, Array.from(result.states).length, Array.from(result.cities).length);
     return {
-        countries: Array.from(result.countries).slice(0, 5),
-        states: Array.from(result.states).slice(0, 5),
-        cities: Array.from(result.cities).slice(0, 5)
+        countries: Array.from(result.countries).slice(skip, skip + perPage),
+        states: Array.from(result.states).slice(skip, skip + perPage),
+        cities: Array.from(result.cities).slice(skip, skip + perPage),
+        totalDocs
     };
 };
