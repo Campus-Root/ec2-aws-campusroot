@@ -115,7 +115,7 @@ export const dashboard = errorWrapper(async (req, res, next, session) => {
     await universityModel.populate(req.user, [{ path: "activity.cart.course.university activity.wishList.university recommendations.data.course.university activity.products.course.university orders.products.course.university", select: "name logoSrc location type establishedYear " },]),
     await Document.populate(req.user, [{ path: "activity.products.docChecklist.doc orders.products.docChecklist", select: "data" },]),
     await meetingModel.populate(req.user, { path: "activity.meetings" }),
-    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.advisors orders.products.advisors", select: "firstName displayPicSrc lastName email role" }),
+    await userModel.populate(req.user, { path: "activity.meetings.user activity.meetings.member activity.products.advisors orders.products.advisors", select: "firstName displayPicSrc lastName email role" }),
   ]);
   let applications, checklist
   if (req.user.activity.products.length > 0) {
