@@ -396,8 +396,12 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
     const { email, phoneNumber, countryCode } = value;
     const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 10 * 60000);
     let type = (email) ? "email" : "phone";
+    let alreadyExist
     switch (type) {
         case "email":
+            alreadyExist = await studentModel.findOne({ email: email });
+            if (alreadyExist) return { statusCode: 401, message: `email already exists`, data: null };
+            if (user.otp.emailLoginOtp.verified) return { statusCode: 401, message: `email already verified`, data: null };
             user.otp.emailLoginOtp = { data: otp, expiry: expiry }
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
             const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -409,6 +413,9 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
             user.email = email
             break;
         case "phone":
+            alreadyExist = await studentModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode });
+            if (alreadyExist) return { statusCode: 401, message: `phone already exists`, data: null };
+            if (user.otp.phoneLoginOtp.verified) return { statusCode: 401, message: `phone already verified`, data: null };
             user.otp.phoneLoginOtp = { data: otp, expiry: expiry, }
             const smsResponse = await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }

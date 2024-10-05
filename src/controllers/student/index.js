@@ -257,7 +257,6 @@ export const deleteData = errorWrapper(async (req, res, next, session) => {
   });
   return { statusCode: 200, message: "Requested to delete data", data: null }
 })
-
 export const deleteAccount = errorWrapper(async (req, res, next, session) => {
   req.user.active = false
   await req.user.save()
