@@ -1,7 +1,7 @@
 export const registration = async (req, res, next) => {
     console.table({
         "Body": req.body,
-        "Query Params": Params,
+        "Query Params": req.query,
         "Headers": req.headers,
         "Request Method": req.method,
         "Request URL": req.originalUrl,
