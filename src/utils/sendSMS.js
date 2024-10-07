@@ -1,6 +1,7 @@
 import twilio from 'twilio';
 
 import 'dotenv/config';
+import axios from 'axios';
 let { SMS_TWILIO_SID, SMS_TWILIO_TOKEN, SMS_TWILIO_NUMBER } = process.env;
 export const sendSMS = async (data) => {
     try {
@@ -39,6 +40,38 @@ export const sendOTP = async (data) => {
     }
 };
 
+export const sendWAOTP = async (data) => {
+    try {
+
+        const { to, otp, name } = data
+        const token =  process.env.WA_TOKEN
+        const data = {
+            "from": "+919642004141",
+            "campaignName": "Login",
+            "to": to,
+            "type": "template",
+            "templateName": "otp",
+            "components": {
+                "body": {
+                    "params": [
+                        name || "User", otp
+                    ]
+                }
+            }
+        }
+        const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", data, {
+            headers: {
+                'apiKey': `${token}`,
+                'Content-Type': 'application/json',
+            }
+        })
+        return { return: true, message: ["otp sent"], data: resp }
+    }
+    catch (error) {
+        console.error('Error:', error);
+        return { return: false, message: "otp not sent", data: error }
+    }
+}
 
 
 

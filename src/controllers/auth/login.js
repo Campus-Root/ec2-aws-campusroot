@@ -9,7 +9,7 @@ import { cookieOptions } from "../../index.js";
 import Joi from "joi";
 import { loginSchema, OTPVerificationSchema } from "../../schemas/student.js";
 import { deleteTokens, generateTokens } from "../../utils/redisTokens.js";
-import { sendOTP } from "../../utils/sendSMS.js";
+import { sendWAOTP } from "../../utils/sendSMS.js";
 import { fileURLToPath } from "url";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import leadsModel from "../../models/leads.js";
@@ -76,7 +76,7 @@ import { createFolder } from "../../utils/CRMintegrations.js";
 //                 download_url: doc.attributes.download_url,
 //                 modified_by_zuid: doc.attributes.modified_by_zuid
 //             }
-//             const smsResponse = await sendOTP({ to: student.phone.countryCode + student.phone.number, otp: otp, region: "International" });
+//             const smsResponse = await sendWAOTP({ to: student.phone.countryCode + student.phone.number, otp: otp, region: "International" });
 //             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
 
 //             student.logs.push({ action: `OTP sent for registration`, details: `` });
@@ -85,7 +85,7 @@ import { createFolder } from "../../utils/CRMintegrations.js";
 //         }
 //         const otp = Math.floor(100000 + Math.random() * 900000), expiry = new Date(new Date().getTime() + 5 * 60000);
 //         user.phoneLoginOtp = { data: otp, expiry: expiry, }
-//         const smsResponse = await sendOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
+//         const smsResponse = await sendWAOTP({ to: user.phone.countryCode + user.phone.number, otp: otp, region: "International" });
 //         if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
 //         user.logs.push({
 //             action: `otp sent for login`,
@@ -135,7 +135,7 @@ export const Login = errorWrapper(async (req, res, next) => {
             if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
             break;
         case "phoneLoginOtp":
-            const smsResponse = await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
+            const smsResponse = await sendWAOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             break;
     }

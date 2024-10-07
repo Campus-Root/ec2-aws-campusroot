@@ -13,7 +13,7 @@ import Joi from "joi";
 import { loginSchema, uploadInProfileSchema } from "../../schemas/student.js";
 import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
-import { sendOTP } from "../../utils/sendSMS.js";
+import { sendWAOTP } from "../../utils/sendSMS.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { studentModel } from "../../models/Student.js";
@@ -418,7 +418,7 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
             if (alreadyExist) return { statusCode: 401, message: `phone already exists`, data: null };
             if (user.otp.phoneLoginOtp.verified) return { statusCode: 401, message: `phone already verified`, data: null };
             user.otp.phoneLoginOtp = { data: otp, expiry: expiry, }
-            const smsResponse = await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
+            const smsResponse = await sendWAOTP({ name: `${user.firstName} ${user.lastName}`, to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             user.phone = { countryCode: countryCode, number: phoneNumber }
             break;
