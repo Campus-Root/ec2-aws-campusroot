@@ -42,10 +42,9 @@ export const sendOTP = async (data) => {
 
 export const sendWAOTP = async (data) => {
     try {
-
         const { to, otp, name } = data
-        const token =  process.env.WA_TOKEN
-        const data = {
+        const token = process.env.WA_TOKEN
+        const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", {
             "from": "+919642004141",
             "campaignName": "Login",
             "to": to,
@@ -58,8 +57,7 @@ export const sendWAOTP = async (data) => {
                     ]
                 }
             }
-        }
-        const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", data, {
+        }, {
             headers: {
                 'apiKey': `${token}`,
                 'Content-Type': 'application/json',
