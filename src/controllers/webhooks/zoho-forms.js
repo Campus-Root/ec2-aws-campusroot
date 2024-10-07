@@ -1,5 +1,5 @@
 export const registration = async (req, res, next) => {
-    console.table({
+    console.log({
         "Body": req.body,
         "Query Params": req.query,
         "Headers": req.headers,
