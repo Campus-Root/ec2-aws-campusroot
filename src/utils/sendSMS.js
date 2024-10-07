@@ -70,6 +70,42 @@ export const sendWAOTP = async (data) => {
         return { return: false, message: "otp not sent", data: error }
     }
 }
+export const sendWAQR = async (data) => {
+    try {
+        const { to, qrCodeUrl, name } = data
+        const token = process.env.WA_TOKEN
+        const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", {
+            "from": "+919642004141",
+            "campaignName": "Send-QR",
+            "to": to,
+            "type": "template",
+            "templateName": "viz_test",
+            "components": {
+                header: {
+                    type: "image",
+                    "image": {
+                        "link": qrCodeUrl
+                    }
+                },
+                body: {
+                    "params": [name]
+                }
+            }
+        }, {
+            headers: {
+                'apiKey': `${token}`,
+                'Content-Type': 'application/json',
+            }
+        })
+        return { return: true, message: ["QR Code sent"], data: resp }
+    }
+    catch (error) {
+        console.error('Error:', error);
+        return { return: false, message: "QR Code not sent", data: error }
+    }
+}
+
+
 
 
 

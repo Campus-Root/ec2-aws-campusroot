@@ -16,6 +16,7 @@ import compression from 'compression';
 import 'dotenv/config';
 import { startCronJob } from "./utils/cron.js";
 import indexRouter from "./routers/index.js";
+import webhookRouter from "./webhooks/index.js";
 
 const app = express();
 const server = createServer(app);
@@ -77,6 +78,7 @@ app.use(mongoSanitize());
 app.use(xssReqSanitizer())
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use("/api/v1", indexRouter);
+app.use("/webhook/v1", webhookRouter)
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 const io = new Server(server, {
 	cors: {
