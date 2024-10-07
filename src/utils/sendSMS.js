@@ -53,7 +53,7 @@ export const sendWAOTP = async (data) => {
             "components": {
                 "body": {
                     "params": [
-                        name || "User", otp
+                        name || "User", String(otp)
                     ]
                 }
             }
