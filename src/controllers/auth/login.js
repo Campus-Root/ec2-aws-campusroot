@@ -124,6 +124,8 @@ export const Login = errorWrapper(async (req, res, next) => {
         finder = { "phone.number": phoneNumber, "phone.countryCode": countryCode }
         type = "phoneLoginOtp"
     }
+    user = await userModel.findOne(finder);
+    if (!user.active) return ({ statusCode: 403, message: `Your account has been deactivated. Please contact OneWindow to reactivate your account.`, data: null });
     switch (type) {
         case "emailLoginOtp":
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
@@ -139,7 +141,6 @@ export const Login = errorWrapper(async (req, res, next) => {
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             break;
     }
-    user = await userModel.findOne(finder);
     if (!user) {
         user = await studentModel.create(finder)
         user.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]

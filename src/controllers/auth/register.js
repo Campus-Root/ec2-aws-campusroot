@@ -72,7 +72,7 @@ import chatModel from "../../models/Chat.js";
 // });
 export const TeamRegister = errorWrapper(async (req, res, next, session) => {
     const { email, firstName, lastName, role, expertiseCountry } = req.body;
-    if (!email || !firstName || !lastName  || !role || !expertiseCountry.length) return { statusCode: 400, data: null, message: `Incomplete details` };
+    if (!email || !firstName || !lastName || !role || !expertiseCountry.length) return { statusCode: 400, data: null, message: `Incomplete details` };
     const alreadyExists = await teamModel.findOne({ email: email });
     if (alreadyExists) return {
         statusCode: 400, data: null, message: `Email Already Registered`
@@ -102,7 +102,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
         if (teamMember) return res.redirect(`${process.env.STUDENT_URL}/team`)
         let student = await studentModel.findOne({ email: email });
         if (student) {
-            if (student.socialAuth?.google?.id) {
+             if (student.socialAuth?.google?.id) {
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 student.otp.emailLoginOtp.verified = true;
                 student.logs.push({ action: `Logged in using Google auth` });
