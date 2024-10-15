@@ -258,9 +258,8 @@ export const deleteData = errorWrapper(async (req, res, next, session) => {
   return { statusCode: 200, message: "data cleared successfully", data: null }
 })
 export const deleteAccount = errorWrapper(async (req, res, next, session) => {
-  req.user.active = false
-
-  await req.user.save()
+  let user = await userModel.findById(req.user._id)
+  await recycleBinModel.create({ data: user, dataModel: "userModel", collection: "user" })
   await sendMail({
     to: req.user.email,
     subject: "Account Deletion",
@@ -335,5 +334,6 @@ export const deleteAccount = errorWrapper(async (req, res, next, session) => {
         </html>
     `
   });
+  await  userModel.deleteOne({ _id: req.user._id })
   return { statusCode: 200, message: "Requested to delete Account", data: null }
 })
