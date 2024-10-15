@@ -255,12 +255,12 @@ export const deleteData = errorWrapper(async (req, res, next, session) => {
         </html>
     `
   });
-  return { statusCode: 200, message: "Requested to delete data", data: null }
+  return { statusCode: 200, message: "data cleared successfully", data: null }
 })
 export const deleteAccount = errorWrapper(async (req, res, next, session) => {
   req.user.active = false
-  await req.user.save()
 
+  await req.user.save()
   await sendMail({
     to: req.user.email,
     subject: "Account Deletion",

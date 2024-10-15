@@ -102,7 +102,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
         if (teamMember) return res.redirect(`${process.env.STUDENT_URL}/team`)
         let student = await studentModel.findOne({ email: email });
         if (student) {
-             if (student.socialAuth?.google?.id) {
+            if (student.socialAuth?.google?.id) {
                 const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
                 student.otp.emailLoginOtp.verified = true;
                 student.logs.push({ action: `Logged in using Google auth` });
