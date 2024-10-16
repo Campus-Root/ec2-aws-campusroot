@@ -15,6 +15,7 @@ import { productModel } from "../../models/Product.js";
 import { orderModel } from "../../models/Order.js";
 import { packageModel } from "../../models/Package.js";
 import sendMail from "../../utils/sendEMAIL.js";
+import chatModel from "../../models/Chat.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next, session) => {
   const GRE = req.user.tests.find(ele => ele.name == "Graduate Record Examination")
@@ -260,6 +261,7 @@ export const deleteData = errorWrapper(async (req, res, next, session) => {
 export const deleteAccount = errorWrapper(async (req, res, next, session) => {
   let user = await userModel.findById(req.user._id)
   await recycleBinModel.create({ data: user, dataModel: "userModel", collection: "user" })
+  await chatModel.updateMany({ participants: { $in: [req.user._id] } }, { $pull: { participants: req.user._id, "unSeenMessages.$[].seen": req.user._id } }, { multi: true })
   await sendMail({
     to: req.user.email,
     subject: "Account Deletion",
@@ -334,6 +336,6 @@ export const deleteAccount = errorWrapper(async (req, res, next, session) => {
         </html>
     `
   });
-  await  userModel.deleteOne({ _id: req.user._id })
+  await userModel.deleteOne({ _id: req.user._id })
   return { statusCode: 200, message: "Requested to delete Account", data: null }
 })
