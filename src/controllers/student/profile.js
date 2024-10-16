@@ -400,10 +400,11 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
     let alreadyExist
     switch (type) {
         case "email":
-            alreadyExist = await studentModel.findOne({ email: email });
+            alreadyExist = await studentModel.findOne({ email: email, "otp.emailLoginOtp.verified": true });
             if (alreadyExist) return { statusCode: 401, message: `email already exists`, data: null };
             if (user.otp.emailLoginOtp.verified) return { statusCode: 401, message: `email already verified`, data: null };
-            user.otp.emailLoginOtp = { data: otp, expiry: expiry }
+            user.otp.emailLoginOtp.data = otp
+            user.otp.emailLoginOtp.expiry = expiry
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
             const __dirname = path.dirname(fileURLToPath(import.meta.url));
             const filePath = path.join(__dirname, '../../../static/forgotPassword.html');
@@ -414,10 +415,11 @@ export const addPhoneOrEmail = errorWrapper(async (req, res, next) => {
             user.email = email
             break;
         case "phone":
-            alreadyExist = await studentModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode });
+            alreadyExist = await studentModel.findOne({ "phone.number": phoneNumber, "phone.countryCode": countryCode, "otp.phoneLoginOtp.verified": true });
             if (alreadyExist) return { statusCode: 401, message: `phone already exists`, data: null };
             if (user.otp.phoneLoginOtp.verified) return { statusCode: 401, message: `phone already verified`, data: null };
-            user.otp.phoneLoginOtp = { data: otp, expiry: expiry, }
+            user.otp.phoneLoginOtp.data = otp
+            user.otp.phoneLoginOtp.expiry = expiry
             const smsResponse = await sendWAOTP({ name: `${user.firstName} ${user.lastName}`, to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             user.phone = { countryCode: countryCode, number: phoneNumber }
