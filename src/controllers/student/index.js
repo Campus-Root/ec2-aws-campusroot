@@ -14,6 +14,7 @@ import { currencySymbols } from "../../utils/enum.js";
 import { productModel } from "../../models/Product.js";
 import { orderModel } from "../../models/Order.js";
 import { packageModel } from "../../models/Package.js";
+import recycleBinModel from "../../models/RecycleBin.js"
 import sendMail from "../../utils/sendEMAIL.js";
 import chatModel from "../../models/Chat.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
