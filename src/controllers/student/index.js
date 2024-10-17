@@ -16,7 +16,7 @@ import { orderModel } from "../../models/Order.js";
 import { packageModel } from "../../models/Package.js";
 import sendMail from "../../utils/sendEMAIL.js";
 import chatModel from "../../models/Chat.js";
-import { recycleBinModel } from "../../models/RecycleBin.js";
+import { recycleBinModel } from "../../models/recycleBin.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next, session) => {
   const GRE = req.user.tests.find(ele => ele.name == "Graduate Record Examination")
