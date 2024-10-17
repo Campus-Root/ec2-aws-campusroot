@@ -2,7 +2,6 @@ import chatModel from "../../models/Chat.js";
 import messageModel from "../../models/Message.js";
 import Document from "../../models/Uploads.js";
 import userModel from "../../models/User.js";
-import { decrypt, encrypt } from "../../utils/crypto.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 import Joi from "joi";
@@ -29,8 +28,7 @@ export const postMessages = errorWrapper(async (req, res, next, session) => {
         if (req.file && req.file.path) unlinkSync(req.file.path);
         return { statusCode: 400, data: null, message: `invalid sender` };
     }
-    const { encryptedData, key } = encrypt(content)
-    let message = await messageModel.create({ sender: user._id, content: encryptedData, iv: key, chat: chatId })
+    let message = await messageModel.create({ sender: user._id, content: content, chat: chatId })
     if (req.file) {
         const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
         if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
@@ -44,10 +42,7 @@ export const postMessages = errorWrapper(async (req, res, next, session) => {
     if (repliedTo) message.repliedTo = repliedTo
     await message.save()
     message.content = content
-    if (message.repliedTo) {
-        await messageModel.populate(message, { path: "repliedTo", select: "-chat" })
-        message.repliedTo.decoded = decrypt(message.repliedTo.iv, message.repliedTo.content);
-    }
+    if (message.repliedTo) await messageModel.populate(message, { path: "repliedTo", select: "-chat" })
     await userModel.populate(message, { path: "sender", select: "firstName lastName displayPicSrc email userType role" })
     await Document.populate(message, { path: "document", select: "data" })
     chat.lastMessage = message._id
@@ -56,9 +51,7 @@ export const postMessages = errorWrapper(async (req, res, next, session) => {
     await chat.populate("participants", "firstName lastName displayPicSrc email userType role")
     await chat.populate({ path: "unSeenMessages.message", populate: { path: "sender", select: "firstName lastName displayPicSrc email userType role" } })
     await chat.populate("lastMessage")
-    chat.unSeenMessages.forEach(ele => { ele.message.content = decrypt(ele.message.iv, ele.message.content); });
-    if (chat.lastMessage) chat.lastMessage.content = decrypt(chat.lastMessage.iv, chat.lastMessage.content)
-    return ({ statusCode: 200, message: `messages`, data: { message: message, chat } })
+    return ({ statusCode: 200, message: `messages`, data: {message, chat } })
 })
 export const fetchMessages = errorWrapper(async (req, res, next, session) => {
     const { chatId } = req.params
@@ -75,12 +68,7 @@ export const fetchMessages = errorWrapper(async (req, res, next, session) => {
         .sort({ updatedAt: -1 })
         .skip((page - 1) * pageSize)
         .limit(+pageSize);
-    const decryptedMessages = messages.map(message => {
-        const decryptedMessage = { ...message.toObject(), content: decrypt(message.iv, message.content) };
-        if (decryptedMessage.repliedTo) decryptedMessage.repliedTo.decoded = decrypt(message.repliedTo.iv, message.repliedTo.content);
-        return decryptedMessage;
-    });
-    return ({ statusCode: 200, message: `messages`, data: decryptedMessages, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
+    return ({ statusCode: 200, message: `messages`, data: messages, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
 export const downloadSharedDocument = errorWrapper(async (req, res, next, session) => {
     const { id } = req.params
@@ -105,7 +93,5 @@ export const seeMessages = errorWrapper(async (req, res, next, session) => {
     await chat.save()
     await userModel.populate(chat, [{ path: "participants", select: "firstName lastName displayPicSrc" }, { path: "admins", select: "firstName lastName displayPicSrc" },])
     await messageModel.populate(chat, [{ path: "unSeenMessages.message", }, { path: "lastMessage" }])
-    if (chat.unSeenMessages) chat.unSeenMessages.forEach(ele => ele.message.content = decrypt(ele.message.iv, ele.message.content));
-    if (chat.lastMessage) chat.lastMessage.content = decrypt(chat.lastMessage.iv, chat.lastMessage.content);
     return ({ statusCode: 200, message: `seen successfully`, data: chat })
 })
