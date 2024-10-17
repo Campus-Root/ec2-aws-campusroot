@@ -7,5 +7,4 @@ const recycleBinSchema = mongoose.Schema({
 },
     { timestamps: true }
 );
-const recycleBinModel = mongoose.model("recycleBin", recycleBinSchema);
-export default recycleBinModel
+export const recycleBinModel = mongoose.model("recycleBin", recycleBinSchema);
