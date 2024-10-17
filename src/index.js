@@ -37,11 +37,7 @@ export const cookieOptions = {
 const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
 app.set('trust proxy', 1) // trust first proxy
 const corsOptions = {
-	origin(origin, callback) {
-		if (!origin) return callback(null, true);      // for mobile app and postman client
-		if (whitelist.indexOf(origin) !== -1) callback(null, true);
-		else callback(new Error("Not allowed by CORS"));
-	},
+	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
 	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
 	credentials: true,
 	optionsSuccessStatus: 200
