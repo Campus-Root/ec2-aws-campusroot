@@ -13,13 +13,7 @@ export const postChat = errorWrapper(async (req, res, next, session) => {
         .populate("participants", "firstName lastName displayPicSrc email userType role")
         .populate("unSeenMessages.message")
         .populate("lastMessage");
-    if (isChat) {
-        isChat.unSeenMessages?.forEach(ele => ele.message.content = decrypt(ele.message.iv, ele.message.content));
-        if (isChat.lastMessage) {
-            isChat.lastMessage.content = decrypt(isChat.lastMessage.iv, isChat.lastMessage.content);
-        }
-        return ({ statusCode: 200, message: `chat retrieved`, data: isChat });
-    }
+    if (isChat) return ({ statusCode: 200, message: `chat retrieved`, data: isChat });
     else {
         const createdChat = await chatModel.create({ participants: [req.decoded.id, friendId] });
         const FullChat = await createdChat.populate("participants", "firstName lastName displayPicSrc email userType role");
@@ -44,10 +38,6 @@ export const fetchChats = errorWrapper(async (req, res, next, session) => {
         { path: "unSeenMessages.message.sender", select: "firstName lastName displayPicSrc email userType role" },
         { path: "admins", select: "firstName lastName displayPicSrc email userType role" },
     ])
-    for (const { unSeenMessages, lastMessage } of result) {
-        unSeenMessages.forEach(ele => { ele.message.content = decrypt(ele.message.iv, ele.message.content); });
-        if (lastMessage) lastMessage.content = decrypt(lastMessage.iv, lastMessage.content)
-    }
     return ({ statusCode: 200, message: `all chats`, data: result })
 })
 export const newGroup = errorWrapper(async (req, res, next, session) => {
