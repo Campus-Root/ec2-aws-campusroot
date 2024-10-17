@@ -38,7 +38,8 @@ const whitelist = ["https://campusroot.com", "http://localhost:3000", "https://t
 app.set('trust proxy', 1) // trust first proxy
 const corsOptions = {
 	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
-	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],  // Add necessary headers
 	credentials: true,
 	optionsSuccessStatus: 200
 };
