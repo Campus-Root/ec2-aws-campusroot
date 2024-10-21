@@ -1,6 +1,6 @@
 import express from "express";
 
-import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack } from "../controllers/public/index.js";
+import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, search } from "../controllers/public/index.js";
 import { authMiddleware, conditionalAuth } from "../middleware/auth.js";
 import rateLimit from "express-rate-limit";
 
@@ -21,7 +21,7 @@ router.get("/profile/:id", authMiddleware, PublicProfile);
 router.get("/profiles", authMiddleware, CommunityProfiles);
 
 
-
+router.get("/search",search)
 // router.get("/all_destinations", allDestinations);
 // router.get("/single_destination/:id", oneDestination);
 router.get("/counsellors", counsellors);

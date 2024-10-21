@@ -13,6 +13,7 @@ import { leadCreation, refreshToken } from "../../utils/CRMintegrations.js";
 import 'dotenv/config';
 import institutionModel from "../../models/IndianColleges.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
+import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const listings = errorWrapper(async (req, res, next, session) => {
     const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
@@ -346,4 +347,26 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
     newLead.crmId = crmData[0].details.id
     await newLead.save()
     return ({ statusCode: 200, message: 'We have received your request, we will reach out to you shortly', data: null });
+})
+export const search = errorWrapper(async (req, res, next, session) => {
+    const { query } = req.query;
+    let embeddingVector;
+    try { embeddingVector = await stringToEmbedding(query); }
+    catch (error) { return { statusCode: 500, message: 'Error generating embedding vector', data: error.message } }
+
+    if (!embeddingVector || embeddingVector.length !== 1536) return { statusCode: 400, message: 'Invalid embedding vector', data: null };
+    const courses = await courseModel.aggregate([
+        {
+            $vectorSearch: {
+                "queryVector": embeddingVector,
+                "path": "embeddingVector",
+                "numCandidates": 1000,
+                "limit": 20,
+                "index": "CourseSymanticSearch"
+            }
+        },
+        { $project: { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, elite: 1, "AdmissionsRequirements.LanguageRequirements": 1, } }
+    ]);
+    await universityModel.populate(courses, { path: "university", select: "name location logoSrc type uni_rating" })
+    return { statusCode: 200, message: 'search results', data: { courses } }
 })

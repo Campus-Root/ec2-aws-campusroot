@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import 'dotenv/config';
 import { createClient } from 'redis';
-
+import OpenAI from "openai";
 export const connectDB = async (retryCount = 0) => {
     try {
         await mongoose.connect(process.env.MONGO_URL);
@@ -17,7 +17,7 @@ export const connectDB = async (retryCount = 0) => {
     }
 };
 
-let redisClient;
+export let redisClient, openai;
 
 export const connectRedis = async () => {
     if (redisClient) return redisClient
@@ -43,13 +43,18 @@ export const getRedisClient = async () => {
 
 export const initialize = async () => {
     try {
-        await connectDB(); // Connect to MongoDB
-        await connectRedis(); // Connect to Redis
+        await Promise.all([
+            connectDB(),
+            connectRedis(),
+            initializeTransformer()
+        ])
         console.log('Application initialized successfully');
     } catch (err) {
         console.error('Error during initialization:', err);
         process.exit(1); // Exit the process if initialization fails
     }
 };
-
-
+export const initializeTransformer = async () => {
+    openai = new OpenAI({ apiKey: process.env.OpenAI_API_KEY });
+    console.log('EmbeddingModel initialized successfully');
+}
