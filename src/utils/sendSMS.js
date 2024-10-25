@@ -21,90 +21,50 @@ export const sendOTP = async (data) => {
         const { to, otp, region } = data
         switch (region) {
             case "Indian":
-            // const uniRestResponse = await unirest.post("https://www.fast2sms.com/dev/bulkV2")
-            //     .headers({ "authorization": SMS_FAST2SMS_API_KEY })
-            //     .form({ "variables_values": `${otp}`, "route": "otp", "numbers": `${to}` });
-            // return uniRestResponse.body
+                const { data } = await axios.post("https://api.aoc-portal.com/v1/sms", {
+                    "sender": "OWOEDU",
+                    "to": to,
+                    "text": `Your One Window OTP is ${otp} to reset your password. It’s valid for 10 minutes. Please don’t share this code with anyone.\n\nThank you,\nOne Window Overseas Education Pvt Ltd`,
+                    "type": "TRANS"
+                }, {
+                    headers: {
+                        "apikey": "8opmJMY3d8fAjquBZj6OcLCDcBdN9Q",
+                        "Content-Type": "application/json"
+                    }
+                })
+                if (error === null) return { return: true, message: ["otp sent"], data: data.data }
+                break;
             case "International":
-                const accountSid = SMS_TWILIO_SID;
-                const authToken = SMS_TWILIO_TOKEN;
-                const client = new twilio(accountSid, authToken);
-                const resp = await client.messages.create({ body: `Dear customer, use this as One Time Password ${otp}. This OTP will be valid for the next 5 mins.`, from: SMS_TWILIO_NUMBER, to: to })
+                const token = process.env.WA_TOKEN
+                const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", {
+                    "from": "+919642004141",
+                    "campaignName": "Login",
+                    "to": to,
+                    "type": "template",
+                    "templateName": "otp",
+                    "components": {
+                        "body": {
+                            "params": [
+                                data.name || "User", String(otp)
+                            ]
+                        }
+                    }
+                }, {
+                    headers: {
+                        'apiKey': `${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                })
                 return { return: true, message: ["otp sent"], data: resp }
             default:
                 return { return: false, message: "otp not sent as region is invalid", data: null }
         }
+        return { return: false, message: "something went wrong", data: null }
     } catch (error) {
         console.error('Error:', error);
         return { return: false, message: "otp not sent", data: error }
     }
 };
-
-export const sendWAOTP = async (data) => {
-    try {
-        const { to, otp, name } = data
-        const token = process.env.WA_TOKEN
-        const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", {
-            "from": "+919642004141",
-            "campaignName": "Login",
-            "to": to,
-            "type": "template",
-            "templateName": "otp",
-            "components": {
-                "body": {
-                    "params": [
-                        name || "User", String(otp)
-                    ]
-                }
-            }
-        }, {
-            headers: {
-                'apiKey': `${token}`,
-                'Content-Type': 'application/json',
-            }
-        })
-        return { return: true, message: ["otp sent"], data: resp }
-    }
-    catch (error) {
-        console.error('Error:', error);
-        return { return: false, message: "otp not sent", data: error }
-    }
-}
-export const sendWAQR = async (data) => {
-    try {
-        const { to, qrCodeUrl, name } = data
-        const token = process.env.WA_TOKEN
-        const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", {
-            "from": "+919642004141",
-            "campaignName": "Send-QR",
-            "to": to,
-            "type": "template",
-            "templateName": "viz_test",
-            "components": {
-                header: {
-                    type: "image",
-                    "image": {
-                        "link": qrCodeUrl
-                    }
-                },
-                body: {
-                    "params": [name]
-                }
-            }
-        }, {
-            headers: {
-                'apiKey': `${token}`,
-                'Content-Type': 'application/json',
-            }
-        })
-        return { return: true, message: ["QR Code sent"], data: resp }
-    }
-    catch (error) {
-        console.error('Error:', error);
-        return { return: false, message: "QR Code not sent", data: error }
-    }
-}
-
 
 
 
