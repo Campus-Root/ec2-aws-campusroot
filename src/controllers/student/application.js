@@ -448,13 +448,15 @@ export const orderInfo = errorWrapper(async (req, res, next, session) => {
     const order = await orderModel.findOne({ _id: orderId, student: req.user._id });
     if (!order) return { statusCode: 400, message: `invalid orderId or you might not have permission`, data: { orderId: orderId } };
     await Promise.all([
-        await packageModel.populate(order, { path: "Package", select: "-logs" }),
-        await productModel.populate(order, { path: "products" }),
-        await Document.populate(order, { path: "products.docChecklist", select: "data" }),
-        await userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
+        packageModel.populate(order, { path: "Package", select: "-logs" }),
+        productModel.populate(order, { path: "products" }),
     ])
     await courseModel.populate(order, { path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" })
-    await universityModel.populate(order, { path: "products.course.university", select: "name logoSrc location type establishedYear " })
+    await Promise.all([
+        Document.populate(order, { path: "products.docChecklist", select: "data" }),
+        userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" }),
+        universityModel.populate(order, { path: "products.course.university", select: "name logoSrc location type establishedYear " })
+    ])
     return { statusCode: 200, message: 'order info', data: order };
 });
 export const addingProductsToOrder = errorWrapper(async (req, res, next, session) => {
