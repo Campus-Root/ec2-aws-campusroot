@@ -18,9 +18,10 @@ export const sendSMS = async (data) => {
 export const sendOTP = async (data) => {
     try {
         const { to, otp, region } = data
+        let response
         switch (region) {
             case "Indian":
-                const { data, error } = await axios.post("https://api.aoc-portal.com/v1/sms", {
+                response = await axios.post("https://api.aoc-portal.com/v1/sms", {
                     "sender": "OWOEDU",
                     "to": to,
                     "text": `Your One Window OTP is ${otp} to reset your password. It’s valid for 10 minutes. Please don’t share this code with anyone.\n\nThank you,\nOne Window Overseas Education Pvt Ltd`,
@@ -31,11 +32,11 @@ export const sendOTP = async (data) => {
                         "Content-Type": "application/json"
                     }
                 })
-                if (error === null) return { return: true, message: ["otp sent"], data: data.data }
+                if (response.status === 200) return { return: true, message: ["otp sent"], data: response.data }
                 break;
             case "International":
                 const token = process.env.WA_TOKEN
-                const resp = await axios.post("https://api.aoc-portal.com/v1/whatsapp", {
+                response = await axios.post("https://api.aoc-portal.com/v1/whatsapp", {
                     "from": "+919642004141",
                     "campaignName": "Login",
                     "to": to,
@@ -54,7 +55,7 @@ export const sendOTP = async (data) => {
                         'Content-Type': 'application/json',
                     }
                 })
-                return { return: true, message: ["otp sent"], data: resp }
+                return { return: true, message: ["otp sent"], data: response }
             default:
                 return { return: false, message: "otp not sent as region is invalid", data: null }
         }
