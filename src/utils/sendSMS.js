@@ -1,20 +1,6 @@
-import twilio from 'twilio';
 import 'dotenv/config';
 import axios from 'axios';
-let { SMS_TWILIO_SID, SMS_TWILIO_TOKEN, SMS_TWILIO_NUMBER } = process.env;
-export const sendSMS = async (data) => {
-    try {
-        const { to, message } = data
-        const accountSid = SMS_TWILIO_SID;
-        const authToken = SMS_TWILIO_TOKEN;
-        const client = new twilio(accountSid, authToken);
-        await client.messages.create({ body: message, from: SMS_TWILIO_NUMBER, to: to })
-        return { success: true, message: "otp sent", data: null }
-    } catch (error) {
-        console.error(error);
-        return { success: false, message: "otp not sent", data: error }
-    }
-}
+let { SMS_REDCLOUD_APIKEY } = process.env;
 export const sendOTP = async (data) => {
     try {
         const { to, otp, region } = data
@@ -24,11 +10,11 @@ export const sendOTP = async (data) => {
                 response = await axios.post("https://api.aoc-portal.com/v1/sms", {
                     "sender": "OWOEDU",
                     "to": to,
-                    "text": `Your One Window OTP is ${otp} to reset your password. It’s valid for 10 minutes. Please don’t share this code with anyone.\n\nThank you,\nOne Window Overseas Education Pvt Ltd`,
+                    "text": `Your One Window OTP is ${otp}. It’s valid for 10 minutes. Please don’t share this code with anyone.\n\nThank you,\nOne Window Overseas Education Pvt Ltd`,
                     "type": "TRANS"
                 }, {
                     headers: {
-                        "apikey": "8opmJMY3d8fAjquBZj6OcLCDcBdN9Q",
+                        "apikey": SMS_REDCLOUD_APIKEY ,
                         "Content-Type": "application/json"
                     }
                 })
