@@ -1,5 +1,4 @@
 import twilio from 'twilio';
-
 import 'dotenv/config';
 import axios from 'axios';
 let { SMS_TWILIO_SID, SMS_TWILIO_TOKEN, SMS_TWILIO_NUMBER } = process.env;
@@ -21,7 +20,7 @@ export const sendOTP = async (data) => {
         const { to, otp, region } = data
         switch (region) {
             case "Indian":
-                const { data } = await axios.post("https://api.aoc-portal.com/v1/sms", {
+                const { data, error } = await axios.post("https://api.aoc-portal.com/v1/sms", {
                     "sender": "OWOEDU",
                     "to": to,
                     "text": `Your One Window OTP is ${otp} to reset your password. It’s valid for 10 minutes. Please don’t share this code with anyone.\n\nThank you,\nOne Window Overseas Education Pvt Ltd`,
