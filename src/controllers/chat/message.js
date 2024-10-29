@@ -51,7 +51,7 @@ export const postMessages = errorWrapper(async (req, res, next, session) => {
     await chat.populate("participants", "firstName lastName displayPicSrc email userType role")
     await chat.populate({ path: "unSeenMessages.message", populate: { path: "sender", select: "firstName lastName displayPicSrc email userType role" } })
     await chat.populate("lastMessage")
-    return ({ statusCode: 200, message: `messages`, data: {message, chat } })
+    return ({ statusCode: 200, message: `messages`, data: { message, chat } })
 })
 export const fetchMessages = errorWrapper(async (req, res, next, session) => {
     const { chatId } = req.params
@@ -62,12 +62,12 @@ export const fetchMessages = errorWrapper(async (req, res, next, session) => {
     const totalPages = Math.ceil(messagesCount / pageSize);
     const messages = await messageModel
         .find({ chat: chatId })
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * Number(pageSize))
+        .limit(Number(pageSize))
         .populate("sender", "firstName lastName displayPicSrc email userType role")
         .populate("document", "data")
-        .populate("repliedTo", "-chat")
-        .sort({ updatedAt: -1 })
-        .skip((page - 1) * pageSize)
-        .limit(+pageSize);
+        .populate("repliedTo", "-chat");
     return ({ statusCode: 200, message: `messages`, data: messages, additionalData: { totalPages, currentPage: +page, pageSize: +pageSize } })
 })
 export const downloadSharedDocument = errorWrapper(async (req, res, next, session) => {
@@ -81,9 +81,7 @@ export const seeMessages = errorWrapper(async (req, res, next, session) => {
     const { chatId } = req.params
     const chat = await chatModel.findById(chatId).populate("unSeenMessages")
     if (!chat) return { statusCode: 400, data: null, message: `invalid chat id` };
-    if (!chat.participants.includes(req.decoded.id)) return {
-        statusCode: 400, data: null, message: `invalid access to private chats`
-    };
+    if (!chat.participants.includes(req.decoded.id)) return { statusCode: 400, data: null, message: `invalid access to private chats` };
     let newUnSeenMessages = []
     chat.unSeenMessages.forEach(ele => {
         if (!ele.seen.includes(req.decoded.id.toString())) ele.seen.push(req.decoded.id.toString())
