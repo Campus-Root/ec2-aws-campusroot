@@ -29,9 +29,9 @@ export const fetchChats = errorWrapper(async (req, res, next, session) => {
     const { page = 1, perPage = 20 } = req.body, skip = (page - 1) * perPage;
     let result = await chatModel
         .find({ "participants": { $eq: req.decoded.id } }).sort({ updatedAt: -1 }).skip(skip).limit(perPage)
-        .populate({ path: "participants", select: "firstName lastName displayPicSrc email userType role", options: { lean: true } })
-        .populate({ path: "unSeenMessages.message", options: { lean: true } })
-        .populate({ path: "lastMessage", options: { lean: true } })
+        .populate({ path: "participants", select: "firstName lastName displayPicSrc email userType role" })
+        .populate({ path: "unSeenMessages.message" })
+        .populate({ path: "lastMessage" })
     result = await userModel.populate(result, [
         { path: "unSeenMessages.message.sender", select: "firstName lastName displayPicSrc email userType role" },
         { path: "admins", select: "firstName lastName displayPicSrc email userType role" },
