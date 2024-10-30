@@ -392,6 +392,8 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
                     if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
                     else {
                         const Counsellor = await getNewAdvisor("counsellor", country);
+                        console.log(Counsellor);
+
                         teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
                         chatModel.create({ participants: [student._id, Counsellor._id] });
                         student.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
@@ -546,6 +548,7 @@ export const addingProductsToOrder = errorWrapper(async (req, res, next, session
     await req.user.save()
     await packageModel.populate(req.order, { path: "Package" })
     await productModel.populate(req.order, { path: "products" })
+    await userModel.populate(req.order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
     await courseModel.populate(req.order, { path: "products.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite startDate" })
     await universityModel.populate(req.order, { path: "products.course.university", select: "name logoSrc location type establishedYear" })
     return { statusCode: 200, message: 'order', data: req.order };
