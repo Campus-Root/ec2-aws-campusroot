@@ -24,13 +24,9 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
   const totalScore = GRE.scores.find(ele => ele.description === "totalScore")
   const gre = totalScore ? totalScore.count : GRE.scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
   const ug = req.user.education.underGraduation
-  if (!ug || !ug.totalScore) return {
-    statusCode: 400, data: null, message: "add ug gpa"
-  }
+  if (!ug || !ug.totalScore) return { statusCode: 400, data: null, message: "add ug gpa" }
   let ug_gpa = (req.user.education.underGraduation.gradingSystem != "gpa") ? gradeConversions(ug.gradingSystem, "gpa", ug.totalScore) : ug.totalScore
-  if (!req.user.preference.courses) return {
-    statusCode: 400, data: null, message: "add course preferences"
-  }
+  if (!req.user.preference.courses) return { statusCode: 400, data: null, message: "add course preferences" }
   let criteria = {
     ug_gpa: ug_gpa,
     gre: gre,
@@ -261,7 +257,7 @@ export const deleteData = errorWrapper(async (req, res, next, session) => {
 })
 export const deleteAccount = errorWrapper(async (req, res, next, session) => {
   let user = await userModel.findById(req.user._id)
-  await recycleBinModel.create({ data: user, dataModel: "userModel", collection: "user" })
+  await recycleBinModel.create({ data: user, dataModel: "userModel", collectionName: "user" })
   await chatModel.updateMany({ participants: { $in: [req.user._id] } }, { $pull: { participants: req.user._id, "unSeenMessages.$[].seen": req.user._id } }, { multi: true })
   await sendMail({
     to: req.user.email,

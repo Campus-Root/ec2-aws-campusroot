@@ -288,6 +288,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
         await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, "activity.products": { $each: newProductIds }, purchasedPackages: packageId ? packageId : null, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
         await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
         await productModel.populate(order, [{ path: "products" }])
+        await userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
         await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
         await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
@@ -322,6 +323,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
     await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
     await productModel.populate(order, [{ path: "products" }])
     await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
+    await userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
     await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
 });
@@ -383,6 +385,7 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
                 if (ele.info.role === "counsellor" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) counsellors.push(ele)
                 else if (ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) processCoordinators.push(ele)
             }
+            console.log(counsellors, processCoordinators);
             switch (Product.category) {
                 case ProductCategoryEnum.ELITE:
                 case ProductCategoryEnum.PREMIUM:
