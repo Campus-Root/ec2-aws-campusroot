@@ -210,7 +210,9 @@ export const deleteData = errorWrapper(async (req, res, next, session) => {
                 <div class="container">
                     <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
                     <h3>Dear ${req.user.firstName} ${req.user.lastName},</h3>
-                    <h2>your data will be deleted permanently after 60 days</h2>
+                    <h2>Your data will be deleted permanently after 60 days</h2>
+                    <p>After you delete your data, we retain your data for a period of 60 days. This period allows us to ensure that the deletion was intentional and provides time for account recovery if needed. It also allows us to complete any remaining transactions or address potential security, fraud, or regulatory issues. After 60 days, your data will be permanently deleted from our systems.</p>
+
                 </div>
             </body>
         </html>
@@ -290,7 +292,8 @@ export const deleteAccount = errorWrapper(async (req, res, next, session) => {
                 <div class="container">
                     <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
                     <h3>Dear ${req.user.firstName} ${req.user.lastName},</h3>
-                    <h2>your account will be deleted permanently after 60 days</h2>
+                    <h2>Your account will be deleted permanently after 60 days</h2>
+                    <p>After you delete your account, we retain your data for a period of 60 days. This period allows us to ensure that the deletion was intentional and provides time for account recovery if needed. It also allows us to complete any remaining transactions or address potential security, fraud, or regulatory issues. After 60 days, your data will be permanently deleted from our systems.</p>
                 </div>
             </body>
         </html>
