@@ -109,11 +109,11 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 else if (ele.type === "intake") filter["intake"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
                 else if (ele.type === "deadline") filter["deadline"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
             });
-            filter[req.user.role] = req.user._id
+            filter.advisors = req.user._id
             const applications = await productModel.find(filter, "course university intake deadline user approval stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
-            totalDocs = await studentModel.countDocuments(filter)
+            totalDocs = await productModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
-            await userModel.populate(applications, { path: "user processCoordinator", select: "firstName lastName email displayPicSrc" })
+            await userModel.populate(applications, { path: "user advisors", select: "firstName lastName email displayPicSrc" })
             await courseModel.populate(applications, { path: "course", select: "name unisName startDate" })
             return ({ statusCode: 200, message: `applications list`, data: { list: applications, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "leads":
