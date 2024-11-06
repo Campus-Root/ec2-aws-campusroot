@@ -7,21 +7,19 @@ import { productModel } from "../../../models/Product.js";
 export const approval = errorWrapper(async (req, res, next, session) => {
     const { applicationId, action, justification } = req.body
     const application = await productModel.findById(applicationId);
-    if (application.counsellor.toString() != req.user._id) return { statusCode: 400, data: null, message: `invalid access` };
-    if (!justification) return {
-        statusCode: 400, data: null, message: `justification necessary`
-    };
+    if (!application.advisors.includes(req.user._id)) return { statusCode: 400, data: null, message: `invalid access` };
+    if (!justification) return { statusCode: 400, data: null, message: `justification necessary` };
     const historyLog = application.log.find(ele => ele.status == "Processing")
     switch (action) {
         case "approve":
-            application.approval.counsellorApproval = true
-            application.approval.justification = justification
+            application.info.approval.counsellorApproval = true
+            application.info.approval.justification = justification
             application.stage = "Counsellor Approved"
             historyLog.stages.push({ name: "Counsellor Approved", });
             break;
         case "disapprove":
-            application.approval.counsellorApproval = false
-            application.approval.justification = justification
+            application.info.approval.counsellorApproval = false
+            application.info.approval.justification = justification
             application.stage = "Counsellor Disapproved"
             historyLog.stages.push({ name: "Counsellor Disapproved", });
             break;
