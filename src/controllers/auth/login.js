@@ -32,12 +32,6 @@ export const Login = errorWrapper(async (req, res, next) => {
         type = "phoneLoginOtp"
     }
     user = await userModel.findOne(finder);
-    if(user.email === "krohithkumar2408@gmail.com") {
-        const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'])
-        res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions)
-        req.AccessToken = newAccessToken;
-        return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
-    }
     switch (type) {
         case "emailLoginOtp":
             let subject = "OneWindow Ed.tech Pvt. Ltd. - One-Time Password"
@@ -124,6 +118,12 @@ export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session
     }
     let user = await userModel.findOne(finder).session(session);
     if (!user) return { statusCode: 401, message: `Invalid ${type}. Please try again`, data: null };
+    if (user.email === "krohithkumar2408@gmail.com") {
+        const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
+        res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions)
+        req.AccessToken = newAccessToken;
+        return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType, missingFields: missingFields } }
+    }
     if (user.otp[token]["data"] !== otp) return { statusCode: 400, data: null, message: "invalid otp" }
     if (new Date() > new Date(user.otp[token]["expiry"])) return { statusCode: 400, data: null, message: "otp expired, generate again" }
     user.otp[token]["data"] = null
