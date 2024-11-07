@@ -33,10 +33,10 @@ export const Login = errorWrapper(async (req, res, next) => {
     }
     user = await userModel.findOne(finder);
     if(user.email === "krohithkumar2408@gmail.com") {
-        const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
+        const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'])
         res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions)
         req.AccessToken = newAccessToken;
-        return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType, missingFields: missingFields } }
+        return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
     }
     switch (type) {
         case "emailLoginOtp":
