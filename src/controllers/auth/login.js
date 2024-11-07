@@ -122,7 +122,7 @@ export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session
         const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
         res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions)
         req.AccessToken = newAccessToken;
-        return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType, missingFields: missingFields } }
+        return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role || user.userType } }
     }
     if (user.otp[token]["data"] !== otp) return { statusCode: 400, data: null, message: "invalid otp" }
     if (new Date() > new Date(user.otp[token]["expiry"])) return { statusCode: 400, data: null, message: "otp expired, generate again" }
