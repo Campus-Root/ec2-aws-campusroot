@@ -15,6 +15,104 @@ import institutionModel from "../../models/IndianColleges.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
+export const filters = errorWrapper(async (req, res, next) => {
+
+    const filter = {};
+    let countrySelected = false, stateSelected = false, disciplineSelected = false
+
+    req.body.filterData.forEach(ele => {
+        if (ele.type === "country") {
+            filter["location.country"] = { $in: ele.data };
+            countrySelected = true;
+        }
+        else if (ele.type === "city") {
+            filter["location.city"] = { $in: ele.data };
+        }
+        else if (ele.type === "state") {
+            filter["location.state"] = { $in: ele.data };
+            stateSelected = true;
+        }
+        else if (ele.type === "discipline") {
+            filter.discipline = { $in: ele.data };
+            disciplineSelected = true;
+        }
+        else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
+        else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
+        else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
+        // else if (ele.type === "type") filter.type = ele.data[0];
+        // else if (ele.type === "rating") filter.uni_rating = { $gte: ele.data[0] };
+        // else if (ele.type === "name") {
+        //     const regex = { $regex: ele.data[0].replace(" ", "|"), $options: "i" };
+        //     filter["$or"] = [
+        //         { name: regex },
+        //         { code: regex }
+        //     ];
+        // } else if (ele.type === "popular") {
+        //     filter[`rank.${ele.data[0]}`] = { $exists: true, $ne: 0 };
+        //     sort[`rank.${ele.data[0]}`] = 1;
+        // }
+    });
+
+    const facets = {
+        country: [
+            { $group: { _id: "$location.country", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ],
+        elite: [
+            { $group: { _id: "$elite", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ],
+        type: [
+            { $group: { _id: "$type", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ],
+        discipline: [
+            { $unwind: "$discipline" },
+            { $group: { _id: "$discipline", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ],
+        studyLevel: [
+            { $group: { _id: "$studyLevel", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ],
+        studyMode: [
+            { $unwind: "$studyMode" },
+            { $group: { _id: "$studyMode", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ]
+    };
+
+    // Add `state` facet only if a country is selected
+    if (countrySelected) {
+        facets.state = [
+            { $group: { _id: "$location.state", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ];
+    }
+
+    // Add `city` facet only if a state is selected
+    if (stateSelected) {
+        facets.city = [
+            { $group: { _id: "$location.city", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ];
+    }
+    if (disciplineSelected) {
+        facets.city = [
+            { $group: { _id: "$subDiscipline", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ];
+    }
+
+    // Step 3: Execute the aggregate query with the dynamic facets
+    const facetResults = await courseModel.aggregate([
+        { $match: filter },
+        { $facet: facets }
+    ]);
+
+
+    return ({ statusCode: 200, message: `facets`, data: facetResults })
+})
 export const listings = errorWrapper(async (req, res, next, session) => {
     const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
