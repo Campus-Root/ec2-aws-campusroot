@@ -343,6 +343,7 @@ export const blockUser = errorWrapper(async (req, res, next, session) => {
   const { action, studentId } = req.params
   const currentUserId = req.user._id;
   if (!['block', 'unblock'].includes(action)) return { statusCode: 400, message: 'Invalid action. Use "block" or "unblock".', data: null };
+  const currentUser = await studentModel.findById(currentUserId, "firstName lastName displayPicSrc email userType role");
   const user = await studentModel.findById(studentId, "firstName lastName displayPicSrc email userType role");
   if (!user) return { statusCode: 404, message: 'User not found', data: null };
   if (action === 'block') {
@@ -356,5 +357,5 @@ export const blockUser = errorWrapper(async (req, res, next, session) => {
       studentModel.findByIdAndUpdate(studentId, { $pull: { blockedBy: currentUserId } })
     ]);
   }
-  return { statusCode: 200, message: `User ${action}ed successfully`, data: { user: req.user, blocked: user } };
+  return { statusCode: 200, message: `User ${action}ed successfully`, data: { user: currentUser, blocked: user } };
 })

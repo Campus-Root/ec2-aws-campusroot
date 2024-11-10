@@ -19,8 +19,11 @@ import { fileURLToPath } from "url";
 import { studentModel } from "../../models/Student.js";
 export const profile = errorWrapper(async (req, res, next, session) => {
     await Promise.all([
-        await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
-        await Document.populate(req.user,
+        userModel.populate(req.user, [
+            { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" },
+            { path: "blockedBy blockList", select: "firstName displayPicSrc lastName email role userType" }
+        ]),
+        Document.populate(req.user,
             [{ path: "tests.docId", select: "data", },
             { path: "workExperience.docId", select: "data", },
             { path: "documents.personal.resume", select: "data", },
@@ -42,7 +45,7 @@ export const profile = errorWrapper(async (req, res, next, session) => {
             { path: "documents.test.general", select: "data", },
             { path: "documents.test.languageProf", select: "data", },
             { path: "documents.workExperiences", select: "data", },]),
-        await institutionModel.populate(req.user, { path: "IEH.institution", select: "InstitutionName IEH.logoSrc IEH.members InstitutionType university" })
+        institutionModel.populate(req.user, { path: "IEH.institution", select: "InstitutionName IEH.logoSrc IEH.members InstitutionType university" })
     ])
     const profile = { ...req.user._doc }
     delete profile.logs;
