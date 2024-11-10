@@ -5,13 +5,13 @@ import { authMiddleware, isStudent } from "../middleware/auth.js";
 import { checkDisposableEmail, isPaid, validatePayment, validateProducts } from "../middleware/validations.js";
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
-import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation, deleteData, deleteAccount } from "../controllers/student/index.js";
+import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation, deleteData, deleteAccount, blockUser } from "../controllers/student/index.js";
 import { addPhoneOrEmail, deleteUploadedInProfile, editProfile, IEH, profile, requestCounsellor, uploadInProfile, verifyStudentOTP } from "../controllers/student/profile.js";
 import { wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, requestCancellation, checkout, uploadInApplication, paymentVerification, orderInfo, Cart, reCheckout, paySummary, addingProductsToOrder } from "../controllers/student/application.js";
 const router = express.Router();
 //        {{base}}/api/v1/student
-router.post("/phone-email", authMiddleware, isStudent,addPhoneOrEmail)
-router.post("/verify-otp", authMiddleware, isStudent,verifyStudentOTP)
+router.post("/phone-email", authMiddleware, isStudent, addPhoneOrEmail)
+router.post("/verify-otp", authMiddleware, isStudent, verifyStudentOTP)
 router.post("/ieh", authMiddleware, isStudent, handleFile, IEH);
 router.post("/post-review", authMiddleware, isStudent, postReview);
 router.put("/edit-review", authMiddleware, isStudent, editReview);
@@ -44,4 +44,5 @@ router.put('/delete-data', authMiddleware, isStudent, deleteData)
 router.put('/delete-account', authMiddleware, isStudent, deleteAccount)
 router.get("/all-students", authMiddleware, isStudent, allStudents)
 router.get("/single-student/:studentId", authMiddleware, isStudent, singleStudent)
+router.put('/:action/:studentId', authMiddleware, isStudent, blockUser)
 export default router;

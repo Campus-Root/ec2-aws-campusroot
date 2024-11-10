@@ -339,3 +339,22 @@ export const deleteAccount = errorWrapper(async (req, res, next, session) => {
   await userModel.deleteOne({ _id: req.user._id })
   return { statusCode: 200, message: "Requested to delete Account", data: null }
 })
+export const blockUser = errorWrapper(async (req, res, next, session) => {
+  const { action, studentId } = req.params
+  const currentUserId = req.user._id;
+  if (!['block', 'unblock'].includes(action)) return { statusCode: 400, message: 'Invalid action. Use "block" or "unblock".', data: null };
+  const user = await studentModel.findById(studentId, "firstName lastName displayPicSrc email userType role");
+  if (!user) return { statusCode: 404, message: 'User not found', data: null };
+  if (action === 'block') {
+    await Promise.all([
+      studentModel.findByIdAndUpdate(currentUserId, { $addToSet: { blockList: studentId } }),
+      studentModel.findByIdAndUpdate(studentId, { $addToSet: { blockedBy: currentUserId } })
+    ]);
+  } else if (action === 'unblock') {
+    await Promise.all([
+      studentModel.findByIdAndUpdate(currentUserId, { $pull: { blockList: studentId } }),
+      studentModel.findByIdAndUpdate(studentId, { $pull: { blockedBy: currentUserId } })
+    ]);
+  }
+  return { statusCode: 200, message: `User ${action}ed successfully`, data: { user: req.user, blocked: user } };
+})

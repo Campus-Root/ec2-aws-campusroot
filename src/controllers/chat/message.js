@@ -10,23 +10,34 @@ export const postMessages = errorWrapper(async (req, res, next, session) => {
 
     const { error, value } = Joi.object({ chatId: Joi.string().required(), content: Joi.string().allow(""), repliedTo: Joi.string().allow(""), fileIdentifier: Joi.string().allow("") }).validate(req.body)
     if (error) {
-        if (req.file && req.file.path) unlinkSync(req.file.path);
+        if (req.file?.path) unlinkSync(req.file.path);
         return { statusCode: 400, message: error.details[0].message, data: [value] };
     }
     const { content, chatId, repliedTo, fileIdentifier } = value
     if (!content && !req.file) {
-        if (req.file && req.file.path) unlinkSync(req.file.path);
+        if (req.file?.path) unlinkSync(req.file.path);
         return { statusCode: 400, data: null, message: `incomplete content or attachment` };
     }
-    const user = await userModel.findById(req.decoded.id)
+    const user = await userModel.findById(req.decoded.id, "blockList blockedBy")
     const chat = await chatModel.findById(chatId)
     if (!chat) {
-        if (req.file && req.file.path) unlinkSync(req.file.path);
+        if (req.file?.path) unlinkSync(req.file.path);
         return { statusCode: 400, data: null, message: `invalid chatID` };
     }
     if (!chat.participants.includes(req.decoded.id)) {
-        if (req.file && req.file.path) unlinkSync(req.file.path);
+        if (req.file?.path) unlinkSync(req.file.path);
         return { statusCode: 400, data: null, message: `invalid sender` };
+    }
+    if (chat.participants.length == 2) {
+        let receiver = chat.participants.find(ele => ele.toString() != req.decoded.id)
+        if (user.blockList && user.blockList.includes(receiver)) {
+            if (req.file?.path) unlinkSync(req.file.path);
+            return { statusCode: 400, data: null, message: `you have blocked this user, unblock him to continue messaging` };
+        }
+        if (user.blockedBy && user.blockedBy.includes(receiver)) {
+            if (req.file?.path) unlinkSync(req.file.path);
+            return { statusCode: 400, data: null, message: `you have been blocked by the receiver` };
+        }
     }
     let message = await messageModel.create({ sender: user._id, content: content, chat: chatId })
     if (req.file) {

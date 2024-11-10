@@ -4,6 +4,8 @@ import { studyLevelEnum, EducationStageEnum, IndustryTypeEnum, WorkStyleEnum, De
 
 const Student = mongoose.Schema(
     {
+        blockList: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        blockedBy: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         active: { type: Boolean, default: true },
         LeadSource: { type: String },
         IEH: {
