@@ -99,9 +99,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             req.body.filterData.forEach(ele => {
                 if (ele.type === "courseId") filter["course"] = { $in: ele.data }
                 else if (ele.type === "universityId") filter["university"] = { $in: ele.data }
-                else if (ele.type === "processCoordinator") filter["$or"] ? filter.$or.push([{ "approval.counsellorApproval": true }, { "approval.userConsent": true }]) : filter["$or"] = [{ "approval.counsellorApproval": true }, { "approval.userConsent": true }]
-                else if (ele.type === "counsellorApproval") filter["approval.counsellorApproval"] = { $in: ele.data }
-                else if (ele.type === "userConsent") filter["approval.userConsent"] = { $in: ele.data }
+                else if (ele.type === "processCoordinator") filter["$or"] ? filter.$or.push([{ "info.approval.counsellorApproval": true }, { "info.approval.userConsent": true }]) : filter["$or"] = [{ "info.approval.counsellorApproval": true }, { "info.approval.userConsent": true }]
+                else if (ele.type === "counsellorApproval") filter["info.approval.counsellorApproval"] = { $in: ele.data }
+                else if (ele.type === "userConsent") filter["info.approval.userConsent"] = { $in: ele.data }
                 else if (ele.type === "user") filter["user"] = { $in: ele.data }
                 else if (ele.type === "cancellationRequest") filter["cancellationRequest"] = { $in: ele.data }
                 else if (ele.type === "stage") filter["stage"] = { $in: ele.data }
@@ -110,11 +110,12 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 else if (ele.type === "deadline") filter["deadline"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
             });
             filter.advisors = req.user._id
-            const applications = await productModel.find(filter, "course university intake deadline user approval stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
+            const applications = await productModel.find(filter, "course intake deadline user info stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
             totalDocs = await productModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
             await userModel.populate(applications, { path: "user advisors", select: "firstName lastName email displayPicSrc" })
-            await courseModel.populate(applications, { path: "course", select: "name unisName startDate" })
+            await courseModel.populate(applications, { path: "course", select: "name university unisName startDate" })
+            await universityModel.populate(applications,{ path: "course.university", select: "name" })
             return ({ statusCode: 200, message: `applications list`, data: { list: applications, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "leads":
             filter[req.user.role] = req.user._id
