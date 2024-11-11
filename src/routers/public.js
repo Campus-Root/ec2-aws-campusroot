@@ -15,13 +15,13 @@ const router = express.Router();
 router.post("/listings/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), conditionalAuth((req, res, next) => req.body.page > 2, authMiddleware), listings);
 router.get("/single_university", oneUniversity);
 router.get("/single_course", oneCourse);
-router.post("/facets",filters)
+router.post("/facets/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), filters)
 
 router.get("/profile/:id", authMiddleware, PublicProfile);
 router.get("/profiles", authMiddleware, CommunityProfiles);
 
 
-router.get("/search",search)
+router.get("/search", search)
 // router.get("/all_destinations", allDestinations);
 // router.get("/single_destination/:id", oneDestination);
 router.get("/counsellors", counsellors);
