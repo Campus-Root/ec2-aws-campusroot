@@ -26,9 +26,7 @@ export const filters = errorWrapper(async (req, res, next) => {
                     filter["location.country"] = { $in: ele.data };
                     countrySelected = true;
                 }
-                else if (ele.type === "city") {
-                    filter["location.city"] = { $in: ele.data };
-                }
+                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
                 else if (ele.type === "state") {
                     filter["location.state"] = { $in: ele.data };
                     stateSelected = true;
@@ -42,7 +40,7 @@ export const filters = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
             });
-            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode"]
+            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode","startDate"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("city") && stateSelected) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
@@ -52,18 +50,44 @@ export const filters = errorWrapper(async (req, res, next) => {
             if (project.includes("type")) facets.type = [{ $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("studyMode")) facets.studyMode = [{ $unwind: "$studyMode" }, { $group: { _id: "$studyMode", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-             facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
+            if (project.includes("startDate")) facets.courseStartingMonth = [
+                { $unwind: "$startDate" },
+                {
+                    $group: {
+                        _id: {
+                            $cond: [
+                                { $in: ["$startDate.courseStartingMonth", [0, 1, 2]] },
+                                "January to March",
+                                {
+                                    $cond: [
+                                        { $in: ["$startDate.courseStartingMonth", [3, 4, 5]] },
+                                        "April to June",
+                                        {
+                                            $cond: [
+                                                { $in: ["$startDate.courseStartingMonth", [6, 7, 8]] },
+                                                "July to September",
+                                                "October to December"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { count: -1 } }
+            ]
+
+            facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
             break;
         default:
             break;
     }
-
-   
-  
     return ({ statusCode: 200, message: `facets`, data: facetResults })
 })
 export const listings = errorWrapper(async (req, res, next, session) => {
-    const { page,perPage = 20 } = req.body, filter = {}, sort = {}, skip = (page - 1) * perPage; // Number of items per page
+    const { page, perPage = 20 } = req.body, filter = {}, sort = {}, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
     switch (req.params.name) {
