@@ -63,7 +63,7 @@ export const filters = errorWrapper(async (req, res, next) => {
     return ({ statusCode: 200, message: `facets`, data: facetResults })
 })
 export const listings = errorWrapper(async (req, res, next, session) => {
-    const { page } = req.body, filter = {}, sort = {}, perPage = 20, skip = (page - 1) * perPage; // Number of items per page
+    const { page,perPage = 20 } = req.body, filter = {}, sort = {}, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
     switch (req.params.name) {
