@@ -140,8 +140,8 @@ export const TeamRoleEnum = {
     DEVELOPER: "developer",
     ADMIN: "admin",
     COUNSELLOR: "counsellor",
-    // COUNSELLOR_UG: "Counsellor_UG",
-    // COUNSELLOR_PG: "Counsellor_PG",
+    COUNSELLOR_UG: "Counsellor_UG",
+    COUNSELLOR_PG: "Counsellor_PG",
     REMOTE_STUDENT_ADVISOR: "remoteStudentAdvisor",
     IEH: "IEH_MEMBER"
 };
