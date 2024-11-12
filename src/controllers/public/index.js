@@ -17,10 +17,29 @@ import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
-    let facetResults
+    let facetResults, facets = {}, countrySelected = false, stateSelected = false, disciplineSelected = false, filter = {}
     switch (req.params.name) {
+        case "universities":
+            filterData.forEach(ele => {
+                if (ele.type === "country") {
+                    filter["location.country"] = { $in: ele.data };
+                    countrySelected = true;
+                }
+                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
+                else if (ele.type === "state") {
+                    filter["location.state"] = { $in: ele.data };
+                    stateSelected = true;
+                }
+            });
+            if (project.length === 0) project = ["country", "state", "city", "type"]
+            if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("city") && stateSelected) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            facetResults = await universityModel.aggregate([{ $match: filter }, { $facet: facets }]);
+            break;
         case "courses":
-            let countrySelected = false, stateSelected = false, disciplineSelected = false, filter = {}, facets = {}
+            filter.university = { $exists: true }
             filterData.forEach(ele => {
                 if (ele.type === "country") {
                     filter["location.country"] = { $in: ele.data };
@@ -40,17 +59,17 @@ export const filters = errorWrapper(async (req, res, next) => {
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
             });
-            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode","startDate"]
+            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode", "courseStartingMonth"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("city") && stateSelected) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("subDiscipline") && disciplineSelected) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("elite")) facets.elite = [{ $group: { _id: "$elite", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("type")) facets.type = [{ $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("studyMode")) facets.studyMode = [{ $unwind: "$studyMode" }, { $group: { _id: "$studyMode", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("startDate")) facets.courseStartingMonth = [
+            if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            // if (project.includes("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            if (project.includes("studyMode")) facets.studyMode = [{ $unwind: "$studyMode" }, { $match: { studyMode: { $nin: [null, "Online"] } } }, { $group: { _id: "$studyMode", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            if (project.includes("courseStartingMonth")) facets.courseStartingMonth = [
                 { $unwind: "$startDate" },
                 {
                     $group: {
@@ -125,6 +144,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             totalPages = Math.ceil(totalDocs / perPage);
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
+            filter.university = { $exists: true }
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
@@ -189,9 +209,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
                     }));
                 }
-                else if (ele.type === "intake") {
-                    /* 0=>0,1,2 1=>3,4,5 2=>6,7,8 3=>9,10,11*/
-                    let period = { $and: [{ courseStartingMonth: { $gte: ele.data * 3 } }, { courseStartingMonth: { $lte: (ele.data * 3) + 2 } }] }
+                else if (ele.type === "courseStartingMonth") {
+                    const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
+                    let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
                     filter.startDate = { $elemMatch: period };
                 }
             });
