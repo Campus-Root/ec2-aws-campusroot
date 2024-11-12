@@ -16,7 +16,7 @@ import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
-    const { filterData, project } = req.body;
+    let { filterData, project } = req.body;
     let facetResults
     switch (req.params.name) {
         case "courses":

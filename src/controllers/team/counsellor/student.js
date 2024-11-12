@@ -242,3 +242,9 @@ export const Package = errorWrapper(async (req, res, next, session) => {
         };
     }
 })
+export const registerNewStudent = errorWrapper(async (req, res, next, session) => {
+    // primary details phone, email => verify them 
+    // secondary details 
+    // tertiary details 
+    // save the user
+})
