@@ -45,7 +45,7 @@ export const Login = errorWrapper(async (req, res, next) => {
         case "phoneLoginOtp":
             const smsResponse = countryCode === "+91" ? await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "Indian" }) : await sendOTP({ to: countryCode + phoneNumber, otp: otp, region: "International" });
             if (!smsResponse.return) {
-                if (smsResponse.data.status === 400) return { statusCode: 400, data: null, message: smsResponse.data.code }
+                if (smsResponse.data.status === 400) return { statusCode: 400, data: null, message: "wrong mobile number" }
                 return { statusCode: 500, data: smsResponse, message: "Otp not sent" }
             }
             break;
