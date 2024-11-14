@@ -1,6 +1,6 @@
 import express from "express";
 
-import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, search, filters } from "../controllers/public/index.js";
+import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, search, filters, filtersNew, listingsNew } from "../controllers/public/index.js";
 import { authMiddleware, conditionalAuth } from "../middleware/auth.js";
 import rateLimit from "express-rate-limit";
 
@@ -16,7 +16,8 @@ router.post("/listings/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, me
 router.get("/single_university", oneUniversity);
 router.get("/single_course", oneCourse);
 router.post("/facets/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), filters)
-
+router.post("/newlistings/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), conditionalAuth((req, res, next) => req.body.page > 2, authMiddleware), listingsNew);
+router.post("/newfacets/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), filtersNew)
 router.get("/profile/:id", authMiddleware, PublicProfile);
 router.get("/profiles", authMiddleware, CommunityProfiles);
 
