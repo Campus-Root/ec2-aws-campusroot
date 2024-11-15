@@ -1,6 +1,6 @@
 import express from "express";
 
-import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, search, filters, filtersNew, listingsNew } from "../controllers/public/index.js";
+import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, search, filters, filtersNew, listingsNew, oneCourseNew } from "../controllers/public/index.js";
 import { authMiddleware, conditionalAuth } from "../middleware/auth.js";
 import rateLimit from "express-rate-limit";
 
