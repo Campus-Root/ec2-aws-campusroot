@@ -18,6 +18,7 @@ router.get("/single_course", oneCourse);
 router.post("/facets/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), filters)
 router.post("/newlistings/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), conditionalAuth((req, res, next) => req.body.page > 2, authMiddleware), listingsNew);
 router.post("/newfacets/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, message: "Too many requests from this IP, please try again later" }), filtersNew)
+router.get("/newsingle_course", oneCourseNew);
 router.get("/profile/:id", authMiddleware, PublicProfile);
 router.get("/profiles", authMiddleware, CommunityProfiles);
 

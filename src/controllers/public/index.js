@@ -518,6 +518,29 @@ export const oneCourse = errorWrapper(async (req, res, next, session) => {
     }
     return ({ statusCode: 200, message: `single course`, data: course })
 })
+export const oneCourseNew = errorWrapper(async (req, res, next, session) => {
+    let course = await newCourseModel
+        .findById(req.query.id)
+        .populate("university", "name location ranking cost currency type logoSrc pictureSrc establishedYear")
+    if (!course) return res.status(400).json({ statusCode: 200, message: `course ID invalid`, data: null })
+    if (req.query.currency && course.currency.code !== req.query.currency) {
+        const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
+        if (!rates[course.currency.code] || !rates[req.query.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
+        course.tuitionFee.tuitionFee = costConversion(course.tuitionFee.tuitionFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
+        course.applicationDetails.applicationFee = costConversion(course.applicationDetails.applicationFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
+        course.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
+        if (!rates[course.university.currency.code] || !rates[req.query.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
+        course.university.cost = course.university.cost.map(ele => {
+            return {
+                name: ele.name,
+                lowerLimit: costConversion(ele.lowerLimit, course.university.currency.code, req.query.currency, rates[course.university.currency.code], rates[req.query.currency]),
+                upperLimit: costConversion(ele.upperLimit, course.university.currency.code, req.query.currency, rates[course.university.currency.code], rates[req.query.currency])
+            };
+        });
+        course.university.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
+    }
+    return ({ statusCode: 200, message: `single course`, data: course })
+})
 export const PublicProfile = errorWrapper(async (req, res, next, session) => {
     const { id } = req.params
     if (!id) return res.status(400).json({ success: false, message: "no id provided", data: null })
