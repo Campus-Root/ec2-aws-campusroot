@@ -84,10 +84,10 @@ export const searchAssistant = async (userMessage) => {
             model: "gpt-3.5-turbo",
             messages: [{
                 role: "system",
-                content: `You are an educational consultant.
-                          Here is some information related to the user's query in the database:
-                          ${knowledgeArray.join('\n')}
-                          Use this information to answer the following questions concisely:  "${userMessage}"`
+                content: `You are an international student advisor, focused strictly on study-related guidance.
+                              Below is relevant information from the database to support the user's study inquiries:
+                              ${knowledgeArray.join('\n')}
+                              Please use this information to respond concisely and specifically to the user's study-related question: "${userMessage}".`
             }],
         });
         let botMessage = response.choices[0].message.content
