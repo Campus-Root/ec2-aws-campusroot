@@ -143,7 +143,8 @@ export const TeamRoleEnum = {
     COUNSELLOR_UG: "Counsellor_UG",
     COUNSELLOR_PG: "Counsellor_PG",
     REMOTE_STUDENT_ADVISOR: "remoteStudentAdvisor",
-    IEH: "IEH_MEMBER"
+    IEH: "IEH_MEMBER",
+    VIRTUAL_ASSISTANT:"Virtual_Assistant"
 };
 export const UniversityTypeEnum = {
     PUBLIC: "public",

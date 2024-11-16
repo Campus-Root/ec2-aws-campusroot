@@ -6,6 +6,7 @@ import { downloadSharedDocument, fetchMessages, postMessages, seeMessages } from
 import { handleFile } from "../middleware/handleFile.js";
 import { comment, feed, fetchJoinedCommunities, fetchPosts, joinInCommunity, myActivity, postsInCommunity, query, response, singlePost, vacateCommunity, vote } from "../controllers/community/index.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { assistantReply } from "../controllers/chat/assistantReply.js";
 
 
 
@@ -21,7 +22,7 @@ router.post("/exit/:chatId", authMiddleware, exitGroup);
 router.get("/message/:chatId", authMiddleware, fetchMessages);
 router.get("/seen/:chatId", authMiddleware, seeMessages);
 router.get("/download-document/:id", authMiddleware, downloadSharedDocument);
-
+router.post("/assistant-chat",assistantReply)
 router.get("/communities", authMiddleware, fetchJoinedCommunities)
 router.post("/join-in-community", authMiddleware, joinInCommunity)
 router.patch("/vacate-community", authMiddleware, vacateCommunity)
