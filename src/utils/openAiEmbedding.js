@@ -21,7 +21,7 @@ export const getGoodstring = async (userStr) => {
             messages: [
                 {
                     role: "system",
-                    content: "You are an AI assistant that generates structured JSON output for database searches. Each JSON object should describe what to search for in specific categories out of courses and universities"
+                    content: "Your name is Ava(Artificial Virtual Assistant).You are an AI assistant that generates structured JSON output for database searches. Each JSON object should describe what to search for in specific categories out of courses and universities"
                 },
                 {
                     role: "user",
@@ -57,7 +57,7 @@ export const contentExtractor = async (userMessage) => {
                 }
             },
             {
-                $project: { plot: 1 }
+                $project: { plot: 1, courseLink: 1 }
             }
         ])
         console.log("courses: ", courses);
