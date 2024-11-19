@@ -15,6 +15,7 @@ export const assistantReply = errorWrapper(async (req, res, next, session) => {
     //     }],
     // });
     const chat = await chatModel.findById(chatId)
+    // let messages = await messageModel.find({ chatId: chatId }).limit(5).sort({ createdAt: -1 });
     let reply = await searchAssistant(content)
     let message = await messageModel.create({ sender: "6737304feb3f12f7ec92ec41", content: reply, chat: chatId })
     chat.lastMessage = message._id

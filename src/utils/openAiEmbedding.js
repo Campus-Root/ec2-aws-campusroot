@@ -1,6 +1,5 @@
 import newCourseModel from '../models/coursesNew.js';
 import { openai } from './dbConnection.js';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
 export const stringToEmbedding = async (text) => {
     try {
         const { data } = await openai.embeddings.create({
@@ -21,7 +20,7 @@ export const getGoodstring = async (userStr) => {
             messages: [
                 {
                     role: "system",
-                    content: "Your name is Ava(Artificial Virtual Assistant).You are an AI assistant that generates structured JSON output for database searches. Each JSON object should describe what to search for in specific categories out of courses and universities"
+                    content: "You are an AI assistant that generates structured JSON output for database searches. Each JSON object should describe what to search for in specific categories out of courses and universities"
                 },
                 {
                     role: "user",
@@ -71,12 +70,13 @@ export const contentExtractor = async (userMessage) => {
 
 export const searchAssistant = async (userMessage) => {
     try {
-        let goodStringResults = await getGoodstring(userMessage)
+        let goodStringResults = await getGoodstring(userMessage)  // filter out prompt and other non-useful strings
+        console.log("goodStrings: ", goodStringResults);
         let knowledgeArray = []
         for (const element of goodStringResults) {
             console.log("goodString: ", element);
             if (element.category == "courses") {
-                let data = await contentExtractor(element.assistStr)
+                let data = await contentExtractor(element.assistStr) // extract content from db  such as plot and courseLink 
                 knowledgeArray.push(...data)
             }
         }
@@ -84,12 +84,13 @@ export const searchAssistant = async (userMessage) => {
             model: "gpt-3.5-turbo",
             messages: [{
                 role: "system",
-                content: `You are an international student advisor, focused strictly on study-related guidance.
-                              Below is relevant information from the database to support the user's study inquiries:
-                              ${knowledgeArray.join('\n')}
+                content: `Your name is Ava(Artificial Virtual Assistant).You are an international student advisor, focused strictly on study-related guidance.
+                              Below is relevant information from the database to support the user's study inquiries with links for reference:
+                              ${knowledgeArray.join('\n')} 
                               Please use this information to respond concisely and specifically to the user's study-related question: "${userMessage}".`
             }],
         });
+        console.log("response: ", JSON.stringify(response))
         let botMessage = response.choices[0].message.content
         return botMessage
     } catch (error) {
