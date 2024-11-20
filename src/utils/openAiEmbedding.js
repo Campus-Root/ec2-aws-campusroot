@@ -50,10 +50,13 @@ export const contentExtractor = async (userMessage) => {
                 }
             },
             {
-                $project: { plot: 1, courseLink: 1 }
+                $project: { plot: 1 }
             }
         ])
-        return courses
+        return courses.map(ele => {
+            let url = `https://campusroot.com/singlecourse/${ele._id}`
+            return `<a href="${url}" target="_blank">${ele.plot}</a>`
+        })
     } catch (error) {
         console.error("error extracting content from db", error)
         throw new Error("error extracting content from db")
@@ -67,6 +70,7 @@ export const searchAssistant = async (userMessage, messages) => {
         for (const element of searchItems) {
             if (element.category == "courses") {
                 let data = await contentExtractor(element.assistStr) // extract content from db  such as plot and courseLink 
+
                 knowledgeArray.push(...data)
             }
         }
@@ -83,7 +87,7 @@ export const searchAssistant = async (userMessage, messages) => {
                 ...messages,
                 {
                     role: "system",
-                    content: `Below is relevant information from the database to support the user's study inquiries with links(courseLink) for reference from the given info:
+                    content: `Below is relevant information from the database to support the user's study inquiries with links for reference from the given info:
                               ${knowledgeArray.join('\n')} 
                               Please use this information to respond concisely and specifically to the user's study-related question: "${userMessage}".`
                 }],
