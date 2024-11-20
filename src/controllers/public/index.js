@@ -161,20 +161,22 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     // filter["$or"].push({ "location.country": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.city": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.state": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { unisName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { schoolName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } })
                     filter.$text = { $search: ele.data[0] };
                 }
-                else if (ele.type === "AcademicTestName") {
-                    if (!filter["$and"]) filter["$and"] = []
-                    let InArray = [], OutArray = []
-                    ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
-                    if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $nin: OutArray } });
-                    if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $in: InArray } });
-                }
-                else if (ele.type === "LanguageTestName") {
-                    if (!filter["$and"]) filter["$and"] = []
-                    let InArray = [], OutArray = []
-                    ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
-                    if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $nin: OutArray } });
-                    if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $in: InArray } });
-                }
+
+                
+                // else if (ele.type === "AcademicTestName") {
+                //     if (!filter["$and"]) filter["$and"] = []
+                //     let InArray = [], OutArray = []
+                //     ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
+                //     if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $nin: OutArray } });
+                //     if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $in: InArray } });
+                // }
+                // else if (ele.type === "LanguageTestName") {
+                //     if (!filter["$and"]) filter["$and"] = []
+                //     let InArray = [], OutArray = []
+                //     ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
+                //     if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $nin: OutArray } });
+                //     if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $in: InArray } });
+                // }
                 else if (ele.type === "openNow") {
                     let currentMonth = new Date().getMonth(), next3Months = (currentMonth + 3) % 12, period
                     (currentMonth > 8) ?
@@ -526,6 +528,7 @@ export const oneCourse = errorWrapper(async (req, res, next, session) => {
 export const oneCourseNew = errorWrapper(async (req, res, next, session) => {
     let course = await newCourseModel
         .findById(req.query.id)
+        .select("-embeddingVector -plot -programmeStructure -description")
         .populate("university", "name location ranking cost currency type logoSrc pictureSrc establishedYear")
     if (!course) return res.status(400).json({ statusCode: 200, message: `course ID invalid`, data: null })
     if (req.query.currency && course.currency.code !== req.query.currency) {
