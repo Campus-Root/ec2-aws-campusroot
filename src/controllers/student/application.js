@@ -385,15 +385,12 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
                 if (ele.info.role === "counsellor" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) counsellors.push(ele)
                 else if (ele.info.role === "processCoordinator" && (ele.assignedCountries.includes(country) || ele.info.expertiseCountry.includes(country))) processCoordinators.push(ele)
             }
-            console.log(counsellors, processCoordinators);
             switch (Product.category) {
                 case ProductCategoryEnum.ELITE:
                 case ProductCategoryEnum.PREMIUM:
                     if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
                     else {
                         const Counsellor = await getNewAdvisor("counsellor", country);
-                        console.log(Counsellor);
-
                         teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
                         chatModel.create({ participants: [student._id, Counsellor._id] });
                         student.advisors.push({ info: Counsellor._id, assignedCountries: [country] });

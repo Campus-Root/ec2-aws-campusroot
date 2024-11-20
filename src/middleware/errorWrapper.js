@@ -34,7 +34,6 @@ export const errorWrapper = (fn) => {
         }
       }
     } catch (error) {
-      // console.log(error.message);
       await session.abortTransaction();
       console.error(error)
       const errorHtml = ` <h1>Error at Server Side</h1> <p><strong>Message:</strong> ${error.message}</p><p><strong>Stack Trace:</strong></p><pre>${error.stack.replace(/\n/g, '<br>')}</pre>`;

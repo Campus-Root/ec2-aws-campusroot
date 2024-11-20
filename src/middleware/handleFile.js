@@ -14,7 +14,6 @@ export const handleFile = (req, res, next) => {
 	upload(req, res, (err) => {
 		if (err instanceof multer.MulterError) {
 			// A Multer error occurred when uploading.
-			console.log(err.message);
 			return res.status(400).json({ success: false, message: err.message });
 		} else if (err) {
 			// An unknown error occurred when uploading.

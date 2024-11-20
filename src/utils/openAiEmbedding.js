@@ -24,18 +24,13 @@ export const getGoodstring = async (userStr) => {
                 },
                 {
                     role: "user",
-                    content: `The user provided the following query: "${userStr}". Generate a structured JSON array with objects like: [{list: "category", assistStr: "search query string"}].`
+                    content: `The user provided the following query: "${userStr}". Generate a structured JSON array with objects should strictly be like like:    {  "searchItems": [  {    "category": "courses", "assistStr": "search query string"   },    {  "category": "universities",   "assistStr": "search query string"    }  ] }`
                 }
             ],
+            response_format: { type: "json_object" },
             max_tokens: 200,
         });
-
-
-        const cleanedInput = response.choices[0].message.content
-            .trim()
-            .replace(/^```json\n/, '') // Remove the leading ```json
-            .replace(/\n```$/, '');    // Remove the trailing ```
-        return JSON.parse(cleanedInput);
+        return JSON.parse(response.choices[0].message.content);
     } catch (error) {
         console.log(error);
         throw new Error('Error passing through 1st stage of AI');
@@ -44,7 +39,6 @@ export const getGoodstring = async (userStr) => {
 
 export const contentExtractor = async (userMessage) => {
     try {
-        console.log("userMessage: ", userMessage);
         const courses = await newCourseModel.aggregate([
             {
                 $vectorSearch: {
@@ -59,8 +53,6 @@ export const contentExtractor = async (userMessage) => {
                 $project: { plot: 1, courseLink: 1 }
             }
         ])
-        console.log("courses: ", courses);
-
         return courses
     } catch (error) {
         console.error("error extracting content from db", error)
@@ -68,29 +60,34 @@ export const contentExtractor = async (userMessage) => {
     }
 }
 
-export const searchAssistant = async (userMessage) => {
+export const searchAssistant = async (userMessage, messages) => {
     try {
-        let goodStringResults = await getGoodstring(userMessage)  // filter out prompt and other non-useful strings
-        console.log("goodStrings: ", goodStringResults);
+        let { searchItems } = await getGoodstring(userMessage)  // filter out prompt and other non-useful strings  
         let knowledgeArray = []
-        for (const element of goodStringResults) {
-            console.log("goodString: ", element);
+        for (const element of searchItems) {
             if (element.category == "courses") {
                 let data = await contentExtractor(element.assistStr) // extract content from db  such as plot and courseLink 
                 knowledgeArray.push(...data)
             }
         }
+        let Messages = [
+            {
+                role: "system",
+                content: `Your name is Ava (Artificial Virtual Assistant). You are an international student advisor, focused strictly on study-related guidance. Use the provided information to answer questions accurately and concisely.`
+            }
+        ];
+        messages.forEach(ele => { Messages.push({ role: ele.sender == "6737304feb3f12f7ec92ec41" ? "assistant" : "user", content: ele.content }) })
         const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
-            messages: [{
-                role: "system",
-                content: `Your name is Ava(Artificial Virtual Assistant).You are an international student advisor, focused strictly on study-related guidance.
-                              Below is relevant information from the database to support the user's study inquiries with links for reference:
+            messages: [
+                ...messages,
+                {
+                    role: "system",
+                    content: `Below is relevant information from the database to support the user's study inquiries with links(courseLink) for reference from the given info:
                               ${knowledgeArray.join('\n')} 
                               Please use this information to respond concisely and specifically to the user's study-related question: "${userMessage}".`
-            }],
+                }],
         });
-        console.log("response: ", JSON.stringify(response))
         let botMessage = response.choices[0].message.content
         return botMessage
     } catch (error) {
