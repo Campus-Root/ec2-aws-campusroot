@@ -234,6 +234,11 @@ export const listings = errorWrapper(async (req, res, next, session) => {
         case "destinations":
             const destinations = await destinationModel.find({})
             return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
+        case "blogs":
+            const blogs = await blogModel.find({}).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
+            totalDocs = await courseModel.countDocuments({})
+            totalPages = Math.ceil(totalDocs / perPage);
+            return { statusCode: 201, message: "Blogs fetched successfully", data: blogs };
     }
 })
 export const filtersNew = errorWrapper(async (req, res, next) => {
@@ -703,4 +708,9 @@ export const search = errorWrapper(async (req, res, next, session) => {
     ]);
     await universityModel.populate(courses, { path: "university", select: "name location logoSrc type uni_rating" })
     return { statusCode: 200, message: 'search results', data: { courses } }
+})
+export const getBlogById = errorWrapper(async (req, res) => {
+    const blog = await blogModel.findById(req.params.id).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 });
+    if (!blog) return { statusCode: 400, message: "Blog post not found", data: blog };
+    return { statusCode: 201, message: "Blog fetched successfully", data: blog };
 })

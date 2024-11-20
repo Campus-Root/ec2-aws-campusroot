@@ -1,6 +1,6 @@
 import express from "express";
 
-import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, search, filters, filtersNew, listingsNew, oneCourseNew } from "../controllers/public/index.js";
+import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, search, filters, filtersNew, listingsNew, oneCourseNew, getBlogById } from "../controllers/public/index.js";
 import { authMiddleware, conditionalAuth } from "../middleware/auth.js";
 import rateLimit from "express-rate-limit";
 
@@ -21,7 +21,7 @@ router.post("/newfacets/:name", rateLimit({ windowMs: 5 * 60 * 1000, max: 100, m
 router.get("/newsingle_course", oneCourseNew);
 router.get("/profile/:id", authMiddleware, PublicProfile);
 router.get("/profiles", authMiddleware, CommunityProfiles);
-
+router.get("/blog/:id", getBlogById)
 
 router.get("/search", search)
 // router.get("/all_destinations", allDestinations);

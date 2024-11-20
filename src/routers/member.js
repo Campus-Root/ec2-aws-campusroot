@@ -2,7 +2,7 @@ import { downloadDoc, listings, newStudents, profile, profileEdit, singleApplica
 import { calendarEvents, generatingAuthUrl, googleAuthentication } from "../controllers/team/calendar.js";
 import { authMiddleware, isTeam } from "../middleware/auth.js";
 import express from "express";
-import { createBlog, deleteBlog, getBlogById, getBlogs, updateBlog } from "../controllers/team/blogs.js";
+import { createBlog, deleteBlog, getBlogs, updateBlog } from "../controllers/team/blogs.js";
 
 
 const router = express.Router();
@@ -19,7 +19,6 @@ router.get("/events", authMiddleware, isTeam, calendarEvents)
 router.post('/new-students', authMiddleware, isTeam, newStudents)
 router.post("/blog", authMiddleware, isTeam, createBlog)
 router.get("/blog", authMiddleware, isTeam, getBlogs)
-router.get("/blog/:id", authMiddleware, isTeam, getBlogById)
 router.put("/blog/:id", authMiddleware, isTeam, updateBlog)
 router.delete("/blog/:id", authMiddleware, isTeam, deleteBlog)
 export default router;

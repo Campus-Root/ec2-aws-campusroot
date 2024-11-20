@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { errorWrapper } from "../../middleware/errorWrapper";
+import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { blogModel } from "../../models/blogs.js";
 import userModel from "../../models/User.js";
 
@@ -40,11 +40,6 @@ export const createBlog = errorWrapper(async (req, res) => {
 export const getBlogs = errorWrapper(async (req, res) => {
     const blogs = await blogModel.find({ author: req.user._id }).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 });
     return { statusCode: 201, message: "Blogs fetched successfully", data: blogs };
-})
-export const getBlogById = errorWrapper(async (req, res) => {
-    const blog = await blogModel.findById(req.params.id).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 });
-    if (!blog) return { statusCode: 400, message: "Blog post not found", data: blog };
-    return { statusCode: 201, message: "Blog fetched successfully", data: blog };
 })
 export const updateBlog = errorWrapper(async (req, res) => {
     const { error, value } = blogSchema.validate(req.body)
