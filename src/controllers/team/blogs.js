@@ -29,6 +29,7 @@ export const createBlog = errorWrapper(async (req, res) => {
     const { error, value } = blogSchema.validate(req.body)
     if (error) return { statusCode: 400, message: error.details[0].message, data: [value] };
     const { title, coverImageSrc, content, summary, tags, categories, isPublished, publishedAt } = value;
+    console.log("author", JSON.stringify(req.user));
     const blog = await blogModel.create({ title, coverImageSrc, content, summary, tags, categories, isPublished, publishedAt: new Date(publishedAt) || new Date(), author: req.user._id });
     await userModel.populate(blog, [
         { path: 'author', select: "firstName lastName displayPicSrc email userType role" },
