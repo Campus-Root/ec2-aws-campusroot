@@ -9,10 +9,10 @@ import publicRouter from "./public.js"
 import memberRouter from "./member.js"
 import processCoordinatorRouter from "./processCoordinator.js"
 const router = Router();
-
+router.use("/member",memberRouter);
+router.use(xssReqSanitizer())
 router.use("/auth", authRouter);
 router.use("/student", studentRouter);
-router.use("/member",memberRouter);
 router.use("/admin", adminRouter);
 router.use("/developer", developerRouter);
 router.use("/counsellor", counsellorRouter);

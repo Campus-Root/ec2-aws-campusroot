@@ -3,9 +3,13 @@ import { calendarEvents, generatingAuthUrl, googleAuthentication } from "../cont
 import { authMiddleware, isTeam } from "../middleware/auth.js";
 import express from "express";
 import { createBlog, deleteBlog, getBlogs, updateBlog } from "../controllers/team/blogs.js";
+import xssReqSanitizer from "xss-req-sanitizer";
 
 
 const router = express.Router();
+router.put("/blog/:id", authMiddleware, isTeam, updateBlog)
+router.post("/blog", authMiddleware, isTeam, createBlog)
+router.use(xssReqSanitizer())
 //        {{base}}/api/v1/member
 router.get("/", authMiddleware, isTeam, profile)
 router.put("/", authMiddleware, isTeam, profileEdit)
@@ -17,9 +21,7 @@ router.get("/google", generatingAuthUrl)
 router.get("/google/login", googleAuthentication)
 router.get("/events", authMiddleware, isTeam, calendarEvents)
 router.post('/new-students', authMiddleware, isTeam, newStudents)
-router.post("/blog", authMiddleware, isTeam, createBlog)
 router.get("/blog", authMiddleware, isTeam, getBlogs)
-router.put("/blog/:id", authMiddleware, isTeam, updateBlog)
 router.delete("/blog/:id", authMiddleware, isTeam, deleteBlog)
 export default router;
 

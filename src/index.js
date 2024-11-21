@@ -13,20 +13,11 @@ import 'dotenv/config';
 import { startCronJob } from "./utils/cron.js";
 import indexRouter from "./routers/index.js";
 import webhookRouter from "./webhooks/index.js";
-
 const app = express();
-
 import path from 'path';
-import { getTokens, sendPushNotification } from "./utils/sendNotification.js";
-import xssReqSanitizer from "xss-req-sanitizer";
 const __filename = new URL(import.meta.url).pathname;
-
-
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, 'build')));
-
-
-
 await startCronJob();
 await initialize();
 export const cookieOptions = {
@@ -66,7 +57,6 @@ app.use(helmet.noSniff());
 app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
 app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(mongoSanitize());
-app.use(xssReqSanitizer())
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use("/api/v1", indexRouter);
 app.use("/webhook/v1", webhookRouter)
