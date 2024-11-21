@@ -51,6 +51,7 @@
     "razorpay": "^2.9.4",
     "redis": "^4.7.0",
     "whatwg-url": "^14.0.0",
-    "xss-req-sanitizer": "^1.0.4"
+    "xss-req-sanitizer": "^1.0.4",
+    "zod": "^3.23.8"
   }
 }

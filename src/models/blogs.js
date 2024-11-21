@@ -2,7 +2,7 @@ import mongoose from "mongoose"
 
 const blogSchema = new mongoose.Schema({
     title: { type: String, required: true, trim: true, },
-    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true, },
     coverImageSrc: { type: String, required: true, },
     content: { type: String, required: true },
     summary: { type: String, trim: true },
@@ -14,7 +14,7 @@ const blogSchema = new mongoose.Schema({
     likes: { type: Number, default: 0 },
     comments: [
         {
-            user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+            user: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
             content: { type: String, required: true, trim: true, },
             createdAt: { type: Date, default: Date.now, },
         },
