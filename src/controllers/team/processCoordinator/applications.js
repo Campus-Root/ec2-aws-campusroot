@@ -11,15 +11,9 @@ export const switchStage = errorWrapper(async (req, res, next, session) => {
     const { applicationId, status, stage, note } = req.body
     const application = await productModel.findById(applicationId)
     if (!application) return { statusCode: 400, data: null, message: `invalid applicationId` };
-    if (application.processCoordinator.toString() != req.user._id) return {
-        statusCode: 400, data: null, message: `invalid access to this application`
-    };
-    if (application.status != status) return {
-        statusCode: 400, data: null, message: `invalid status`
-    };
-    if (!Object.values(applicationStagesEnum).includes(stage)) return {
-        statusCode: 400, data: null, message: `invalid stage`
-    };
+    if (!application.advisors.includes(req.user._id)) return { statusCode: 400, data: null, message: `invalid access` };
+    if (application.status != status) return {  statusCode: 400, data: null, message: `invalid status` };
+    if (!Object.values(applicationStagesEnum).includes(stage)) return { statusCode: 400, data: null, message: `invalid stage` };
     const logs = application.log.find(ele => ele.status == status)
     logs.stages.push({ name: stage, message: note })
     application.stage = stage
@@ -38,14 +32,10 @@ export const addToChecklist = errorWrapper(async (req, res, next, session) => {
     const { applicationId, name, isChecked, desc } = req.body
     if (!name) return { statusCode: 400, data: null, message: `name of item is required` };
     const application = await productModel.findById(applicationId)
-    if (!application) return {
-        statusCode: 400, data: null, message: `invalid applicationId`
-    };
+    if (!application) return {  statusCode: 400, data: null, message: `invalid applicationId` };
     const checklistItem = { name: name }
     if (isChecked) checklistItem.isChecked = isChecked
     if (desc) checklistItem.desc = desc
-
-
     if (req.file) {
         const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier || "", folder_ID: req.user.docData.folder })
         if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
@@ -78,9 +68,7 @@ export const editItemInChecklist = errorWrapper(async (req, res, next, session) 
     let application = await productModel.findById(applicationId);
     if (!application) return { statusCode: 400, data: null, message: `invalid application ID` };
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
-    if (!checklistItem) return {
-        statusCode: 400, data: null, message: `invalid checklist ID`
-    };
+    if (!checklistItem) return {  statusCode: 400, data: null, message: `invalid checklist ID` };
     switch (action) {
         case "edit":
             if (name) checklistItem.name = name
