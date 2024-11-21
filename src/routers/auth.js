@@ -7,7 +7,7 @@ import { customRateLimiter } from "../middleware/ratelimiter.js";
 
 const router = express.Router();
 //        {{localhost:5000}}/api/v1/auth/team-login
-router.post("/team-login", checkDisposableEmail, TeamLogin)
+router.post("/team-login", TeamLogin)
 router.post("/login", checkDisposableEmail, customRateLimiter, Login);
 router.post("/verify-user", verifyStudentLoginOTP);
 router.post("/team-register", authMiddleware, isAdmin, TeamRegister);

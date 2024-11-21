@@ -15,6 +15,7 @@ import institutionModel from "../../models/IndianColleges.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 import newCourseModel from "../../models/coursesNew.js";
+import { blogModel } from "../../models/blogs.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
@@ -238,7 +239,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
         case "blogs":
             const blogs = await blogModel.find({}).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
-            totalDocs = await courseModel.countDocuments({})
+            totalDocs = await blogModel.countDocuments({})
             totalPages = Math.ceil(totalDocs / perPage);
             return { statusCode: 201, message: "Blogs fetched successfully", data: blogs };
     }
