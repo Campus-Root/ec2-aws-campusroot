@@ -19,6 +19,7 @@ import { priceModel } from "../../models/prices.js";
 import { CartSchema, CheckoutSchema, uploadApplicationSchema } from "../../schemas/student.js";
 import { startSession } from "mongoose"
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
+import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next, session) => {
     const { error, value } = CartSchema.validate(req.body)
@@ -580,10 +581,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next, session) 
     if (!application) return { statusCode: 400, message: `invalid application ID`, data: { applicationId: applicationId } };
     const checklistItem = application.docChecklist.find(ele => ele._id.toString() == checklistItemId)
     if (!checklistItem) return { statusCode: 400, message: `invalid checklist ID`, data: { checklistItemId: checklistItemId } };
-
     const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier || "", folder_ID: req.user.docData.folder })
-
-
     if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
     if (!uploadedFileResponse.data.new) return { statusCode: 200, message: `file updated`, data: null }
     const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
