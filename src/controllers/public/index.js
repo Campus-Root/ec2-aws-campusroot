@@ -238,7 +238,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             const destinations = await destinationModel.find({})
             return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
         case "blogs":
-            const blogs = await blogModel.find({}).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
+            const blogs = await blogModel.find({}).populate("-content").populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
             totalDocs = await blogModel.countDocuments({})
             totalPages = Math.ceil(totalDocs / perPage);
             return { statusCode: 201, message: "Blogs fetched successfully", data: blogs };
