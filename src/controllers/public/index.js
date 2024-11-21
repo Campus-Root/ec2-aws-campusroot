@@ -282,17 +282,17 @@ export const filtersNew = errorWrapper(async (req, res, next) => {
                     filter.discipline = { $in: ele.data };
                     disciplineSelected = true;
                 }
-                else if (ele.type === "elite") filter.elite = { $in: ele.data[0] };
+                else if (ele.type === "elite") filter.elite = { $in: ele.data };
                 else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
-                else if (ele.type === "GRE") filter.GRE = ele.data[0];
-                else if (ele.type === "GPA") filter.GPA = ele.data[0];
-                else if (ele.type === "GMAT") filter.GMAT = ele.data[0];
-                else if (ele.type === "Duolingo") filter.Duolingo = ele.data[0];
-                else if (ele.type === "IELTS") filter.IELTS = ele.data[0];
-                else if (ele.type === "PTE") filter.PTE = ele.data[0];
-                else if (ele.type === "TOEFL") filter.TOEFL = ele.data[0];
+                else if (ele.type === "GRE") filter.GRE = { $in: ele.data };
+                else if (ele.type === "GPA") filter.GPA = { $in: ele.data };
+                else if (ele.type === "GMAT") filter.GMAT = { $in: ele.data };
+                else if (ele.type === "Duolingo") filter.Duolingo = { $in: ele.data };
+                else if (ele.type === "IELTS") filter.IELTS = { $in: ele.data };
+                else if (ele.type === "PTE") filter.PTE = { $in: ele.data };
+                else if (ele.type === "TOEFL") filter.TOEFL = { $in: ele.data };
             });
             if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
@@ -485,7 +485,7 @@ export const listingsNew = errorWrapper(async (req, res, next, session) => {
                     return ele;
                 });
             }
-            totalDocs = await courseModel.countDocuments(filter)
+            totalDocs = await newCourseModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
             return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
