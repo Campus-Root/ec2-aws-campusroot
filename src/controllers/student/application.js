@@ -16,7 +16,7 @@ import { packageModel } from "../../models/Package.js";
 import { orderModel } from "../../models/Order.js";
 import { RazorpayInstance } from "../../utils/razorpay.js";
 import { priceModel } from "../../models/prices.js";
-import { CartSchema, CheckoutSchema, uploadApplicationSchema } from "../../schemas/student.js";
+import { CartSchema, CheckoutSchema, uploadApplicationSchema, uploadInProfileSchema } from "../../schemas/student.js";
 import { startSession } from "mongoose"
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
