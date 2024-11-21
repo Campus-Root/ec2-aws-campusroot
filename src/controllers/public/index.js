@@ -748,5 +748,5 @@ export const search = errorWrapper(async (req, res, next, session) => {
 export const getBlogById = errorWrapper(async (req, res) => {
     const blog = await blogModel.findById(req.params.id).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 });
     if (!blog) return { statusCode: 400, message: "Blog post not found", data: blog };
-    return { statusCode: 201, message: "Blog fetched successfully", data: blog };
+    return { statusCode: 200, message: "Blog fetched successfully", data: blog };
 })
