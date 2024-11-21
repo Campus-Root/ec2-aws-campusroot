@@ -282,12 +282,19 @@ export const filtersNew = errorWrapper(async (req, res, next) => {
                     filter.discipline = { $in: ele.data };
                     disciplineSelected = true;
                 }
-                else if (ele.type === "elite") filter.elite = { $in: ele.data };
+                else if (ele.type === "elite") filter.elite = { $in: ele.data[0] };
                 else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
+                else if (ele.type === "GRE") filter.GRE = ele.data[0];
+                else if (ele.type === "GPA") filter.GPA = ele.data[0];
+                else if (ele.type === "GMAT") filter.GMAT = ele.data[0];
+                else if (ele.type === "Duolingo") filter.Duolingo = ele.data[0];
+                else if (ele.type === "IELTS") filter.IELTS = ele.data[0];
+                else if (ele.type === "PTE") filter.PTE = ele.data[0];
+                else if (ele.type === "TOEFL") filter.TOEFL = ele.data[0];
             });
-            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode", "courseStartingMonth"]
+            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
@@ -325,6 +332,38 @@ export const filtersNew = errorWrapper(async (req, res, next) => {
                 },
                 { $sort: { count: -1 } }
             ]
+            if (project.includes("Academic")) {
+                facets.GRE = [
+                    { $group: { _id: "$GRE", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]
+                facets.GPA = [
+                    { $group: { _id: "$GPA", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]
+                facets.GMAT = [
+                    { $group: { _id: "$GMAT", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]
+            }
+            if (project.includes("Language")) {
+                facets.Duolingo = [
+                    { $group: { _id: "$Duolingo", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]
+                facets.IELTS = [
+                    { $group: { _id: "$IELTS", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]
+                facets.PTE = [
+                    { $group: { _id: "$PTE", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]
+                facets.TOEFL = [
+                    { $group: { _id: "$TOEFL", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]
+            }
 
             facetResults = await newCourseModel.aggregate([{ $match: filter }, { $facet: facets }]);
             break;
@@ -382,25 +421,18 @@ export const listingsNew = errorWrapper(async (req, res, next, session) => {
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
                 else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
-                else if (ele.type === "type") filter.type = ele.data;
+                else if (ele.type === "type") filter.type = ele.data[0];
                 else if (ele.type === "name") {
                     // filter["$or"].push({ "location.country": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.city": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.state": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { unisName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { schoolName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } })
                     filter.$text = { $search: ele.data[0] };
                 }
-                else if (ele.type === "AcademicTestName") {
-                    if (!filter["$and"]) filter["$and"] = []
-                    let InArray = [], OutArray = []
-                    ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
-                    if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $nin: OutArray } });
-                    if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $in: InArray } });
-                }
-                else if (ele.type === "LanguageTestName") {
-                    if (!filter["$and"]) filter["$and"] = []
-                    let InArray = [], OutArray = []
-                    ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
-                    if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $nin: OutArray } });
-                    if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $in: InArray } });
-                }
+                else if (ele.type === "GRE") filter.GRE = ele.data[0];
+                else if (ele.type === "GPA") filter.GPA = ele.data[0];
+                else if (ele.type === "GMAT") filter.GMAT = ele.data[0];
+                else if (ele.type === "Duolingo") filter.Duolingo = ele.data[0];
+                else if (ele.type === "IELTS") filter.IELTS = ele.data[0];
+                else if (ele.type === "PTE") filter.PTE = ele.data[0];
+                else if (ele.type === "TOEFL") filter.TOEFL = ele.data[0];
                 else if (ele.type === "openNow") {
                     let currentMonth = new Date().getMonth(), next3Months = (currentMonth + 3) % 12, period
                     (currentMonth > 8) ?
