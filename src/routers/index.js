@@ -8,6 +8,7 @@ import communicationRouter from "./communication.js"
 import publicRouter from "./public.js"
 import memberRouter from "./member.js"
 import processCoordinatorRouter from "./processCoordinator.js"
+import xssReqSanitizer from 'xss-req-sanitizer';
 const router = Router();
 router.use("/member",memberRouter);
 router.use(xssReqSanitizer())
