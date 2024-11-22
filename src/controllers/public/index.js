@@ -241,7 +241,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             const blogs = await blogModel.find({}, "-content").populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
             totalDocs = await blogModel.countDocuments({})
             totalPages = Math.ceil(totalDocs / perPage);
-            return { statusCode: 201, message: "Blogs fetched successfully", data: blogs };
+            return { statusCode: 200, message: "Blogs fetched successfully", data: blogs };
     }
 })
 export const filtersNew = errorWrapper(async (req, res, next) => {
