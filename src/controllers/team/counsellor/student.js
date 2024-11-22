@@ -242,9 +242,11 @@ export const Package = errorWrapper(async (req, res, next, session) => {
         };
     }
 })
-export const registerNewStudent = errorWrapper(async (req, res, next, session) => {
-    // primary details phone, email => verify them 
-    // secondary details 
-    // tertiary details 
-    // save the user
-})
+// export const registerNewStudent = errorWrapper(async (req, res, next, session) => {
+//     // primary details phone, email => verify them
+//     const { phone, email, firstName, lastName } = req.body;
+//     // secondary details 
+//     // tertiary details 
+//     // save the user
+//     return { statusCode: 200, message: "user created successfully", data: Package }
+// })

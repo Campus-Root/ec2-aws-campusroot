@@ -82,7 +82,7 @@ export const searchAssistant = async (userMessage, messages) => {
         ];
         messages.forEach(ele => { Messages.push({ role: ele.sender == "6737304feb3f12f7ec92ec41" ? "assistant" : "user", content: ele.content }) })
         const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-4o-mini",
             messages: [
                 ...messages,
                 {
