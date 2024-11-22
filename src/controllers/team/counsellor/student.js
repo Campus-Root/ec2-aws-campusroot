@@ -5,7 +5,7 @@ import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { CurrencySymbolEnum, DestinationTypeEnum, possibilityOfAdmitEnum, ProductCategoryEnum, studentCounsellingStagesEnum } from "../../../utils/enum.js";
 import userModel from "../../../models/User.js";
 import { packageModel } from "../../../models/Package.js";
-
+import 'dotenv/config'
 export const switchStage = errorWrapper(async (req, res, next, session) => {
     const { studentId, stage, nextActionDate, note } = req.body
     if (!await studentModel.findById(studentId)) return { statusCode: 400, data: null, message: `invalid StudentId` };
@@ -242,11 +242,118 @@ export const Package = errorWrapper(async (req, res, next, session) => {
         };
     }
 })
-// export const registerNewStudent = errorWrapper(async (req, res, next, session) => {
-//     // primary details phone, email => verify them
-//     const { phone, email, firstName, lastName } = req.body;
-//     // secondary details 
-//     // tertiary details 
-//     // save the user
-//     return { statusCode: 200, message: "user created successfully", data: Package }
-// })
+export const registerNewStudent = errorWrapper(async (req, res, next, session) => {
+    const { phone, email, firstName, lastName, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, extraCurriculumActivities, displayPicSrc, school, plus2, underGraduation, postGraduation, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+    const existingEmail = await userModel.findOne({ email });
+    if (existingEmail) return { statusCode: 400, message: "email already exists", data: email }
+    const existingPhone = await userModel.findOne({ "phone.number": phone.number, "phone.countryCode": phone.countryCode });
+    if (existingPhone) return { statusCode: 400, message: "phone number already exists", data: phone }
+    const user = await studentModel.create({ phone, email, firstName, lastName })
+    user.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]
+    user.advisors = [{ assignedCountries: req.user.expertiseCountry, info: req.user._id }]
+    const chat = await chatModel.create({ participants: [req.user._id, user._id] });
+    req.user.students.push({ students: { profile: user._id, stage: "Fresh Lead" } });
+    req.user.logs.push({
+        action: `registered new student`,
+        details: `userId:${user._id}`
+    })
+    sendMail({
+        to: req.user.email,
+        subject: "new Student assigned to you",
+        html: `
+            <html lang="en">
+                <head>
+                    <meta charset="UTF-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <title>Document</title>
+                    <style>
+                        .container {
+                            font-family: Arial, sans-serif;
+                            text-align: center;
+                            padding: 20px;
+                        }
+                        img {
+                            max-width: 200px;
+                            margin-bottom: 20px;
+                        }
+                        h3 {
+                            color: #333;
+                        }
+                        h2 {
+                            color: #0073e6;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                        <h3>Dear ${req.user.firstName} ${req.user.lastName},</h3>
+                        <h2>you have successfully registered a student!</h2>
+                    </div>
+                </body>
+            </html>
+        `
+    });
+    const doc = await createFolder(user._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
+    user.docData = {
+        folder: doc.id,
+        name: doc.attributes.name,
+        parent: doc.attributes.parent_id,
+        download_url: doc.attributes.download_url,
+        modified_by_zuid: doc.attributes.modified_by_zuid
+    }
+    user.LeadSource = req.user.firstName + req.user.lastName;
+    if (personalDetails) user.personalDetails = personalDetails;
+    if (isPlanningToTakeAcademicTest) user.isPlanningToTakeAcademicTest = isPlanningToTakeAcademicTest;
+    if (isPlanningToTakeLanguageTest) user.isPlanningToTakeLanguageTest = isPlanningToTakeLanguageTest;
+    if (familyDetails) user.familyDetails = familyDetails;
+    if (extraCurriculumActivities) user.extraCurriculumActivities = extraCurriculumActivities;
+    if (displayPicSrc) user.displayPicSrc = displayPicSrc;
+    if (tests) user.tests = tests;
+    if (workExperience) user.workExperience = workExperience;
+    if (researchPapers) user.researchPapers = researchPapers;
+    if (school) user.education.school = school;
+    if (plus2) user.education.plus2 = plus2;
+    if (underGraduation) user.education.underGraduation = underGraduation;
+    if (postGraduation) user.education.postGraduation = postGraduation;
+    if (skills) user.skills = skills;
+    if (preference) user.preference = preference;
+    if (education) user.education = education;
+    await Promise.all([
+        req.user.save(),
+        user.save()
+    ])
+    return { statusCode: 200, message: "user created successfully", data: user }
+})
+export const editStudentDetails = errorWrapper(async (req, res) => {
+    const { studentId, firstName, lastName, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, extraCurriculumActivities, displayPicSrc, school, plus2, underGraduation, postGraduation, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+    const user = await studentModel.findById(studentId)
+    if (!user) return { statusCode: 404, message: "User not found" }
+    if (firstName) user.firstName = firstName
+    if (lastName) user.lastName = lastName
+    if (personalDetails) user.personalDetails = personalDetails;
+    if (isPlanningToTakeAcademicTest) user.isPlanningToTakeAcademicTest = isPlanningToTakeAcademicTest;
+    if (isPlanningToTakeLanguageTest) user.isPlanningToTakeLanguageTest = isPlanningToTakeLanguageTest;
+    if (familyDetails) user.familyDetails = familyDetails;
+    if (extraCurriculumActivities) user.extraCurriculumActivities = extraCurriculumActivities;
+    if (displayPicSrc) user.displayPicSrc = displayPicSrc;
+    if (tests) user.tests = tests;
+    if (workExperience) user.workExperience = workExperience;
+    if (researchPapers) user.researchPapers = researchPapers;
+    if (school) user.education.school = school;
+    if (plus2) user.education.plus2 = plus2;
+    if (underGraduation) user.education.underGraduation = underGraduation;
+    if (postGraduation) user.education.postGraduation = postGraduation;
+    if (skills) user.skills = skills;
+    if (preference) user.preference = preference;
+    if (education) user.education = education;
+    req.user.logs.push({
+        action: `updated student data`,
+        details: `userId:${user._id}`
+    })
+    await Promise.all([
+        req.user.save(),
+        user.save()
+    ])
+    return { statusCode: 200, message: "user updated successfully", data: user }
+})

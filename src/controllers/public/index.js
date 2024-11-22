@@ -750,25 +750,3 @@ export const getBlogById = errorWrapper(async (req, res) => {
     if (!blog) return { statusCode: 400, message: "Blog post not found", data: blog };
     return { statusCode: 200, message: "Blog fetched successfully", data: blog };
 })
-// export const testValidity = errorWrapper(async (req, res) => {
-//     const { type, data } = req.body;
-//     switch (type) {
-//         case "email":
-//             // data is email  find if it is valid and  it doesn't exists in db then return true
-//             const { error } = emailSchema.validate(Joi.string().email().required())
-
-
-//             const response = await fetch(`https://disposable.debounce.io/?email=${data.email}`);
-//             const result = await response.json();
-//             if (result.disposable == "true") return { statusCode: 400, data: null, message: `Please do not use throw away email` };
-//             if (result.success == "0") return { statusCode: 400, data: null, message: `Invalid email Id` };
-
-//             break;
-//         case "phone":
-//             // data is {countryCode,number}  find if it is valid and  it doesn't exists in db then return true 
-//             break;
-
-//         default:
-//             break;
-//     }
-// })
