@@ -14,237 +14,9 @@ import 'dotenv/config';
 import institutionModel from "../../models/IndianColleges.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
-import newCourseModel from "../../models/coursesNew.js";
 import { blogModel } from "../../models/blogs.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
-    let { filterData, project } = req.body;
-    let facetResults, facets = {}, countrySelected = false, stateSelected = false, disciplineSelected = false, filter = {}
-    switch (req.params.name) {
-        case "universities":
-            filterData.forEach(ele => {
-                if (ele.type === "country") {
-                    filter["location.country"] = { $in: ele.data };
-                    countrySelected = true;
-                }
-                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
-                else if (ele.type === "state") {
-                    filter["location.state"] = { $in: ele.data };
-                    stateSelected = true;
-                }
-            });
-            if (project.length === 0) project = ["country", "state", "city", "type"]
-            if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            facetResults = await universityModel.aggregate([{ $match: filter }, { $facet: facets }]);
-            break;
-        case "courses":
-            filter.university = { $exists: true }
-            filterData.forEach(ele => {
-                if (ele.type === "country") {
-                    filter["location.country"] = { $in: ele.data };
-                    countrySelected = true;
-                }
-                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
-                else if (ele.type === "state") {
-                    filter["location.state"] = { $in: ele.data };
-                    stateSelected = true;
-                }
-                else if (ele.type === "discipline") {
-                    filter.discipline = { $in: ele.data };
-                    disciplineSelected = true;
-                }
-                else if (ele.type === "elite") filter.elite = { $in: ele.data };
-                else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
-                else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
-                else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
-            });
-            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode", "courseStartingMonth"]
-            if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("subDiscipline") && disciplineSelected) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("elite")) facets.elite = [{ $group: { _id: "$elite", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            // if (project.includes("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("studyMode")) facets.studyMode = [{ $unwind: "$studyMode" }, { $match: { studyMode: { $nin: [null, "Online"] } } }, { $group: { _id: "$studyMode", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("courseStartingMonth")) facets.courseStartingMonth = [
-                { $unwind: "$startDate" },
-                {
-                    $group: {
-                        _id: {
-                            $cond: [
-                                { $in: ["$startDate.courseStartingMonth", [0, 1, 2]] },
-                                "January to March",
-                                {
-                                    $cond: [
-                                        { $in: ["$startDate.courseStartingMonth", [3, 4, 5]] },
-                                        "April to June",
-                                        {
-                                            $cond: [
-                                                { $in: ["$startDate.courseStartingMonth", [6, 7, 8]] },
-                                                "July to September",
-                                                "October to December"
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        count: { $sum: 1 }
-                    }
-                },
-                { $sort: { count: -1 } }
-            ]
-
-            facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
-            break;
-        default:
-            break;
-    }
-    return ({ statusCode: 200, message: `facets`, data: facetResults })
-})
-export const listings = errorWrapper(async (req, res, next, session) => {
-    const { page, perPage = 20 } = req.body, filter = {}, sort = {}, skip = (page - 1) * perPage; // Number of items per page
-    let totalPages = 0, totalDocs
-    const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
-    switch (req.params.name) {
-        case "universities":
-            filter.courses = { "$gt": 0 }
-            sort.courses = -1
-            req.body.filterData.forEach(ele => {
-                if (ele.type === "country") filter["location.country"] = { $in: ele.data };
-                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
-                else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
-                else if (ele.type === "type") filter.type = ele.data[0];
-                else if (ele.type === "rating") filter.uni_rating = { $gte: ele.data[0] };
-                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]
-                else if (ele.type === "popular") {
-                    filter[`rank.${ele.data[0]}`] = { $exists: true, $ne: 0 };
-                    sort[`rank.${ele.data[0]}`] = 1;
-                }
-            });
-            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort(sort).skip(skip).limit(perPage);
-            totalDocs = await universityModel.countDocuments(filter)
-            for (const university of listOfUniversities) {
-                if (req.body.currency && university.currency.code !== req.body.currency) {
-                    if (!rates[university.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
-                    university.cost = university.cost.map(ele => {
-                        return {
-                            name: ele.name,
-                            lowerLimit: costConversion(ele.lowerLimit, university.currency.code, req.body.currency, rates[university.currency.code], rates[req.body.currency]),
-                            upperLimit: costConversion(ele.upperLimit, university.currency.code, req.body.currency, rates[university.currency.code], rates[req.body.currency])
-                        };
-                    });
-                    university.currency = { code: req.body.currency, symbol: currencySymbols[req.body.currency] }
-                }
-            }
-
-            totalPages = Math.ceil(totalDocs / perPage);
-            return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
-        case "courses":
-            filter.university = { $exists: true }
-            req.body.filterData.forEach(ele => {
-                if (ele.type === "country") filter["location.country"] = { $in: ele.data };
-                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
-                else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
-                else if (ele.type === "universityId") filter.university = { $in: ele.data };
-                else if (ele.type === "courseId") filter._id = { $in: ele.data };
-                else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
-                else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
-                else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
-                else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
-                else if (ele.type === "type") filter.type = ele.data;
-                else if (ele.type === "name") {
-                    // filter["$or"].push({ "location.country": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.city": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.state": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { unisName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { schoolName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } })
-                    filter.$text = { $search: ele.data[0] };
-                }
-                // else if (ele.type === "ranking") filter.data
-
-                // else if (ele.type === "AcademicTestName") {
-                //     if (!filter["$and"]) filter["$and"] = []
-                //     let InArray = [], OutArray = []
-                //     ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
-                //     if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $nin: OutArray } });
-                //     if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.AcademicRequirements.testName": { $in: InArray } });
-                // }
-                // else if (ele.type === "LanguageTestName") {
-                //     if (!filter["$and"]) filter["$and"] = []
-                //     let InArray = [], OutArray = []
-                //     ele.data.forEach(item => item.required ? InArray.push(item.name) : OutArray.push(item.name))
-                //     if (OutArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $nin: OutArray } });
-                //     if (InArray.length) filter["$and"].push({ "AdmissionsRequirements.LanguageRequirements.testName": { $in: InArray } });
-                // }
-                else if (ele.type === "openNow") {
-                    let currentMonth = new Date().getMonth(), next3Months = (currentMonth + 3) % 12, period
-                    (currentMonth > 8) ?
-                        period = {
-                            $or: [
-                                {
-                                    $and: [
-                                        { deadlineMonth: { $gte: currentMonth } },
-                                        { deadlineMonth: { $lte: 11 } } // Deadline in the current year
-                                    ]
-                                },
-                                {
-                                    $and: [
-                                        { deadlineMonth: { $lte: next3Months } },
-                                        { deadlineMonth: { $gte: 0 } } // Deadline in the next year
-
-                                    ]
-                                }]
-                        }
-                        :
-                        period = { $and: [{ deadlineMonth: { $gte: currentMonth } }, { deadlineMonth: { $lte: next3Months } }] }
-                    filter.startDate = { $elemMatch: period };
-                }
-                else if (ele.type === "stem") filter["stemDetails.stem"] = true;
-                else if (ele.type === "budget") {
-                    let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
-                    if (!filter["$or"]) filter["$or"] = []
-                    filter["$or"].push(...currencyFilter.map(element => {
-                        ele.data[0] = ele.data[0] ? ele.data[0] : 0
-                        ele.data[1] = ele.data[1] ? ele.data[1] : Math.min()
-                        let lowerLimit = costConversion(ele.data[0], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-                        let upperLimit = costConversion(ele.data[1], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-                        return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
-                    }));
-                }
-                else if (ele.type === "courseStartingMonth") {
-                    const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
-                    let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
-                    filter.startDate = { $elemMatch: period };
-                }
-            });
-            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, elite: 1, "AdmissionsRequirements.LanguageRequirements": 1, globalRankingPosition: 1, globalTopRankingPercentage: 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
-            if (req.body.currency) {
-                courses = courses.map(ele => {
-                    if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
-                    if (ele.currency.code != req.body.currency) {
-                        ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.body.currency, rates[ele.currency.code], rates[req.body.currency])
-                        ele.currency = { code: req.body.currency, symbol: currencySymbols[req.body.currency] }
-                    }
-                    return ele;
-                });
-            }
-            totalDocs = await courseModel.countDocuments(filter)
-            totalPages = Math.ceil(totalDocs / perPage);
-            if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
-            return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
-        case "destinations":
-            const destinations = await destinationModel.find({})
-            return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
-        case "blogs":
-            const blogs = await blogModel.find({}, "-content").populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
-            totalDocs = await blogModel.countDocuments({})
-            totalPages = Math.ceil(totalDocs / perPage);
-            return { statusCode: 200, message: "Blogs fetched successfully", data: blogs };
-    }
-})
-export const filtersNew = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
     let facetResults, facets = {}, countrySelected = false, stateSelected = false, disciplineSelected = false, filter = {}
     switch (req.params.name) {
@@ -366,14 +138,14 @@ export const filtersNew = errorWrapper(async (req, res, next) => {
                 ]
             }
 
-            facetResults = await newCourseModel.aggregate([{ $match: filter }, { $facet: facets }]);
+            facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
             break;
         default:
             break;
     }
     return ({ statusCode: 200, message: `facets`, data: facetResults })
 })
-export const listingsNew = errorWrapper(async (req, res, next, session) => {
+export const listings = errorWrapper(async (req, res, next, session) => {
     const { page, perPage = 20 } = req.body, filter = {}, sort = {}, skip = (page - 1) * perPage; // Number of items per page
     let totalPages = 0, totalDocs
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
@@ -475,7 +247,7 @@ export const listingsNew = errorWrapper(async (req, res, next, session) => {
                     filter.startDate = { $elemMatch: period };
                 }
             });
-            let courses = await newCourseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, elite: 1, "AdmissionsRequirements.LanguageRequirements": 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
+            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, elite: 1, "AdmissionsRequirements.LanguageRequirements": 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
                     if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
@@ -486,7 +258,7 @@ export const listingsNew = errorWrapper(async (req, res, next, session) => {
                     return ele;
                 });
             }
-            totalDocs = await newCourseModel.countDocuments(filter)
+            totalDocs = await courseModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
             return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
@@ -524,42 +296,6 @@ export const oneUniversity = errorWrapper(async (req, res, next, session) => {
 })
 export const oneCourse = errorWrapper(async (req, res, next, session) => {
     let course = await courseModel
-        .findById(req.query.id, {
-            "tuitionFee.tuitionFeeLink": 0,
-            "startDate.link": 0,
-            "AdmissionsRequirements.AcademicRequirements.Link": 0,
-            "AdmissionsRequirements.EnglishRequirements.Link": 0,
-            "AdmissionsRequirements.generalRequirementLink": 0,
-            "AdmissionsRequirements.year15RequirementLink": 0,
-            "applicationDetails.applicationProcedureLink": 0,
-            "scholarship.termsAndConditions": 0,
-            "scholarship.scholarshipLink": 0,
-            "contactInfo": 0,
-            "initialDeposits": 0,
-            "stemDetails.stemLink": 0
-        })
-        .populate("university", "name location ranking cost currency type logoSrc pictureSrc establishedYear")
-    if (!course) return res.status(400).json({ statusCode: 200, message: `course ID invalid`, data: null })
-    if (req.query.currency && course.currency.code !== req.query.currency) {
-        const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
-        if (!rates[course.currency.code] || !rates[req.query.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
-        course.tuitionFee.tuitionFee = costConversion(course.tuitionFee.tuitionFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
-        course.applicationDetails.applicationFee = costConversion(course.applicationDetails.applicationFee, course.currency.code, req.query.currency, rates[course.currency.code], rates[req.query.currency])
-        course.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
-        if (!rates[course.university.currency.code] || !rates[req.query.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
-        course.university.cost = course.university.cost.map(ele => {
-            return {
-                name: ele.name,
-                lowerLimit: costConversion(ele.lowerLimit, course.university.currency.code, req.query.currency, rates[course.university.currency.code], rates[req.query.currency]),
-                upperLimit: costConversion(ele.upperLimit, course.university.currency.code, req.query.currency, rates[course.university.currency.code], rates[req.query.currency])
-            };
-        });
-        course.university.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
-    }
-    return ({ statusCode: 200, message: `single course`, data: course })
-})
-export const oneCourseNew = errorWrapper(async (req, res, next, session) => {
-    let course = await newCourseModel
         .findById(req.query.id)
         .select("-embeddingVector -plot -programmeStructure -description")
         .populate("university", "name location ranking cost currency type logoSrc pictureSrc establishedYear")

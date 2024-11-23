@@ -1,4 +1,3 @@
-import newCourseModel from '../models/coursesNew.js';
 import { openai } from './dbConnection.js';
 export const stringToEmbedding = async (text) => {
     try {
@@ -39,7 +38,7 @@ export const getGoodstring = async (userStr) => {
 
 export const contentExtractor = async (userMessage) => {
     try {
-        const courses = await newCourseModel.aggregate([
+        const courses = await courseModel.aggregate([
             {
                 $vectorSearch: {
                     "queryVector": await stringToEmbedding(userMessage),
