@@ -64,6 +64,7 @@ const courseSchema = mongoose.Schema(
         TOEFL: { type: Boolean },
         TOEFL_MinScore: { type: String },
         elite: { type: Boolean },
+        featured: { type: Boolean },
         discipline: { type: [String], },
         currency: {
             symbol: { type: String, enum: { values: Object.values(CurrencySymbolEnum), message: "Invalid Type of currency symbol" } },
