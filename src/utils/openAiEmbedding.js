@@ -1,3 +1,4 @@
+import courseModel from '../models/Course.js';
 import { openai } from './dbConnection.js';
 export const stringToEmbedding = async (text) => {
     try {
