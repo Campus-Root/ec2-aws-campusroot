@@ -265,6 +265,12 @@ export const listings = errorWrapper(async (req, res, next, session) => {
         case "destinations":
             const destinations = await destinationModel.find({})
             return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
+        case "blogs":
+            const blogs = await blogModel.find({}, "-content").populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
+            totalDocs = await blogModel.countDocuments({})
+            totalPages = Math.ceil(totalDocs / perPage);
+            return { statusCode: 200, message: "Blogs fetched successfully", data: blogs };
+        default: return ({ statusCode: 400, message: "Invalid endpoint", data: null });
     }
 })
 export const oneUniversity = errorWrapper(async (req, res, next, session) => {
