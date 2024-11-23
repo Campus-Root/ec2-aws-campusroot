@@ -45,7 +45,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
 		defaultSrc: ["'self'"],
-		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/", "blob:"],
+		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/","https://www.4icu.org", "blob:"],
 		connectSrc: ["'self'", "https://ipapi.co", "blob:"],
 		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
 		workerSrc: ["'self'", "blob:"],
