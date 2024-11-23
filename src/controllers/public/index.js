@@ -41,6 +41,7 @@ export const filters = errorWrapper(async (req, res, next) => {
             break;
         case "courses":
             filter.university = { $exists: true }
+            filter.multipleLocations = { $exists: true }
             filterData.forEach(ele => {
                 if (ele.type === "country") {
                     filter["location.country"] = { $in: ele.data };
@@ -184,6 +185,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
             filter.university = { $exists: true }
+            filter.multipleLocations = { $exists: true }
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
