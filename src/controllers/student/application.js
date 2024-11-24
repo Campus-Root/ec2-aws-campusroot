@@ -372,10 +372,8 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
         },
         { new: true }
     );
-    console.log("order: ", JSON.stringify(order)); // check for paymentDetails
     const student = await studentModel.findById(order.student, "advisors");
     await userModel.populate(student, { path: 'advisors.info', select: 'role expertiseCountry' });
-    console.log("studentBefore: ", JSON.stringify(student)); // check for advisors
     const hasPackageId = Boolean(order.Package);
     const hasProducts = Array.isArray(order.products) && order.products.length > 0;
     if (hasProducts) {
@@ -395,7 +393,7 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
                     if (counsellors.length > 0) Product.advisors.push(counsellors[0].info._id);
                     else {
                         const Counsellor = await getNewAdvisor("counsellor", country);
-                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: req.user._id, stage: "Fresh Lead" } } });
+                        teamModel.findByIdAndUpdate(Counsellor._id, { $push: { students: { profile: student._id, stage: "Fresh Lead" } } });
                         chatModel.create({ participants: [student._id, Counsellor._id] });
                         student.advisors.push({ info: Counsellor._id, assignedCountries: [country] });
                         Product.advisors.push(Counsellor._id);
