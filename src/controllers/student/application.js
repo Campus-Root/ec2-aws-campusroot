@@ -627,15 +627,16 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next,
     checklistItem.doc = null
     checklistItem.isChecked = false
     req.user.logs.push({ action: `document deleted in application`, details: `applicationId:${applicationId}` })
-    await Promise.all([
-        application.save(),
-        req.user.save(),
-        deleteFileInWorkDrive(doc.data.resource_id),
-        Document.findByIdAndDelete(documentId),
-        await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
-        await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
-        await Document.populate(application, { path: "docChecklist.doc", select: "data", })
-    ])
+    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
+        await Promise.all([
+            application.save(),
+            req.user.save(),
+            deleteFileInWorkDrive(doc.data.resource_id),
+            Document.findByIdAndDelete(documentId),
+            Document.populate(application, { path: "docChecklist.doc", select: "data", }),
+            userModel.populate(application, { path: "advisors", select: "firstName displayPicSrc lastName email role" }),
+            universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
+        ])
     if (req.user.preference.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
         if (application.course.currency.code !== req.user.preference.currency) {
