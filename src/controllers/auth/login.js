@@ -121,7 +121,7 @@ export const verifyStudentLoginOTP = errorWrapper(async (req, res, next, session
     }
     let user = await userModel.findOne(finder).session(session);
     if (!user) return { statusCode: 401, message: `Invalid ${type}. Please try again`, data: null };
-    if (user.email === "krohithkumar2408@gmail.com") {
+    if (["krohithkumar2408@gmail.com", "applereview@gmail.com", "googlereview@gmail.com"].includes(user.email)) {
         const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'], DeviceToken)
         res.cookie("CampusRoot_Refresh", newRefreshToken, cookieOptions)
         req.AccessToken = newAccessToken;
