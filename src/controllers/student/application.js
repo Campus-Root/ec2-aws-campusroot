@@ -19,7 +19,7 @@ import { priceModel } from "../../models/prices.js";
 import { CartSchema, CheckoutSchema, uploadApplicationSchema, uploadInProfileSchema } from "../../schemas/student.js";
 import { startSession } from "mongoose"
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
-import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
+import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const Cart = errorWrapper(async (req, res, next, session) => {
     const { error, value } = CartSchema.validate(req.body)
