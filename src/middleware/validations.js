@@ -64,6 +64,7 @@ export const validateProducts = errorWrapper(async (req, res, next, session) => 
 })
 export const isPaid = async (req, res, next) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    console.log("razorpayDetails", JSON.stringify({ razorpay_order_id, razorpay_payment_id, razorpay_signature }));
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET).update(body.toString()).digest("hex");
     if (expectedSignature !== razorpay_signature) return next(generateAPIError("payment verification failed, contact for support", 400));

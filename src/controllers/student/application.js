@@ -372,13 +372,16 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
         },
         { new: true }
     );
+    console.log("order: ", JSON.stringify(order)); // check for paymentDetails
     const student = await studentModel.findById(order.student, "advisors");
     await userModel.populate(student, { path: 'advisors.info', select: 'role expertiseCountry' });
+    console.log("studentBefore: ", JSON.stringify(student)); // check for advisors
     const hasPackageId = Boolean(order.Package);
     const hasProducts = Array.isArray(order.products) && order.products.length > 0;
     if (hasProducts) {
         for (const product of order.products) {
             const Product = await productModel.findById(product);
+            console.log("Product before: ", JSON.stringify(Product)); // check for product
             let course = await courseModel.findById(Product.course, "location.country");
             let country = course.location.country;
             let counsellors = [], processCoordinators = []
@@ -437,13 +440,14 @@ export const paymentVerification = errorWrapper(async (req, res, next) => {
                     break;
             }
             await Product.save();
+            console.log("Product After : ", JSON.stringify(Product)); // check for assigned advisors 
         }
-
         await studentModel.findByIdAndUpdate(order.student, { $push: { "activity.products": { $each: order.products } } });
     }
     if (hasPackageId) await studentModel.findByIdAndUpdate(order.student, { $push: { purchasedPackages: order.Package } });
     await studentModel.findByIdAndUpdate(order.student, { $push: { logs: { action: `order paid`, details: `orderId:${order._id}` } } });
     await student.save();
+    console.log("studentAfter: ", JSON.stringify(student)); // check for assigned advisors, purchasedPackages, activity.products
     return { statusCode: 200, message: 'Order processed successfully', data: { reference: order._id } }
 });
 export const orderInfo = errorWrapper(async (req, res, next, session) => {
