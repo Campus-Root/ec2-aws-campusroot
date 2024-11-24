@@ -613,7 +613,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next, session) 
     return { statusCode: 200, message: 'Application checklist updated', data: application };
 });
 export const deleteUploadedFromApplication = errorWrapper(async (req, res, next, session) => {
-    const { error, value } = uploadInProfileSchema.validate(req.body)
+    const { error, value } = uploadApplicationSchema.validate(req.body)
     if (error) return { statusCode: 400, data: [value], message: error.details[0].message };
     const { applicationId, checklistItemId, documentId } = value;
     const doc = await Document.findById(documentId)
