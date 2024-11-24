@@ -594,16 +594,16 @@ export const uploadInApplication = errorWrapper(async (req, res, next, session) 
         action: `document uploaded in checklist`,
         details: `applicationId:${applicationId}&checklistItemId:${checklistItemId}`
     })
-    await Promise.all([
-        req.user.save(),
-        await application.save(),
-        await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
-        await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
-        Document.populate(application, { path: "docChecklist.doc", select: "data", })
-    ])
+    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", })
+        await Promise.all([
+            req.user.save(),
+            application.save(),
+            userModel.populate(application, { path: "advisors", select: "firstName displayPicSrc lastName email role" }),
+            universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " }),
+            Document.populate(application, { path: "docChecklist.doc", select: "data", })
+        ])
     if (req.user.preference.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-
         if (application.course.currency.code !== req.user.preference.currency) {
             if (!rates[application.course.currency.code] || !rates[req.user.preference.currency]) return { statusCode: 400, message: `Exchange rates for the specified currencies are not available`, data: { currency: req.user.preference.currency } };
             application.course.tuitionFee.tuitionFee = costConversion(application.course.tuitionFee.tuitionFee, application.course.currency.code, req.user.preference.currency, rates[application.course.currency.code], rates[req.user.preference.currency]);
