@@ -270,7 +270,18 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     from: "universities", // Related collection name
                     localField: "university",
                     foreignField: "_id",
-                    as: "universityDetails"
+                    as: "university",
+                    pipeline: [
+                        {
+                            $project: {
+                                name: 1,
+                                location: 1,
+                                logoSrc: 1,
+                                type: 1,
+                                uni_rating: 1
+                            }
+                        }
+                    ]
                 }
             });
             aggregationPipeline.push({
@@ -281,11 +292,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             $project: {
                                 name: 1,
                                 university: 1,
-                                "universityDetails.name": 1,
-                                "universityDetails.location": 1,
-                                "universityDetails.logoSrc": 1,
-                                "universityDetails.type": 1,
-                                "universityDetails.uni_rating": 1,
                                 discipline: 1,
                                 subDiscipline: 1,
                                 studyLevel: 1,
