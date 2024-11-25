@@ -153,10 +153,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     switch (req.params.name) {
         case "universities":
             filter.courses = { "$gt": 0 }
-            sort = {
-                globalRankingPosition: 1,
-                courses: -1
-            }
+            sort.globalRankingPosition = 1
+            sort.courses = -1
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
