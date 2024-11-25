@@ -312,6 +312,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 }
             });
             let result = await courseModel.aggregate(aggregationPipeline);
+            let courses = result[0]?.data || [];
+            totalDocs = result[0]?.metadata[0]?.totalDocs || 0;
+            totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
                     if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
@@ -322,9 +325,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     return ele;
                 });
             }
-            let courses = result[0]?.data || [];
-            totalDocs = result[0]?.metadata[0]?.totalDocs || 0;
-            totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
             return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "destinations":
