@@ -153,7 +153,10 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     switch (req.params.name) {
         case "universities":
             filter.courses = { "$gt": 0 }
-            sort.courses = -1
+            sort = {
+                globalRankingPosition: 1,
+                courses: -1
+            }
             req.body.filterData.forEach(ele => {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
@@ -184,9 +187,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             totalPages = Math.ceil(totalDocs / perPage);
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
-            filter.university = { $exists: true }
-            filter.multipleLocations = { $exists: false }
-            req.body.filterData.forEach(ele => {
+            let aggregationPipeline = []
+            for (const ele of req.body.filterData) {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
                 else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
@@ -198,8 +200,16 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
                 else if (ele.type === "type") filter.type = ele.data[0];
                 else if (ele.type === "name") {
-                    // filter["$or"].push({ "location.country": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.city": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { "location.state": { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { unisName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { schoolName: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } })
-                    filter.$text = { $search: ele.data[0] };
+                    let vector = await stringToEmbedding(ele.data) // extract content from db  such as plot and courseLink 
+                    aggregationPipeline.push({
+                        $vectorSearch: {
+                            "queryVector": vector,
+                            "path": "embeddingVector",
+                            "numCandidates": 100,
+                            "limit": 40,
+                            "index": "vector_index"
+                        }
+                    })
                 }
                 else if (ele.type === "GRE") filter.GRE = ele.data[0];
                 else if (ele.type === "GPA") filter.GPA = ele.data[0];
@@ -248,8 +258,62 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
                     filter.startDate = { $elemMatch: period };
                 }
+            }
+
+            aggregationPipeline.push({
+                $match: {
+                    university: { $exists: true },
+                    multipleLocations: { $exists: false },
+                    ...filter // Dynamic filters based on the input
+                }
             });
-            let courses = await courseModel.find(filter, { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, elite: 1, "AdmissionsRequirements.LanguageRequirements": 1 }).populate("university", "name location logoSrc type uni_rating").skip(skip).limit(perPage);
+            aggregationPipeline.push({
+                $lookup: {
+                    from: "universities", // Related collection name
+                    localField: "university",
+                    foreignField: "_id",
+                    as: "universityDetails"
+                }
+            });
+            aggregationPipeline.push({
+                $facet: {
+                    metadata: [{ $count: "totalDocs" }], // Count total matching documents
+                    data: [
+                        {
+                            $project: {
+                                name: 1,
+                                university: 1,
+                                "universityDetails.name": 1,
+                                "universityDetails.location": 1,
+                                "universityDetails.logoSrc": 1,
+                                "universityDetails.type": 1,
+                                "universityDetails.uni_rating": 1,
+                                discipline: 1,
+                                subDiscipline: 1,
+                                studyLevel: 1,
+                                "tuitionFee.tuitionFeeType": 1,
+                                "tuitionFee.tuitionFee": 1,
+                                startDate: 1,
+                                schoolName: 1,
+                                duration: 1,
+                                courseType: 1,
+                                studyMode: 1,
+                                currency: 1,
+                                "stemDetails.stem": 1,
+                                "AdmissionsRequirements.AcademicRequirements": 1,
+                                elite: 1,
+                                globalRankingPosition: 1,
+                                "AdmissionsRequirements.LanguageRequirements": 1
+                            }
+                        },
+                        { $sort: { globalRankingPosition: 1 } },
+                        { $skip: skip }, // Pagination skip
+                        { $limit: perPage }, // Pagination limit
+
+                    ]
+                }
+            });
+            let result = await courseModel.aggregate(aggregationPipeline);
             if (req.body.currency) {
                 courses = courses.map(ele => {
                     if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
@@ -260,7 +324,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     return ele;
                 });
             }
-            totalDocs = await courseModel.countDocuments(filter)
+            let courses = result[0]?.data || [];
+            totalDocs = result[0]?.metadata[0]?.totalDocs || 0;
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
             return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
@@ -291,14 +356,6 @@ export const oneUniversity = errorWrapper(async (req, res, next, session) => {
             };
         });
         university.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
-        // university.courses = university.courses.map(ele => {
-        //     if (!rates[ele.currency.code] || !rates[req.query.currency]) { statusCode: 400, data: student , message:    'Exchange rates for the specified currencies are not available'};
-        //     if (ele.currency.code != req.query.currency) {
-        //         ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.query.currency, rates[ele.currency.code], rates[req.query.currency])
-        //         ele.currency = { code: req.query.currency, symbol: currencySymbols[req.query.currency] }
-        //     }
-        //     return ele;
-        // });
     }
     return ({ statusCode: 200, message: `single university`, data: university })
 })
@@ -412,18 +469,6 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
         citySearchResults = cities
         totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
     }
-    // const uniKeyword = {
-    //     $or: [
-    //         { name: { $regex: req.query.search.replace(" ", "|"), $options: "i" } },
-    //         { code: { $regex: req.query.search.replace(" ", "|"), $options: "i" } },
-    //         { "location.country": { $regex: req.query.search.replace(" ", "|"), $options: "i" } },
-    //         { "location.state": { $regex: req.query.search.replace(" ", "|"), $options: "i" } },
-    //         { "location.city": { $regex: req.query.search.replace(" ", "|"), $options: "i" } }
-    //     ],
-    //     courses: { $gt: 0 }
-    // };
-    // if (req.query.country) uniKeyword["location.country"] = req.query.country
-    // const uniSearchResults = await universityModel.find(uniKeyword, "name location community logoSrc").limit(5)
     return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults, institutions: institutionSearchResults, country: countrySearchResults, state: stateSearchResults, city: citySearchResults, totalPages } });
 })
 export const requestCallBack = errorWrapper(async (req, res, next, session) => {
@@ -466,28 +511,6 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
     newLead.crmId = crmData[0].details.id
     await newLead.save()
     return ({ statusCode: 200, message: 'We have received your request, we will reach out to you shortly', data: null });
-})
-export const search = errorWrapper(async (req, res, next, session) => {
-    const { query } = req.query;
-    let embeddingVector;
-    try { embeddingVector = await stringToEmbedding(query); }
-    catch (error) { return { statusCode: 500, message: 'Error generating embedding vector', data: error.message } }
-
-    if (!embeddingVector || embeddingVector.length !== 1536) return { statusCode: 400, message: 'Invalid embedding vector', data: null };
-    const courses = await courseModel.aggregate([
-        {
-            $vectorSearch: {
-                "queryVector": embeddingVector,
-                "path": "embeddingVector",
-                "numCandidates": 1000,
-                "limit": 20,
-                "index": "CourseSymanticSearch"
-            }
-        },
-        { $project: { name: 1, university: 1, discipline: 1, subDiscipline: 1, studyLevel: 1, "tuitionFee.tuitionFeeType": 1, "tuitionFee.tuitionFee": 1, "startDate": 1, schoolName: 1, STEM: 1, duration: 1, courseType: 1, studyMode: 1, currency: 1, "stemDetails.stem": 1, "AdmissionsRequirements.AcademicRequirements": 1, elite: 1, "AdmissionsRequirements.LanguageRequirements": 1, } }
-    ]);
-    await universityModel.populate(courses, { path: "university", select: "name location logoSrc type uni_rating" })
-    return { statusCode: 200, message: 'search results', data: { courses } }
 })
 export const getBlogById = errorWrapper(async (req, res) => {
     const blog = await blogModel.findById(req.params.id).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 });
