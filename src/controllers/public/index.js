@@ -283,7 +283,12 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         }
                     ]
                 }
-            });
+            },
+                {
+                    $addFields: {
+                        university: { $arrayElemAt: ["$university", 0] } // Extract the first element
+                    }
+                });
             aggregationPipeline.push({
                 $facet: {
                     metadata: [{ $count: "totalDocs" }], // Count total matching documents
