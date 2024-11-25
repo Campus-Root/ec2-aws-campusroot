@@ -257,15 +257,13 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     filter.startDate = { $elemMatch: period };
                 }
             }
-
             aggregationPipeline.push({
                 $match: {
                     university: { $exists: true },
                     multipleLocations: { $exists: false },
                     ...filter // Dynamic filters based on the input
                 }
-            });
-            aggregationPipeline.push({
+            }, {
                 $lookup: {
                     from: "universities", // Related collection name
                     localField: "university",
@@ -288,8 +286,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     $addFields: {
                         university: { $arrayElemAt: ["$university", 0] } // Extract the first element
                     }
-                });
-            aggregationPipeline.push({
+                }, {
                 $facet: {
                     metadata: [{ $count: "totalDocs" }], // Count total matching documents
                     data: [
