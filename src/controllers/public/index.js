@@ -15,6 +15,7 @@ import institutionModel from "../../models/IndianColleges.js";
 import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 import { blogModel } from "../../models/blogs.js";
+import mongoose from "mongoose";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
@@ -186,11 +187,12 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
             let aggregationPipeline = []
+            filter.university = { $exists: true }
             for (const ele of req.body.filterData) {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
                 else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
-                else if (ele.type === "universityId") filter.university = { $in: ele.data };
+                else if (ele.type === "universityId") filter.university = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
                 else if (ele.type === "courseId") filter._id = { $in: ele.data };
                 else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
                 else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
@@ -259,7 +261,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             }
             aggregationPipeline.push({
                 $match: {
-                    university: { $exists: true },
                     multipleLocations: { $exists: false },
                     ...filter // Dynamic filters based on the input
                 }
