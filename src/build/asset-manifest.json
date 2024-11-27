@@ -1,11 +1,12 @@
 {
   "files": {
-    "main.css": "/static/css/main.15eb34d0.css",
-    "main.js": "/static/js/main.ca197d2f.js",
+    "main.css": "/static/css/main.76f3d87a.css",
+    "main.js": "/static/js/main.2f80576e.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
     "static/media/homepage3.png": "/static/media/homepage3.e608fa12cac2d6c3d971.png",
     "static/media/Features3.png": "/static/media/Features3.e4bf3f92b8c61fd11d13.png",
+    "static/media/Us.png": "/static/media/Us.9deaf7433d04b1414f03.png",
     "static/media/Features2.png": "/static/media/Features2.559d2cfcd443c94a1e71.png",
     "static/media/section1.png": "/static/media/section1.24e1b0da027aba611d17.png",
     "static/media/Features1.png": "/static/media/Features1.c6110eeeaa083e09344d.png",
@@ -62,12 +63,12 @@
     "static/media/CampusrootLogo.png": "/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png",
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
-    "main.15eb34d0.css.map": "/static/css/main.15eb34d0.css.map",
-    "main.ca197d2f.js.map": "/static/js/main.ca197d2f.js.map",
+    "main.76f3d87a.css.map": "/static/css/main.76f3d87a.css.map",
+    "main.2f80576e.js.map": "/static/js/main.2f80576e.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.15eb34d0.css",
-    "static/js/main.ca197d2f.js"
+    "static/css/main.76f3d87a.css",
+    "static/js/main.2f80576e.js"
   ]
 }
