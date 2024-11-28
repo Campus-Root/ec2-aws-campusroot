@@ -1,14 +1,16 @@
 import { downloadDoc, listings, newStudents, profile, profileEdit, singleApplications, singleStudentProfile } from "../controllers/team/index.js";
 import { calendarEvents, generatingAuthUrl, googleAuthentication } from "../controllers/team/calendar.js";
-import { authMiddleware, isTeam } from "../middleware/auth.js";
+import { authMiddleware, isCounsellor, isTeam } from "../middleware/auth.js";
 import express from "express";
-import { createBlog, deleteBlog, getBlogs, updateBlog } from "../controllers/team/blogs.js";
+import { createBlog, createCountry, deleteBlog, deleteCountry, getBlogs, getCountry, updateBlog, updateCountry } from "../controllers/team/blogs.js";
 import xssReqSanitizer from "xss-req-sanitizer";
 
 
 const router = express.Router();
 router.put("/blog/:id", authMiddleware, isTeam, updateBlog)
 router.post("/blog", authMiddleware, isTeam, createBlog)
+router.put("/destination/:id", authMiddleware, isCounsellor, updateCountry)
+router.post("/destination", authMiddleware, isCounsellor, createCountry)
 router.use(xssReqSanitizer())
 //        {{base}}/api/v1/member
 router.get("/", authMiddleware, isTeam, profile)
@@ -23,6 +25,8 @@ router.get("/events", authMiddleware, isTeam, calendarEvents)
 router.post('/new-students', authMiddleware, isTeam, newStudents)
 router.get("/blog", authMiddleware, isTeam, getBlogs)
 router.delete("/blog/:id", authMiddleware, isTeam, deleteBlog)
+router.get("/destination", authMiddleware, isTeam, getCountry)
+router.delete("/destination/:id", authMiddleware, isTeam, deleteCountry)
 export default router;
 
 

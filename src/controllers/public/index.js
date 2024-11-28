@@ -1,7 +1,6 @@
 import { studentModel } from "../../models/Student.js";
 import universityModel from "../../models/University.js";
 import courseModel from "../../models/Course.js";
-import destinationModel from "../../models/Destination.js";
 import { teamModel } from "../../models/Team.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { currencySymbols } from "../../utils/enum.js";
@@ -16,6 +15,7 @@ import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 import { blogModel } from "../../models/blogs.js";
 import mongoose from "mongoose";
+import destinationModel from "../../models/Destination.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
@@ -153,7 +153,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
     switch (req.params.name) {
         case "universities":
-            filter.courses = { "$gt": 0 }
             sort.globalRankingPosition = 1
             sort.courses = -1
             req.body.filterData.forEach(ele => {
@@ -187,7 +186,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
             let aggregationPipeline = []
-            filter.university = { $exists: true }
             for (const ele of req.body.filterData) {
                 if (ele.type === "country") filter["location.country"] = { $in: ele.data };
                 else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
@@ -337,13 +335,15 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
             return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "destinations":
-            const destinations = await destinationModel.find({})
-            return ({ statusCode: 200, message: `all destinations`, data: { list: destinations } })
+            const destinations = await destinationModel.find({}, "-content").populate("author", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
+            totalDocs = await destinationModel.countDocuments({})
+            totalPages = Math.ceil(totalDocs / perPage);
+            return ({ statusCode: 200, message: `all destinations`, data: { list: destinations, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "blogs":
             const blogs = await blogModel.find({}, "-content").populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
             totalDocs = await blogModel.countDocuments({})
             totalPages = Math.ceil(totalDocs / perPage);
-            return { statusCode: 200, message: "Blogs fetched successfully", data: blogs };
+            return { statusCode: 200, message: "Blogs fetched successfully", data: { list: blogs, currentPage: page, totalPages: totalPages, totalItems: totalDocs } };
         default: return ({ statusCode: 400, message: "Invalid endpoint", data: null });
     }
 })
@@ -521,6 +521,11 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
 })
 export const getBlogById = errorWrapper(async (req, res) => {
     const blog = await blogModel.findById(req.params.id).populate("author comments.user likes", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 });
-    if (!blog) return { statusCode: 400, message: "Blog post not found", data: blog };
+    if (!blog) return { statusCode: 400, message: "Blog post not found", data: req.params.id };
     return { statusCode: 200, message: "Blog fetched successfully", data: blog };
+})
+export const getDestinationById = errorWrapper(async (req, res) => {
+    const destination = await destinationModel.findById(req.params.id).populate("author", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 });
+    if (!destination) return { statusCode: 400, message: "Destination not found", data: req.params.id };
+    return { statusCode: 200, message: "Destination fetched successfully", data: destination };
 })

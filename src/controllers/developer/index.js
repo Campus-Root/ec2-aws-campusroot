@@ -1,5 +1,4 @@
 import courseModel from "../../models/Course.js"
-import destinationModel from "../../models/Destination.js"
 import universityModel from "../../models/University.js"
 import communityModel from "../../models/Community.js"
 import { errorWrapper } from "../../middleware/errorWrapper.js";
@@ -24,18 +23,6 @@ export const allUniversities = async (req, res) => {
     }
 }
 
-export const addDestination = async (req, res) => {
-    try {
-        const { destinationName, flagSrc, capitalCity, climate, currency, about, popularPrograms } = req.body
-        if (!destinationName) return res.status(400).json({ success: false, message: `destination not added`, data: null })
-        if (await destinationModel.findOne({ destinationName: destinationName })) return res.status(400).json({ success: false, message: `destination already added`, data: null })
-        const destination = await destinationModel.create({ destinationName, flagSrc, capitalCity, climate, currency, about, popularPrograms })
-        return ({ statusCode: 200, message: `new destination added`, data: destination })
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
-    }
-}
 
 
 export const addPackage = async (req, res) => {
@@ -48,40 +35,6 @@ export const addPackage = async (req, res) => {
     }
 }
 
-
-export const allDestinations = async (req, res) => {
-    try {
-        const destinations = await destinationModel.find({})
-        return ({ statusCode: 200, message: `all destinations`, data: destinations })
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ success: false, message: `${error.name}--${error.message}`, data: null })
-    }
-}
-export const editDestination = async (req, res) => {
-    try {
-        const { id } = req.params
-        const destination = await destinationModel.findById(id)
-        if (!destination) return res.status(400).json({ success: false, message: `invalid destination ID`, data: null })
-        const { callingCode, destinationPicSrc, topUniversities, flagSrc, capitalCity, climate, currency, about, popularPrograms, UniversitiesCount, InternationalStudentsCount } = req.body
-        if (destinationPicSrc) destination.destinationPicSrc = destinationPicSrc
-        if (flagSrc) destination.flagSrc = flagSrc
-        if (capitalCity) destination.capitalCity = capitalCity
-        if (climate) destination.climate = climate
-        if (currency) destination.currency = currency
-        if (about) destination.about = about
-        if (popularPrograms) destination.popularPrograms = popularPrograms
-        if (topUniversities) destination.topUniversities = topUniversities
-        if (UniversitiesCount) destination.UniversitiesCount = UniversitiesCount
-        if (InternationalStudentsCount) destination.InternationalStudentsCount = InternationalStudentsCount
-        if (callingCode) destination.callingCode = callingCode
-        await destination.save()
-        return ({ statusCode: 200, message: `destination updated`, data: destination })
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
-    }
-}
 export const editCourse = async (req, res) => {
     try {
         const { id } = req.params
@@ -116,17 +69,7 @@ export const editCourse = async (req, res) => {
         return res.status(500).json({ success: false, message: `${error.name} : ${error.message}`, data: null })
     }
 }
-export const deleteDestination = async (req, res) => {
-    try {
-        const { id } = req.params
-        if (!id) return res.status(400).json({ success: false, message: `invalid destination ID`, data: null })
-        await destinationModel.findByIdAndDelete(id)
-        return ({ statusCode: 200, message: `destination deleted`, data: null })
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ success: false, message: `${error.name}--${error.message}`, data: null })
-    }
-}
+
 
 export const uniDescriptionCreate = async (req, res) => {
     try {

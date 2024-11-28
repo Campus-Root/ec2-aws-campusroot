@@ -4,6 +4,7 @@ import { studentModel } from "../../../models/Student.js";
 import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { CurrencySymbolEnum, DestinationTypeEnum, possibilityOfAdmitEnum, ProductCategoryEnum, studentCounsellingStagesEnum } from "../../../utils/enum.js";
 import userModel from "../../../models/User.js";
+import chatModel from "../../../models/Chat.js";
 import { packageModel } from "../../../models/Package.js";
 import 'dotenv/config'
 export const switchStage = errorWrapper(async (req, res, next, session) => {

@@ -10,3 +10,8 @@ export const blogSchema = Joi.object({
     isPublished: Joi.boolean().default(false), // Boolean with a default value of false
     publishedAt: Joi.date().optional(), // Optional date; defaults will be set dynamically
 });
+export const CountrySchema = Joi.object({
+    title: Joi.string().required(), // Title is required
+    coverImageSrc: Joi.string().uri().required(), // Must be a valid URI
+    content: Joi.string().required(), // Content is required (can hold HTML)
+});
