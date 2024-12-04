@@ -71,6 +71,7 @@ const courseSchema = mongoose.Schema(
             code: { type: String, enum: { values: Object.keys(CurrencySymbolEnum), message: "Invalid Type of currency code" } },
         },
         applicationDetails: {
+            applicationFeeWaiver: { type: Boolean },
             applicationFee: { type: String },
             ScoreEvaluation: { type: Boolean },
         },

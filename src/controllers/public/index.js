@@ -296,6 +296,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 discipline: 1,
                                 subDiscipline: 1,
                                 studyLevel: 1,
+                                applicationDetails:1,
                                 "tuitionFee.tuitionFeeType": 1,
                                 "tuitionFee.tuitionFee": 1,
                                 startDate: 1,
