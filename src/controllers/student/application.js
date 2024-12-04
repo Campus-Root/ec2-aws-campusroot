@@ -559,8 +559,8 @@ export const requestCancellation = errorWrapper(async (req, res, next, session) 
     await Document.populate(updatedApplication, { path: "docChecklist.doc", select: "data", })
     await userModel.populate(updatedApplication, [
         { path: "user", select: "firstName lastName email displayPicSrc" },
-        { path: "counsellor", select: "firstName lastName email displayPicSrc" }
-    ])
+        { path: "advisors", select: "firstName lastName email displayPicSrc userType role" }
+    ]) 
     req.user.logs.push({
         action: `cancellation requested`,
         details: `applicationId:${req.params.applicationId}`
