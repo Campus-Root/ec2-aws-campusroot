@@ -167,7 +167,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     sort[`rank.${ele.data[0]}`] = 1;
                 }
             });
-            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, ranking: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort(sort).skip(skip).limit(perPage);
+            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, rank: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort(sort).skip(skip).limit(perPage);
             totalDocs = await universityModel.countDocuments(filter)
             for (const university of listOfUniversities) {
                 if (req.body.currency && university.currency.code !== req.body.currency) {
@@ -275,7 +275,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 location: 1,
                                 logoSrc: 1,
                                 type: 1,
-                                uni_rating: 1
+                                uni_rating: 1,
+                                rank: 1
                             }
                         }
                     ]
@@ -296,7 +297,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 discipline: 1,
                                 subDiscipline: 1,
                                 studyLevel: 1,
-                                applicationDetails:1,
+                                applicationDetails: 1,
                                 "tuitionFee.tuitionFeeType": 1,
                                 "tuitionFee.tuitionFee": 1,
                                 startDate: 1,
