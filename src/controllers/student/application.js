@@ -312,7 +312,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
             razorpay_order_id: razorPay.id,
             amount: razorPay.amount,
             amount_due: razorPay.amount_due,
-            created_at: razorPay.created_at,
+            created_at: new Date(),
             currency: razorPay.currency,
             misc: razorPay
         },
@@ -348,7 +348,7 @@ export const reCheckout = errorWrapper(async (req, res, next) => {
     order.paymentDetails.razorpay_order_id = razorPay.id
     order.paymentDetails.amount = razorPay.amount
     order.paymentDetails.amount_due = razorPay.amount_due
-    order.paymentDetails.created_at = razorPay.created_at
+    order.paymentDetails.created_at = new Date()
     order.paymentDetails.currency = razorPay.currency
     order.paymentDetails.misc = razorPay
     order.logs.push({ action: "re-checkout initiated", details: JSON.stringify(orderOptions.notes) })
