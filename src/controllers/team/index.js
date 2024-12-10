@@ -9,6 +9,7 @@ import meetingModel from "../../models/meetings.js";
 import leadsModel from "../../models/leads.js";
 import { packageModel } from "../../models/Package.js";
 import { orderModel } from "../../models/Order.js";
+import mongoose from "mongoose";
 export const profile = errorWrapper(async (req, res, next, session) => {
     const profile = {
         _id: req.user._id,
@@ -97,17 +98,43 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             return ({ statusCode: 200, message: `students list`, data: { list: students, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "applications":
             req.body.filterData.forEach(ele => {
-                if (ele.type === "courseId") filter["course"] = { $in: ele.data }
-                else if (ele.type === "universityId") filter["university"] = { $in: ele.data }
-                else if (ele.type === "processCoordinator") filter["$or"] ? filter.$or.push([{ "info.approval.counsellorApproval": true }, { "info.approval.userConsent": true }]) : filter["$or"] = [{ "info.approval.counsellorApproval": true }, { "info.approval.userConsent": true }]
-                else if (ele.type === "counsellorApproval") filter["info.approval.counsellorApproval"] = { $in: ele.data }
-                else if (ele.type === "userConsent") filter["info.approval.userConsent"] = { $in: ele.data }
-                else if (ele.type === "user") filter["user"] = { $in: ele.data }
-                else if (ele.type === "cancellationRequest") filter["cancellationRequest"] = { $in: ele.data }
-                else if (ele.type === "stage") filter["stage"] = { $in: ele.data }
-                else if (ele.type === "status") filter["status"] = { $in: ele.data }
-                else if (ele.type === "intake") filter["intake"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
-                else if (ele.type === "deadline") filter["deadline"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
+                switch (ele.type) {
+                    case "courseId":
+                        filter["course"] = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
+                        break;
+                    case "universityId":
+                        filter["university"] = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
+                        break;
+                    case "processCoordinator":
+                        filter["$or"] ? filter.$or.push([{ "info.approval.counsellorApproval": true }, { "info.approval.userConsent": true }]) : filter["$or"] = [{ "info.approval.counsellorApproval": true }, { "info.approval.userConsent": true }]
+                        break;
+                    case "counsellorApproval":
+                        filter["info.approval.counsellorApproval"] = { $in: ele.data }
+                        break;
+                    case "userConsent":
+                        filter["info.approval.userConsent"] = { $in: ele.data }
+                        break;
+                    case "user":
+                        filter["user"] = { $in: ele.data }
+                        break;
+                    case "cancellationRequest":
+                        filter["cancellationRequest"] = { $in: ele.data }
+                        break;
+                    case "stage":
+                        filter["stage"] = { $in: ele.data }
+                        break;
+                    case "status":
+                        filter["status"] = { $in: ele.data }
+                        break;
+                    case "intake":
+                        filter["intake"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
+                        break;
+                    case "deadline":
+                        filter["deadline"] = { $gte: new Date(fromDate), $lt: new Date(toDate) }
+                        break;
+                    default:
+                        break;
+                }
             });
             filter.advisors = req.user._id
             const applications = await productModel.find(filter, "course intake deadline user info stage status cancellationRequest createdAt updatedAt").skip(skip).limit(perPage)
@@ -115,7 +142,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             totalPages = Math.ceil(totalDocs / perPage);
             await userModel.populate(applications, { path: "user advisors", select: "firstName lastName email displayPicSrc" })
             await courseModel.populate(applications, { path: "course", select: "name university unisName startDate" })
-            await universityModel.populate(applications,{ path: "course.university", select: "name" })
+            await universityModel.populate(applications, { path: "course.university", select: "name" })
             return ({ statusCode: 200, message: `applications list`, data: { list: applications, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "leads":
             filter[req.user.role] = req.user._id

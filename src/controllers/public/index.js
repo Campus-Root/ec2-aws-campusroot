@@ -44,30 +44,60 @@ export const filters = errorWrapper(async (req, res, next) => {
             filter.university = { $exists: true }
             filter.multipleLocations = { $exists: false }
             filterData.forEach(ele => {
-                if (ele.type === "country") {
-                    filter["location.country"] = { $in: ele.data };
-                    countrySelected = true;
+                switch (ele.type) {
+                    case "country":
+                        filter["location.country"] = { $in: ele.data };
+                        countrySelected = true;
+                        break;
+                    case "city":
+                        filter["location.city"] = { $in: ele.data };
+                        break;
+                    case "state":
+                        filter["location.state"] = { $in: ele.data };
+                        stateSelected = true;
+                        break;
+                    case discipline:
+                        filter.discipline = { $in: ele.data };
+                        disciplineSelected = true;
+                        break;
+                    case "TOEFL":
+                        filter.TOEFL = { $in: ele.data };
+                        break;
+                    case "PTE":
+                        filter.PTE = { $in: ele.data };
+                        break;
+                    case "IELTS":
+                        filter.IELTS = { $in: ele.data };
+                        break;
+                    case "Duolingo":
+                        filter.Duolingo = { $in: ele.data };
+                        break;
+                    case "GMAT":
+                        filter.GMAT = { $in: ele.data };
+                        break;
+                    case "GPA":
+                        filter.GPA = { $in: ele.data };
+                        break;
+                    case "GRE":
+                        filter.GRE = { $in: ele.data };
+                        break;
+                    case "subDiscipline":
+                        filter.subDiscipline = { $in: ele.data };
+                        break;
+                    case "studyMode":
+                        filter.studyMode = { $in: ele.data };
+                        break;
+                    case "studyLevel":
+                        filter.studyLevel = { $in: ele.data };
+                        break;
+                    case "elite":
+                        filter.elite = { $in: ele.data };
+                        break;
+                    default:
+                        break;
                 }
-                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
-                else if (ele.type === "state") {
-                    filter["location.state"] = { $in: ele.data };
-                    stateSelected = true;
-                }
-                else if (ele.type === "discipline") {
-                    filter.discipline = { $in: ele.data };
-                    disciplineSelected = true;
-                }
-                else if (ele.type === "elite") filter.elite = { $in: ele.data };
-                else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
-                else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
-                else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
-                else if (ele.type === "GRE") filter.GRE = { $in: ele.data };
-                else if (ele.type === "GPA") filter.GPA = { $in: ele.data };
-                else if (ele.type === "GMAT") filter.GMAT = { $in: ele.data };
-                else if (ele.type === "Duolingo") filter.Duolingo = { $in: ele.data };
-                else if (ele.type === "IELTS") filter.IELTS = { $in: ele.data };
-                else if (ele.type === "PTE") filter.PTE = { $in: ele.data };
-                else if (ele.type === "TOEFL") filter.TOEFL = { $in: ele.data };
+
+
             });
             if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
@@ -156,15 +186,31 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             sort.globalRankingPosition = 1
             sort.courses = -1
             req.body.filterData.forEach(ele => {
-                if (ele.type === "country") filter["location.country"] = { $in: ele.data };
-                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
-                else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
-                else if (ele.type === "type") filter.type = ele.data[0];
-                else if (ele.type === "rating") filter.uni_rating = { $gte: ele.data[0] };
-                else if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]
-                else if (ele.type === "popular") {
-                    filter[`rank.${ele.data[0]}`] = { $exists: true, $ne: 0 };
-                    sort[`rank.${ele.data[0]}`] = 1;
+                switch (ele.type) {
+                    case "country":
+                        filter["location.country"] = { $in: ele.data };
+                        break;
+                    case "city":
+                        filter["location.city"] = { $in: ele.data };
+                        break;
+                    case "state":
+                        filter["location.state"] = { $in: ele.data };
+                        break;
+                    case "type":
+                        filter.type = ele.data[0];
+                        break;
+                    case "rating":
+                        filter.uni_rating = { $gte: ele.data[0] };
+                        break;
+                    case "name":
+                        filter["$or"] ? filter["$or"].push([{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]) : filter["$or"] = [{ name: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }, { code: { $regex: ele.data[0].replace(" ", "|"), $options: "i" } }]
+                        break;
+                    case "popular":
+                        filter[`rank.${ele.data[0]}`] = { $exists: true, $ne: 0 };
+                        sort[`rank.${ele.data[0]}`] = 1;
+                        break;
+                    default:
+                        break;
                 }
             });
             const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, rank: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort(sort).skip(skip).limit(perPage);
@@ -187,74 +233,94 @@ export const listings = errorWrapper(async (req, res, next, session) => {
         case "courses":
             let aggregationPipeline = []
             for (const ele of req.body.filterData) {
-                if (ele.type === "country") filter["location.country"] = { $in: ele.data };
-                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
-                else if (ele.type === "state") filter["location.state"] = { $in: ele.data };
-                else if (ele.type === "universityId") filter.university = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
-                else if (ele.type === "courseId") filter._id = { $in: ele.data };
-                else if (ele.type === "studyLevel") filter.studyLevel = { $in: ele.data };
-                else if (ele.type === "studyMode") filter.studyMode = { $in: ele.data };
-                else if (ele.type === "discipline") filter.discipline = { $in: ele.data };
-                else if (ele.type === "subDiscipline") filter.subDiscipline = { $in: ele.data };
-                else if (ele.type === "type") filter.type = ele.data[0];
-                else if (ele.type === "name") {
-                    let vector = await stringToEmbedding(ele.data) // extract content from db  such as plot and courseLink 
-                    aggregationPipeline.push({
-                        $vectorSearch: {
-                            "queryVector": vector,
-                            "path": "embeddingVector",
-                            "numCandidates": 100,
-                            "limit": 40,
-                            "index": "vector_index"
-                        }
-                    })
-                }
-                else if (ele.type === "GRE") filter.GRE = ele.data[0];
-                else if (ele.type === "GPA") filter.GPA = ele.data[0];
-                else if (ele.type === "GMAT") filter.GMAT = ele.data[0];
-                else if (ele.type === "Duolingo") filter.Duolingo = ele.data[0];
-                else if (ele.type === "IELTS") filter.IELTS = ele.data[0];
-                else if (ele.type === "PTE") filter.PTE = ele.data[0];
-                else if (ele.type === "TOEFL") filter.TOEFL = ele.data[0];
-                else if (ele.type === "openNow") {
-                    let currentMonth = new Date().getMonth(), next3Months = (currentMonth + 3) % 12, period
-                    (currentMonth > 8) ?
-                        period = {
-                            $or: [
-                                {
-                                    $and: [
-                                        { deadlineMonth: { $gte: currentMonth } },
-                                        { deadlineMonth: { $lte: 11 } } // Deadline in the current year
-                                    ]
-                                },
-                                {
-                                    $and: [
-                                        { deadlineMonth: { $lte: next3Months } },
-                                        { deadlineMonth: { $gte: 0 } } // Deadline in the next year
+                switch (ele.type) {
+                    case "country":
+                        filter["location.country"] = { $in: ele.data };
+                        break;
+                    case "city":
+                        filter["location.city"] = { $in: ele.data };
+                        break;
+                    case "state":
+                        filter["location.state"] = { $in: ele.data };
+                        break;
+                    case "universityId":
+                        filter.university = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
+                        break;
+                    case "courseId":
+                        filter._id = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
+                        break;
+                    case "studyLevel":
+                        filter.studyLevel = { $in: ele.data };
+                        break;
 
-                                    ]
-                                }]
-                        }
-                        :
-                        period = { $and: [{ deadlineMonth: { $gte: currentMonth } }, { deadlineMonth: { $lte: next3Months } }] }
-                    filter.startDate = { $elemMatch: period };
-                }
-                else if (ele.type === "stem") filter["stemDetails.stem"] = true;
-                else if (ele.type === "budget") {
-                    let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
-                    if (!filter["$or"]) filter["$or"] = []
-                    filter["$or"].push(...currencyFilter.map(element => {
-                        ele.data[0] = ele.data[0] ? ele.data[0] : 0
-                        ele.data[1] = ele.data[1] ? ele.data[1] : Math.min()
-                        let lowerLimit = costConversion(ele.data[0], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-                        let upperLimit = costConversion(ele.data[1], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-                        return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
-                    }));
-                }
-                else if (ele.type === "courseStartingMonth") {
-                    const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
-                    let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
-                    filter.startDate = { $elemMatch: period };
+                    case "studyMode":
+                        filter.studyMode = { $in: ele.data };
+                        break;
+                    case "discipline":
+                        filter.discipline = { $in: ele.data };
+                        break;
+                    case "subDiscipline":
+                        filter.subDiscipline = { $in: ele.data };
+                        break;
+                    case "type":
+                        filter.type = ele.data[0];
+                        break;
+                    case "name":
+                        let vector = await stringToEmbedding(ele.data) // extract content from db  such as plot and courseLink 
+                        aggregationPipeline.push({
+                            $vectorSearch: {
+                                "queryVector": vector,
+                                "path": "embeddingVector",
+                                "numCandidates": 100,
+                                "limit": 40,
+                                "index": "vector_index"
+                            }
+                        })
+                        break;
+                    case "GRE":
+                        filter.GRE = ele.data[0];
+                        break;
+                    case "GPA":
+                        filter.GPA = ele.data[0];
+                        break;
+                    case "GMAT":
+                        filter.GMAT = ele.data[0];
+                        break;
+                    case "Duolingo":
+                        filter.Duolingo = ele.data[0];
+                        break;
+                    case "IELTS":
+                        filter.IELTS = ele.data[0];
+                        break;
+                    case "PTE":
+                        filter.PTE = ele.data[0];
+                        break;
+                    case "TOEFL":
+                        filter.TOEFL = ele.data[0];
+                        break;
+                    case "openNow":
+                        break;
+                    case "stem":
+                        filter["stemDetails.stem"] = true;
+                        break;
+                    case "budget":
+                        let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
+                        if (!filter["$or"]) filter["$or"] = []
+                        filter["$or"].push(...currencyFilter.map(element => {
+                            ele.data[0] = ele.data[0] ? ele.data[0] : 0
+                            ele.data[1] = ele.data[1] ? ele.data[1] : Math.min()
+                            let lowerLimit = costConversion(ele.data[0], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
+                            let upperLimit = costConversion(ele.data[1], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
+                            return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
+                        }));
+                        break;
+                    case "courseStartingMonth":
+                        const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
+                        let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
+                        filter.startDate = { $elemMatch: period };
+                        break;
+                    default:
+                        break;
                 }
             }
             aggregationPipeline.push({
