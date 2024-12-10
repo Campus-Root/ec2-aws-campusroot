@@ -56,7 +56,7 @@ export const filters = errorWrapper(async (req, res, next) => {
                         filter["location.state"] = { $in: ele.data };
                         stateSelected = true;
                         break;
-                    case discipline:
+                    case "discipline":
                         filter.discipline = { $in: ele.data };
                         disciplineSelected = true;
                         break;
@@ -252,7 +252,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     case "studyLevel":
                         filter.studyLevel = { $in: ele.data };
                         break;
-
                     case "studyMode":
                         filter.studyMode = { $in: ele.data };
                         break;
