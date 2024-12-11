@@ -44,14 +44,25 @@ app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
-		defaultSrc: ["'self'"],
-		imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com", "https://res.cloudinary.com", "https://icon-library.com/", "https://flagcdn.com/","https://www.4icu.org", "blob:"],
-		connectSrc: ["'self'", "https://ipapi.co", "blob:"],
-		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
-		workerSrc: ["'self'", "blob:"],
-		frameSrc: ["'self'", "https://accounts.google.com", "https://workdrive.zoho.in"], // Allow Zoho WorkDrive to be framed
+	  defaultSrc: ["'self'"],
+	  imgSrc: [
+		"'self'", 
+		"data:", 
+		"https://lh3.googleusercontent.com", 
+		"https://res.cloudinary.com", 
+		"https://icon-library.com/", 
+		"https://flagcdn.com/", 
+		"https://www.4icu.org", 
+		"https://onewindow.co", // Add this domain
+		"blob:"
+	  ],
+	  connectSrc: ["'self'", "https://ipapi.co", "blob:"],
+	  scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
+	  workerSrc: ["'self'", "blob:"],
+	  frameSrc: ["'self'", "https://accounts.google.com", "https://workdrive.zoho.in"], // Allow Zoho WorkDrive to be framed
 	},
-}));
+  }));
+  
 app.use(helmet.frameguard({ action: 'sameorigin' }));
 app.use(helmet.noSniff());
 app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
