@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.83c569f8.css",
-    "main.js": "/static/js/main.1719df8c.js",
+    "main.css": "/static/css/main.a62d8351.css",
+    "main.js": "/static/js/main.06812777.js",
     "static/js/453.1a1588cf.chunk.js": "/static/js/453.1a1588cf.chunk.js",
     "static/media/twitter-icon.gif": "/static/media/twitter-icon.1ba6aa8bda6650219d35.gif",
     "static/media/homepage3.png": "/static/media/homepage3.e608fa12cac2d6c3d971.png",
@@ -23,6 +23,7 @@
     "static/media/sec2Img6.png": "/static/media/sec2Img6.99e3ef8393103a4522e4.png",
     "static/media/sec2Img9.png": "/static/media/sec2Img9.093452fc45a5427ed7ab.png",
     "static/media/airecommend.png": "/static/media/airecommend.9aac3f261c26cf311f79.png",
+    "static/media/testimonial.png": "/static/media/testimonial.b74e632eb59b71807027.png",
     "static/media/calendar.gif": "/static/media/calendar.15b8535a4830419c950f.gif",
     "static/media/nafsa.png": "/static/media/nafsa.0941cf9036802c4d54ef.png",
     "static/media/instagram-icon.gif": "/static/media/instagram-icon.0d0ede19c0d1daa8f291.gif",
@@ -71,12 +72,12 @@
     "static/media/CampusrootLogo.png": "/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png",
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
-    "main.83c569f8.css.map": "/static/css/main.83c569f8.css.map",
-    "main.1719df8c.js.map": "/static/js/main.1719df8c.js.map",
+    "main.a62d8351.css.map": "/static/css/main.a62d8351.css.map",
+    "main.06812777.js.map": "/static/js/main.06812777.js.map",
     "453.1a1588cf.chunk.js.map": "/static/js/453.1a1588cf.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.83c569f8.css",
-    "static/js/main.1719df8c.js"
+    "static/css/main.a62d8351.css",
+    "static/js/main.06812777.js"
   ]
 }
