@@ -81,7 +81,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 if (ele.type === "name") filter["$or"] ? filter["$or"].push([{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }]) : filter["$or"] = [{ email: { $regex: ele.data[0], $options: "i" } }, { firstName: { $regex: ele.data[0], $options: "i" } }, { lastName: { $regex: ele.data[0], $options: "i" } }]
             });
             filter["advisors.info"] = req.user._id
-            const listOfStudents = await studentModel.find(filter, "firstName lastName ").skip(skip).limit(perPage); // email displayPicSrc phone recommendations preference
+            const listOfStudents = await studentModel.find(filter, "firstName lastName email displayPicSrc phone recommendations preference").skip(skip).limit(perPage); 
             // await courseModel.populate(listOfStudents, [{ path: "applications.course", select: "name unisName startDate" }])
             const studentsWithStages = new Map()
             req.user.students.forEach((item) => studentsWithStages.set(item.profile.toString(), item.stage));
