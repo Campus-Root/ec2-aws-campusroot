@@ -8,6 +8,7 @@ import chatModel from "../../../models/Chat.js";
 import { packageModel } from "../../../models/Package.js";
 import 'dotenv/config'
 import sendMail from "../../../utils/sendEMAIL.js";
+import { createFolder } from "../../../utils/CRMintegrations.js";
 export const switchStage = errorWrapper(async (req, res, next, session) => {
     const { studentId, stage, nextActionDate, note } = req.body
     if (!await studentModel.findById(studentId)) return { statusCode: 400, data: null, message: `invalid StudentId` };
