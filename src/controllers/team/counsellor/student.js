@@ -255,7 +255,7 @@ export const registerNewStudent = errorWrapper(async (req, res, next, session) =
     user.suggestedPackages = [process.env.DEFAULT_SUGGESTED_PACKAGE_MONGOID]
     user.advisors = [{ assignedCountries: req.user.expertiseCountry, info: req.user._id }]
     const chat = await chatModel.create({ participants: [req.user._id, user._id] });
-    req.user.students.push({ students: { profile: user._id, stage: "Fresh Lead" } });
+    req.user.students.push( { profile: user._id, stage: "Fresh Lead" } );
     req.user.logs.push({
         action: `registered new student`,
         details: `userId:${user._id}`
