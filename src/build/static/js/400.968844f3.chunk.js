@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkstudent_typescript=self.webpackChunkstudent_typescript||[]).push([[400],{75400:(t,s,e)=>{e.r(s),e.d(s,{default:()=>c});e(65043);var n=e(70579);const c=t=>(0,n.jsx)("div",{children:"destinations"})}}]);
+//# sourceMappingURL=400.968844f3.chunk.js.map
