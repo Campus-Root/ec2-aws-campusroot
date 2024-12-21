@@ -73,7 +73,7 @@ export const categorizePrograms = (testScores, programs) => {
     const results = { safe: [], moderate: [], ambitious: [] };
     programs = programs.filter(ele => {
         ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-        return ele.matchPercentage >= 70; // Filter programs with matchPercentage >= 70
+        return ele.matchPercentage >= 50;
     });
     const rankings = [...new Set(programs.map(p => p.WebomatricsNationalRanking))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)]; // Top 20% are "ambitious"
