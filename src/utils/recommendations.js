@@ -71,23 +71,37 @@ export const calculateMatchPercentage = (testScores, program) => {
 };
 export const categorizePrograms = (testScores, programs) => {
     const results = { safe: [], moderate: [], ambitious: [] };
-    programs.forEach((program) => {
+    programs = programs.filter(ele => calculateMatchPercentage(testScores, ele) >= 70)
+    programs.forEach(program => {
         const matchPercentage = calculateMatchPercentage(testScores, program);
-        if (matchPercentage >= 95) {
-            results.safe.push({ ...program, matchPercentage });
-        } else if (matchPercentage >= 85) {
-            results.moderate.push({ ...program, matchPercentage });
-        }
-        else if (matchPercentage >= 70) {
-            results.moderate.push({ ...program, matchPercentage });
+        if (program.QSRanking <= 50) {
+            results.ambitious.push(program);
+        } else if (matchPercentage >= 90) {
+            results.safe.push(program);
+        } else if (matchPercentage >= 80) {
+            results.moderate.push(program);
+        } else {
+            results.ambitious.push(program);
         }
     });
-    const limitPrograms = (list) => list.sort((a, b) => a.QSRanking - b.QSRanking)
-    results.safe = limitPrograms(results.safe);
-    results.moderate = limitPrograms(results.moderate);
-    results.ambitious = limitPrograms(results.ambitious);
     return results;
 };
+// const limitPrograms = (list) => list.sort((a, b) => a.QSRanking - b.QSRanking)
+// results.safe = limitPrograms(results.safe);
+// results.moderate = limitPrograms(results.moderate);
+// results.ambitious = limitPrograms(results.ambitious);
+
+// programs.forEach((program) => {
+//     const matchPercentage = calculateMatchPercentage(testScores, program);
+//     if (matchPercentage >= 95) {
+//         results.safe.push({ ...program, matchPercentage });
+//     } else if (matchPercentage >= 85) {
+//         results.moderate.push({ ...program, matchPercentage });
+//     }
+//     else if (matchPercentage >= 70) {
+//         results.moderate.push({ ...program, matchPercentage });
+//     }
+// });
 export const constructFilters = (filterData, testScores) => {
     const filter = {}, projections = { Name: 1, University: 1, QSRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
