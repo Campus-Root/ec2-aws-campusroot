@@ -77,8 +77,9 @@ export const categorizePrograms = (testScores, programs) => {
             results.safe.push({ ...program, matchPercentage });
         } else if (matchPercentage >= 50) {
             results.moderate.push({ ...program, matchPercentage });
-        } else {
-            results.ambitious.push({ ...program, matchPercentage });
+        }
+        else if (matchPercentage >= 30) {
+            results.moderate.push({ ...program, matchPercentage });
         }
     });
     const limitPrograms = (list) => list.sort((a, b) => a.QSRanking - b.QSRanking).slice(0, 50)
