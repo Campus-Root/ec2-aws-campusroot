@@ -62,8 +62,7 @@ export const calculateMatchPercentage = (testScores, program) => {
             case "Backlogs":
                 weight = program.weights.Backlogs || 30
                 totalWeight += weight
-                let difference = ((program.backlog - ele.overallScore) / program.backlog) * 100
-                margin = difference > 0 ? 0.7 + (difference / 100) * (1.0 - 0.7) : Math.max(0, 0.7 + (difference / 100) * 0.7);// If candidate has fewer backlogs than the program allows, assign a bonus
+                margin = Math.max(0, 1 - (ele.overallScore / program.backlog) * (1 - 0.7));
                 matchScore += margin * weight;
                 break;
         }
@@ -82,14 +81,14 @@ export const categorizePrograms = (testScores, programs) => {
             results.ambitious.push({ ...program, matchPercentage });
         }
     });
-    const limitPrograms = (list) => list.sort((a, b) => a.UniversityOrder - b.UniversityOrder).slice(0, 50)
+    const limitPrograms = (list) => list.sort((a, b) => a.QSRanking - b.QSRanking).slice(0, 50)
     results.safe = limitPrograms(results.safe);
     results.moderate = limitPrograms(results.moderate);
     results.ambitious = limitPrograms(results.ambitious);
     return results;
 };
 export const constructFilters = (filterData, testScores) => {
-    const filter = {}, projections = { Name: 1, University: 1, UniversityOrder: 1, weights: 1 }
+    const filter = {}, projections = { Name: 1, University: 1, QSRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
