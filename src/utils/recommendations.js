@@ -86,22 +86,6 @@ export const categorizePrograms = (testScores, programs) => {
     });
     return results;
 };
-// const limitPrograms = (list) => list.sort((a, b) => a.QSRanking - b.QSRanking)
-// results.safe = limitPrograms(results.safe);
-// results.moderate = limitPrograms(results.moderate);
-// results.ambitious = limitPrograms(results.ambitious);
-
-// programs.forEach((program) => {
-//     const matchPercentage = calculateMatchPercentage(testScores, program);
-//     if (matchPercentage >= 95) {
-//         results.safe.push({ ...program, matchPercentage });
-//     } else if (matchPercentage >= 85) {
-//         results.moderate.push({ ...program, matchPercentage });
-//     }
-//     else if (matchPercentage >= 70) {
-//         results.moderate.push({ ...program, matchPercentage });
-//     }
-// });
 export const constructFilters = (filterData, testScores) => {
     const filter = {}, projections = { Name: 1, University: 1, QSRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
