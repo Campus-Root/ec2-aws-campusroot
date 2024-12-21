@@ -43,24 +43,24 @@ export const calculateMatchPercentage = (testScores, program) => {
         let margin, weight
         switch (ele.testType) {
             case "GPA":
-                weight = program.weights.GPA || 70
+                weight = program.weights?.GPA || 70
                 totalWeight += weight
                 matchScore += getMatchScoreFromGPA(ele.overallScore, ele.ugOutOf, program) * weight;
                 break;
             case "GMAT":
-                weight = program.weights.GMAT || 30
+                weight = program.weights?.GMAT || 30
                 totalWeight += weight
                 margin = calculateMargin(ele.overallScore, program.GmatScore, 805, 205)
                 matchScore += margin * weight;
                 break;
             case "GRE":
-                weight = program.weights.GRE || 30
+                weight = program.weights?.GRE || 30
                 totalWeight += weight
                 margin = calculateMargin(ele.overallScore, program.GreScore, 340, 260)
                 matchScore += margin * weight;
                 break;
             case "Backlogs":
-                weight = program.weights.Backlogs || 30
+                weight = program.weights?.Backlogs || 30
                 totalWeight += weight
                 margin = Math.max(0, 1 - (ele.overallScore / program.backlog) * (1 - 0.7));
                 matchScore += margin * weight;
