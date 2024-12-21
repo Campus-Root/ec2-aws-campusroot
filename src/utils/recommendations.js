@@ -75,21 +75,24 @@ export const categorizePrograms = (testScores, programs) => {
         ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
         return ele.matchPercentage >= 70; // Filter programs with matchPercentage >= 70
     });
+    const rankings = [...new Set(programs.map(p => p.WebomatricsNationalRanking))].sort((a, b) => a - b);
+    const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)]; // Top 20% are "ambitious"
+    const moderateRange = rankings[Math.floor(rankings.length * 0.5)]; // Top 50% are "moderate"
+    console.log("rankings", rankings, ambitiousRange, moderateRange);
     programs.forEach(program => {
-        if (program.QSRanking <= 50) {
+        const rank = program.WebomatricsNationalRanking;
+        if (rank <= ambitiousRange) {
             results.ambitious.push(program);
-        } else if (program.matchPercentage >= 90) {
-            results.safe.push(program);
-        } else if (program.matchPercentage >= 80) {
+        } else if (rank <= moderateRange) {
             results.moderate.push(program);
         } else {
-            results.ambitious.push(program);
+            results.safe.push(program);
         }
     });
     return results;
 };
 export const constructFilters = (filterData, testScores) => {
-    const filter = {}, projections = { Name: 1, University: 1, QSRanking: 1, weights: 1, backlog: 1 }
+    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 } }, projections = { Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {

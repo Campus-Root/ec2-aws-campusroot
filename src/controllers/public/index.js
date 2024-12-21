@@ -609,7 +609,7 @@ export const getRecommendations = async(req, res) => {
         let pipeline = [{ $match: filter }, { $project: projections }]
         const programs = await collection.aggregate(pipeline).toArray();
         const categorizedPrograms = categorizePrograms(testScores, programs);
-        res.json(categorizedPrograms);
+        res.json(categorizedPrograms);  
     } catch (error) {
         console.error("Error fetching programs:", error);
         res.status(500).json({ error: "Internal server error." });
