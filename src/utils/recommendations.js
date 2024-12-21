@@ -82,7 +82,7 @@ export const categorizePrograms = (testScores, programs) => {
             results.moderate.push({ ...program, matchPercentage });
         }
     });
-    const limitPrograms = (list) => list.sort((a, b) => a.QSRanking - b.QSRanking).slice(0, 50)
+    const limitPrograms = (list) => list.sort((a, b) => a.QSRanking - b.QSRanking)
     results.safe = limitPrograms(results.safe);
     results.moderate = limitPrograms(results.moderate);
     results.ambitious = limitPrograms(results.ambitious);
