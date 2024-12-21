@@ -1,6 +1,6 @@
 import express from "express";
 
-import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, filters, getBlogById, getDestinationById } from "../controllers/public/index.js";
+import { listings, CommunityProfiles, PublicProfile, counsellors, oneCourse, oneUniversity, uniNameRegex, requestCallBack, filters, getBlogById, getDestinationById, getRecommendations } from "../controllers/public/index.js";
 import { authMiddleware, conditionalAuth } from "../middleware/auth.js";
 import rateLimit from "express-rate-limit";
 
@@ -26,5 +26,6 @@ router.get("/counsellors", counsellors);
 // router.post("/all_courses", allCourses);
 router.get("/university", uniNameRegex);
 router.post("/callback", requestCallBack);
+router.post('/filter-programs',getRecommendations)
 
 export default router

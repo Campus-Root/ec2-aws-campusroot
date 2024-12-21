@@ -16,6 +16,8 @@ import { stringToEmbedding } from "../../utils/openAiEmbedding.js";
 import { blogModel } from "../../models/blogs.js";
 import mongoose from "mongoose";
 import destinationModel from "../../models/Destination.js";
+import { MongoClient } from "mongodb";
+import {  categorizePrograms, constructFilters } from "../../utils/recommendations.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
@@ -596,3 +598,20 @@ export const getDestinationById = errorWrapper(async (req, res) => {
     if (!destination) return { statusCode: 400, message: "Destination not found", data: req.params.id };
     return { statusCode: 200, message: "Destination fetched successfully", data: destination };
 })
+export const getRecommendations = async(req, res) => {
+    try {
+        const { filterData, testScores } = req.body;
+        if (!testScores || !Array.isArray(testScores) || testScores.length === 0) return res.status(400).json({ error: "Please provide valid testScores as an array." });
+        const { filter, projections } = constructFilters(filterData, testScores);
+        const client = await MongoClient.connect(process.env.mongoRecommendations);
+        let db = client.db('campusroot');
+        const collection = db.collection("Postgraduate");
+        let pipeline = [{ $match: filter }, { $project: projections }]
+        const programs = await collection.aggregate(pipeline).toArray();
+        const categorizedPrograms = categorizePrograms(testScores, programs);
+        res.json(categorizedPrograms);
+    } catch (error) {
+        console.error("Error fetching programs:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+}
