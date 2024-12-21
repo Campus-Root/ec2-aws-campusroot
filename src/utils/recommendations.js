@@ -73,12 +73,12 @@ export const categorizePrograms = (testScores, programs) => {
     const results = { safe: [], moderate: [], ambitious: [] };
     programs.forEach((program) => {
         const matchPercentage = calculateMatchPercentage(testScores, program);
-        if (matchPercentage >= 70) {
+        if (matchPercentage >= 95) {
             results.safe.push({ ...program, matchPercentage });
-        } else if (matchPercentage >= 50) {
+        } else if (matchPercentage >= 85) {
             results.moderate.push({ ...program, matchPercentage });
         }
-        else if (matchPercentage >= 30) {
+        else if (matchPercentage >= 70) {
             results.moderate.push({ ...program, matchPercentage });
         }
     });
