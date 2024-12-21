@@ -71,14 +71,16 @@ export const calculateMatchPercentage = (testScores, program) => {
 };
 export const categorizePrograms = (testScores, programs) => {
     const results = { safe: [], moderate: [], ambitious: [] };
-    programs = programs.filter(ele => calculateMatchPercentage(testScores, ele) >= 70)
+    programs = programs.filter(ele => {
+        ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
+        return ele.matchPercentage >= 70; // Filter programs with matchPercentage >= 70
+    });
     programs.forEach(program => {
-        const matchPercentage = calculateMatchPercentage(testScores, program);
         if (program.QSRanking <= 50) {
             results.ambitious.push(program);
-        } else if (matchPercentage >= 90) {
+        } else if (program.matchPercentage >= 90) {
             results.safe.push(program);
-        } else if (matchPercentage >= 80) {
+        } else if (program.matchPercentage >= 80) {
             results.moderate.push(program);
         } else {
             results.ambitious.push(program);
