@@ -291,12 +291,25 @@ export const deleteUploadedInProfile = errorWrapper(async (req, res, next, sessi
     const existingDoc = await Document.findById(documentId);
     if (!existingDoc) return { statusCode: 400, data: null, message: `Document not found` };
     if (existingDoc.user.toString() !== req.user._id.toString()) return { statusCode: 400, data: null, message: `Unauthorized to delete this document` };
-    const { ...fields } = fieldPath.split(".")
-    if (fields[0] == "workExperiences" || fields[0] == "test") {
-        fields[1] ? await userModel.findByIdAndUpdate(req.user._id, { $pull: { [`documents.${fields[0]}.${fields[1]}`]: existingDoc._id }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } }) : await userModel.findByIdAndUpdate(req.user._id, { $pull: { [`documents.${fields[0]}`]: existingDoc._id }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } })
-    } else {
-        fields[2] ? await userModel.findByIdAndUpdate(req.user._id, { $set: { [`documents.${fields[0]}.${fields[1]}.${fields[2]}`]: null }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } }) : await userModel.findByIdAndUpdate(req.user._id, { $set: { [`documents.${fields[0]}.${fields[1]}`]: null }, $push: { logs: { action: `document deleted`, details: `path:${fieldPath}` } } })
+    const fields = fieldPath.split(".")
+    switch (fields[0]) {
+        case "personal":
+            req.user.documents.personal[fields[1]] = null
+            break;
+        case "academic":
+            (fields[1] == "bachelors" || fields[1] == "masters") ? req.user.documents.academic[fields[1]][fields[2]] = null : req.user.documents.academic[fields[1]] = null
+            break;
+        case "test":
+            req.user.documents.test[fields[1]] = req.user.documents.test[fields[1]].filter(doc => doc._id.toString() !== documentId)
+            break;
+        case "workExperiences":
+            req.user.documents.workExperiences = req.user.documents.workExperiences.filter(doc => doc._id.toString() !== documentId)
+            break;
+        default:
+            break;
     }
+    req.user.logs.push({ logs: { action: `document deleted`, details: `path:${fieldPath}` } })
+    await req.user.save()
     await Promise.all([
         await Document.findByIdAndDelete(documentId),
         await deleteFileInWorkDrive(existingDoc.data.resource_id),
