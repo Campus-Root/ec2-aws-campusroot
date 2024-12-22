@@ -13,8 +13,19 @@ export const bookSlot = errorWrapper(async (req, res, next, session) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens role" })
     let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)
     if (!teamMember) return { statusCode: 400, data: null, message: `invalid teamMember parameter` };
-    const alreadyScheduled = await meetingModel.find({ user: req.user._id, member: teamMember.info._id, "data.end.dateTime": { $gte: new Date() } }, "data.start data.end")
-    if (!alreadyScheduled) return { statusCode: 400, data: null, message: `meeting already scheduled at ${alreadyScheduled.data.start.dateTime}` };
+    const alreadyScheduledInFuture = await meetingModel.find({ user: req.user._id, member: teamMember.info._id, "data.end.dateTime": { $gte: new Date() } }, "data.start data.end")
+    if (!alreadyScheduledInFuture) return { statusCode: 400, data: null, message: `meeting already scheduled at ${alreadyScheduled.data.start.dateTime}` };
+
+    const alreadyScheduledAtSameTime = await meetingModel.findOne({
+        user: req.user._id,
+        $or: [
+            { "data.start.dateTime": { $lt: endTime, $gte: startTime } }, // Overlaps at the start
+            { "data.end.dateTime": { $lte: endTime, $gt: startTime } },   // Overlaps at the end
+            { "data.start.dateTime": { $lte: startTime }, "data.end.dateTime": { $gte: endTime } }, // Completely overlaps
+        ],
+    });
+
+    if (alreadyScheduledAtSameTime) return { statusCode: 400, data: null, message: `Meeting already scheduled at ${alreadyScheduledAtSameTime.data.start.dateTime}` };
     let sessionName
     switch (teamMember.info.role) {
         case "counsellor": sessionName = `Counselling Session - ${req.user.firstName} ${req.user.lastName}`
