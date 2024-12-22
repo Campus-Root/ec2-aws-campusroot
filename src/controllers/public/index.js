@@ -592,6 +592,11 @@ export const requestCallBack = errorWrapper(async (req, res, next, session) => {
     const accessToken = await refreshToken()
     let crmData = await leadCreation(accessToken, { Last_Name: newLead.name, Mobile: newLead.phone.countryCode + newLead.phone.number, Lead_Source: "Campusroot App", Email: newLead.email })
     if (crmData[0].code == "DUPLICATE_DATA") return { statusCode: 200, data: null, message: "We have already received your request, we will reach out to you shortly" };
+    if (crmData[0].code == "MULTIPLE_OR_MULTI_ERRORS") {
+        let unknownErrors = crmData[0].details.errors.filter(ele => ele.code != "DUPLICATE_DATA")
+        if (unknownErrors.length == 0) return { statusCode: 200, data: null, message: "We have already received your request, we will reach out to you shortly" };
+        return { statusCode: 400, data: null, message: crmData[0].code };
+    }
     if (crmData[0].code != "SUCCESS") return { statusCode: 400, data: null, message: crmData[0].code };
     newLead.crmId = crmData[0].details.id
     await newLead.save()
