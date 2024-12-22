@@ -299,7 +299,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     case "TOEFL":
                         filter.TOEFL = ele.data[0];
                         break;
-                    case "openNow":
+                    case "waiver":
+                        filter["$applicationDetails.applicationFeeWaiver"] = true;
                         break;
                     case "openNow":
                         break;
