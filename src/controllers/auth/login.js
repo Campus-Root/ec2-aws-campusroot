@@ -65,6 +65,7 @@ export const Login = errorWrapper(async (req, res, next) => {
         });
         await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } });
         await chatModel.create([{ participants: [user._id, RSA._id] }]);
+        await chatModel.create([{ participants: [user._id, "6737304feb3f12f7ec92ec41"] }]);
         user.advisors.push({ info: RSA._id, assignedCountries: [] });
         const doc = await createFolder(user._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
         user.docData = {

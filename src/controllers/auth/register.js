@@ -155,6 +155,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
             })
             await teamModel.findByIdAndUpdate(RSA._id, { $push: { leads: leadObject._id } });
             await chatModel.create({ participants: [student._id, RSA._id] });
+            await chatModel.create([{ participants: [student._id, "6737304feb3f12f7ec92ec41"] }]);
             student.advisors.push({ info: RSA._id, assignedCountries: [] });
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
