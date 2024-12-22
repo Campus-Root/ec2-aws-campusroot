@@ -442,7 +442,7 @@ export const oneCourse = errorWrapper(async (req, res, next, session) => {
     let course = await courseModel
         .findById(req.query.id)
         .select("-embeddingVector -plot -programmeStructure -description")
-        .populate("university", "name location ranking cost currency type logoSrc pictureSrc establishedYear")
+        .populate("university", "name location rank cost currency type logoSrc pictureSrc establishedYear")
     if (!course) return res.status(400).json({ statusCode: 200, message: `course ID invalid`, data: null })
     if (req.query.currency && course.currency.code !== req.query.currency) {
         const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
