@@ -18,6 +18,7 @@ import mongoose from "mongoose";
 import destinationModel from "../../models/Destination.js";
 import { MongoClient } from "mongodb";
 import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
+import { fetchJSON2GridLink } from "../../utils/json2grid.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
@@ -623,8 +624,9 @@ export const getRecommendations = async (req, res) => {
         const collection = db.collection("Postgraduate");
         let pipeline = [{ $match: filter }, { $project: projections }]
         const programs = await collection.aggregate(pipeline).toArray();
-        const categorizedPrograms = categorizePrograms(testScores, programs);
-        res.json(categorizedPrograms);
+        const { safe, moderate, ambitious } = categorizePrograms(testScores, programs);
+        const link = await fetchJSON2GridLink({ input:{filterData, testScores}, safe, moderate, ambitious })
+        res.send(link);
     } catch (error) {
         console.error("Error fetching programs:", error);
         res.status(500).json({ error: "Internal server error." });
