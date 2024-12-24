@@ -77,7 +77,7 @@ export const categorizePrograms = (testScores, programs) => {
     });
     const rankings = [...new Set(programs.map(p => p.WebomatricsNationalRanking))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
-    const moderateRange = rankings[Math.floor(rankings.length * 0.5)]; 
+    const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
     programs.forEach(program => {
         const rank = program.WebomatricsNationalRanking;
         if (rank <= ambitiousRange) {
@@ -91,7 +91,7 @@ export const categorizePrograms = (testScores, programs) => {
     return results;
 };
 export const constructFilters = (filterData, testScores) => {
-    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 } }, projections = { Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
+    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [] }, projections = { Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
@@ -145,12 +145,11 @@ export const constructFilters = (filterData, testScores) => {
                     projections["DETScore"] = 1
                     break;
                 case 'GRE':
-                    filter["GreScore"] = { $lte: Math.min(340, score + 10), $gte: Math.max(260, score - 10) };
+                    filter["$or"].push({ GreScore: { $lte: Math.min(340, score + 10), $gte: Math.max(260, score - 10) } }, { GreScore: null });
                     projections["GreScore"] = 1
                     break;
                 case 'GMAT':
-                    filter["GmatRequired"] = true;
-                    filter["GmatScore"] = { $lte: Math.min(805, score + 30), $gte: Math.max(205, score - 30) };
+                    filter["$or"].push({ GmatScore: { $lte: Math.min(805, score + 30), $gte: Math.max(205, score - 30) } }, { GmatScore: null });
                     projections["GmatScore"] = 1
                     break;
                 case "Backlogs":
