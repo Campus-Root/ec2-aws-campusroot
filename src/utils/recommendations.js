@@ -38,7 +38,7 @@ export const calculateMargin = (score, required, max, min) => {
     return Math.min(margin, 1.2);
 };
 export const calculateMatchPercentage = (testScores, program) => {
-    let matchScore = 0, totalWeight = 0;
+    let matchScore = 0, totalWeight = 0, bonus = 0;
     for (const ele of testScores) {
         let margin, weight
         switch (ele.testType) {
@@ -48,16 +48,36 @@ export const calculateMatchPercentage = (testScores, program) => {
                 matchScore += getMatchScoreFromGPA(ele.overallScore, ele.ugOutOf, program) * weight;
                 break;
             case "GMAT":
-                weight = program.weights?.GMAT || 30
-                totalWeight += weight
-                margin = calculateMargin(ele.overallScore, program.GmatScore, 805, 205)
-                matchScore += margin * weight;
+                if (program.GmatScore !== null) {
+                    weight = program.weights?.GMAT || 30
+                    totalWeight += weight
+                    margin = calculateMargin(ele.overallScore, program.GmatScore, 805, 205)
+                    matchScore += margin * weight;
+                }
                 break;
             case "GRE":
-                weight = program.weights?.GRE || 30
-                totalWeight += weight
-                margin = calculateMargin(ele.overallScore, program.GreScore, 340, 260)
-                matchScore += margin * weight;
+                if (program.GreScore !== null) {
+                    weight = program.weights?.GRE || 30
+                    totalWeight += weight
+                    margin = calculateMargin(ele.overallScore, program.GreScore, 340, 260)
+                    matchScore += margin * weight;
+                }
+                break;
+            case "WorkExperience":
+                if (program.WorkExp !== null) bonus += (ele.overallScore - program.WorkExp) * 2;
+                break;
+            case "Publications":
+                switch (ele.level) {
+                    case "Local":
+                        bonus += 1;
+                        break;
+                    case "National":
+                        bonus += 3;
+                        break;
+                    case "International":
+                        bonus += 5;
+                        break;
+                }
                 break;
             case "Backlogs":
                 weight = program.weights?.Backlogs || 30
@@ -67,7 +87,7 @@ export const calculateMatchPercentage = (testScores, program) => {
                 break;
         }
     }
-    return (matchScore / totalWeight) * 100;
+    return ((matchScore / totalWeight) * 100) + bonus;
 };
 export const categorizePrograms = (testScores, programs) => {
     const results = { safe: [], moderate: [], ambitious: [] };
@@ -143,6 +163,10 @@ export const constructFilters = (filterData, testScores) => {
                     filter["DETRequired"] = true;
                     filter["DETScore"] = { $lte: score };
                     projections["DETScore"] = 1
+                    break;
+                case 'WorkExperience':
+                    filter["WorkExp"] = { $lte: score };
+                    projections["WorkExp"] = 1
                     break;
                 case 'GRE':
                     filter["$or"].push({ GreScore: { $lte: Math.min(340, score + 10), $gte: Math.max(260, score - 10) } }, { GreScore: null });

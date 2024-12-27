@@ -357,6 +357,17 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     $addFields: {
                         university: { $arrayElemAt: ["$university", 0] } // Extract the first element
                     }
+                },{
+                    $addFields: {
+                        // Add a field for sorting
+                        globalRankingSortOrder: {
+                            $cond: {
+                                if: { $or: [{ $eq: ["$globalRankingPosition", null] }, { $eq: ["$globalRankingPosition", 0] }] },
+                                then: 1, // Set higher priority for null or 0 values
+                                else: 0  // Set lower priority for valid numeric values
+                            }
+                        }
+                    }
                 }, {
                 $facet: {
                     metadata: [{ $count: "totalDocs" }], // Count total matching documents
@@ -381,10 +392,13 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 "AdmissionsRequirements.AcademicRequirements": 1,
                                 elite: 1,
                                 globalRankingPosition: 1,
-                                "AdmissionsRequirements.LanguageRequirements": 1
+                                "AdmissionsRequirements.LanguageRequirements": 1,
+                                globalRankingSortOrder:1
                             }
                         },
-                        { $sort: { globalRankingPosition: 1 } },
+                        {
+                            $sort: { globalRankingSortOrder: 1, globalRankingPosition: 1 } // First by sortOrder, then by position
+                        },
                         { $skip: skip }, // Pagination skip
                         { $limit: perPage }, // Pagination limit
 
