@@ -25,7 +25,7 @@ export const cookieOptions = {
 	httpOnly: true,
 	sameSite: 'strict'
 }
-const whitelist = ["http://localhost:5500","http://127.0.0.1:5500","https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
+const whitelist = ["http://localhost:5500","null","http://127.0.0.1:5500","https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000"];
 app.set('trust proxy', 1) // trust first proxy
 const corsOptions = {
 	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
