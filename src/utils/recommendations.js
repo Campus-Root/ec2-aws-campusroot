@@ -64,7 +64,7 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "WorkExperience":
-                if (program.WorkExp !== null) bonus += Math.max((ele.overallScore - program.WorkExp) * 3,15);
+                if (program.WorkExp !== null) bonus += Math.max((ele.overallScore - program.WorkExp) * 3, 15);
                 break;
             case "Publications":
                 switch (ele.level) {
@@ -204,5 +204,7 @@ export const constructFilters = (filterData, testScores) => {
             }
         });
     }
+    if (filter["$or"].length == 0) delete filter["$or"]
+    console.log(filter);
     return { filter, projections };
 }
