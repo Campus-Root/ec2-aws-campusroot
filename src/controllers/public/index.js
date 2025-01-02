@@ -358,17 +358,17 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         university: { $arrayElemAt: ["$university", 0] } // Extract the first element
                     }
                 },{
-                    $addFields: {
-                        // Add a field for sorting
-                        globalRankingSortOrder: {
-                            $cond: {
-                                if: { $or: [{ $eq: ["$globalRankingPosition", null] }, { $eq: ["$globalRankingPosition", 0] }] },
-                                then: 1, // Set higher priority for null or 0 values
-                                else: 0  // Set lower priority for valid numeric values
-                            }
+                $addFields: {
+                    // Add a field for sorting
+                    globalRankingSortOrder: {
+                        $cond: {
+                            if: { $or: [{ $eq: ["$globalRankingPosition", null] }, { $eq: ["$globalRankingPosition", 0] }] },
+                            then: 0, // Set higher priority for null or 0 values
+                            else: 1  // Set lower priority for valid numeric values
                         }
                     }
-                }, {
+                }
+            }, {
                 $facet: {
                     metadata: [{ $count: "totalDocs" }], // Count total matching documents
                     data: [
@@ -393,7 +393,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 elite: 1,
                                 globalRankingPosition: 1,
                                 "AdmissionsRequirements.LanguageRequirements": 1,
-                                globalRankingSortOrder:1
+                                globalRankingSortOrder: 1
                             }
                         },
                         {

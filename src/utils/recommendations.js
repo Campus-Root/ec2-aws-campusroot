@@ -56,7 +56,7 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "GRE":
-                if (program.GreScore !== null) {
+                if (program?.GreScore !== undefined && program.GreScore !== null) {
                     weight = program.weights?.GRE || 30
                     totalWeight += weight
                     margin = calculateMargin(ele.overallScore, program.GreScore, 340, 260)
@@ -64,13 +64,10 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "WorkExperience":
-                if (program.WorkExp !== null) bonus += (ele.overallScore - program.WorkExp) * 2;
+                if (program.WorkExp !== null) bonus += Math.max((ele.overallScore - program.WorkExp) * 3,15);
                 break;
             case "Publications":
                 switch (ele.level) {
-                    case "Local":
-                        bonus += 1;
-                        break;
                     case "National":
                         bonus += 3;
                         break;
@@ -111,7 +108,7 @@ export const categorizePrograms = (testScores, programs) => {
     return results;
 };
 export const constructFilters = (filterData, testScores) => {
-    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [] }, projections = { Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
+    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], IsOnlineCourse: false }, projections = { Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
