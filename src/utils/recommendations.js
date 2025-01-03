@@ -20,22 +20,10 @@ export const getMatchScoreFromGPA = (score, outOf, program) => {
     return result
 };
 export const calculateMargin = (score, required, max, min) => {
-    let margin = 0; // Initialize margin
-    if (score >= required) {
-        const percentageExceed = ((score - required) / (max - min)) * 100;
-        if (percentageExceed >= 10) {
-            margin = 0.7 + ((percentageExceed - 10) / 100); // Bonus beyond 10%, mapped proportionally
-        } else if (percentageExceed >= 5) {
-            margin = 0.5 + ((percentageExceed - 5) / 5) * (0.7 - 0.5); // Linearly interpolate between 0.5 and 0.7
-        } else {
-            margin = 0.3 + (percentageExceed / 5) * (0.5 - 0.3); // Linearly interpolate between 0.3 and 0.5
-        }
-    } else {
-        // If the user's score is below the program requirement, calculate a baseline margin
-        const percentageBelow = ((required - score) / (max - min)) * 100;
-        margin = Math.max(0, 0.3 - (percentageBelow / 10)); // Decrease margin proportionally
-    }
-    return Math.min(margin, 1.2);
+    let diff = (student_score - required_score) / (max_score - min_score)
+    if (diff < -0.1) return 0; // If the score is significantly below the required value, return 0
+    else if (diff > 1) return 1
+    else return 3.26446281 * diff**3 - 7.02892562 * diff**2 + 4.26446281 * diff + 0.6
 };
 export const calculateMatchPercentage = (testScores, program) => {
     let matchScore = 0, totalWeight = 0, bonus = 0;
@@ -64,7 +52,7 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "WorkExperience":
-                if (program.WorkExp !== null) bonus += Math.max((ele.overallScore - program.WorkExp) * 3, 15);
+                if (program?.WorkExp !== undefined && program.WorkExp !== null) bonus += Math.min((ele.overallScore - program.WorkExp) * 3, 15);
                 break;
             case "Publications":
                 switch (ele.level) {
@@ -77,10 +65,13 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "Backlogs":
-                weight = program.weights?.Backlogs || 30
-                totalWeight += weight
-                margin = Math.max(0, 1 - (ele.overallScore / program.backlog) * (1 - 0.7));
-                matchScore += margin * weight;
+                if (program?.backlog !== undefined && program.backlog !== null) {
+                    weight = program.weights?.Backlogs || 30
+                    totalWeight += weight
+                    // margin = Math.max(0, 1 - (ele.overallScore / program.backlog) * (1 - 0.7));
+                    margin = Math.min(15, (program.backlog - ele.overallScore) * 2)
+                    matchScore += margin * weight;
+                }
                 break;
         }
     }
@@ -107,7 +98,7 @@ export const categorizePrograms = (testScores, programs) => {
     });
     return results;
 };
-export const constructFilters = (filterData, testScores) => {
+export const constructFilters = (filterData, testScores, mode) => {
     const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], IsOnlineCourse: false }, projections = { Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
@@ -140,24 +131,24 @@ export const constructFilters = (filterData, testScores) => {
             if (!score) return;
             switch (testType) {
                 case 'IELTS':
-                    filter["IeltsRequired"] = true;
+                    // filter["IeltsRequired"] = true;
                     filter["IeltsOverall"] = { $lte: score };
                     if (sectionScore) filter["IeltsNoBandLessThan"] = { $lte: Number(sectionScore) };
                     projections["IeltsOverall"] = 1
                     break;
                 case 'TOEFL':
-                    filter["ToeflRequired"] = true;
+                    // filter["ToeflRequired"] = true;
                     filter["ToeflScore"] = { $lte: score };
                     if (sectionScore) filter["TOEFLNoSectionLessThan"] = { $lte: Number(sectionScore) };
                     projections["ToeflScore"] = 1
                     break;
                 case 'PTE':
-                    filter["PteRequired"] = true;
+                    // filter["PteRequired"] = true;
                     filter["PteScore"] = { $lte: score };
                     projections["PteScore"] = 1
                     break;
                 case 'DET':
-                    filter["DETRequired"] = true;
+                    // filter["DETRequired"] = true;
                     filter["DETScore"] = { $lte: score };
                     projections["DETScore"] = 1
                     break;
@@ -166,15 +157,15 @@ export const constructFilters = (filterData, testScores) => {
                     projections["WorkExp"] = 1
                     break;
                 case 'GRE':
-                    filter["$or"].push({ GreScore: { $lte: Math.min(340, score + 10), $gte: Math.max(260, score - 10) } }, { GreScore: null });
+                    filter["$or"].push({ GreScore: { $lte: Math.min(340, score + 10) } }, { GreScore: null });
                     projections["GreScore"] = 1
                     break;
                 case 'GMAT':
-                    filter["$or"].push({ GmatScore: { $lte: Math.min(805, score + 30), $gte: Math.max(205, score - 30) } }, { GmatScore: null });
+                    filter["$or"].push({ GmatScore: { $lte: Math.min(805, score + 40) } }, { GmatScore: null });
                     projections["GmatScore"] = 1
                     break;
                 case "Backlogs":
-                    filter["backlog"] = { $gte: Math.max(0, score - 2) };
+                    filter["$or"].push({ backlog: { $gte: Math.max(0, score) } }, { backlog: null });
                     projections["backlog"] = 1
                     break;
                 case 'GPA':
@@ -192,11 +183,11 @@ export const constructFilters = (filterData, testScores) => {
                             projections["EntryRequirementUgOutOf7"] = 1
                             break;
                         case 10:
-                            filter["EntryRequirementUgOutOf10"] = { $lte: score + 0.3 };
+                            filter["EntryRequirementUgOutOf10"] = { $lte: score + 0.4 };
                             projections["EntryRequirementUgOutOf10"] = 1
                             break;
                         case 100:
-                            filter["EntryRequirementUgOutOf100"] = { $lte: score + 5 };
+                            filter["EntryRequirementUgOutOf100"] = { $lte: score + 8 };
                             projections["EntryRequirementUgOutOf100"] = 1
                             break;
                     }

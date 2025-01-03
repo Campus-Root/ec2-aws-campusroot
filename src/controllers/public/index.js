@@ -357,7 +357,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     $addFields: {
                         university: { $arrayElemAt: ["$university", 0] } // Extract the first element
                     }
-                },{
+                }, {
                 $addFields: {
                     // Add a field for sorting
                     globalRankingSortOrder: {
@@ -630,16 +630,17 @@ export const getDestinationById = errorWrapper(async (req, res) => {
 })
 export const getRecommendations = async (req, res) => {
     try {
+        const { mode = "student" } = req.query;
         const { filterData, testScores } = req.body;
         if (!testScores || !Array.isArray(testScores) || testScores.length === 0) return res.status(400).json({ error: "Please provide valid testScores as an array." });
-        const { filter, projections } = constructFilters(filterData, testScores);
+        const { filter, projections } = constructFilters(filterData, testScores, mode);
         const client = await MongoClient.connect(process.env.mongoRecommendations);
         let db = client.db('campusroot');
         const collection = db.collection("Postgraduate");
         let pipeline = [{ $match: filter }, { $project: projections }]
         const programs = await collection.aggregate(pipeline).toArray();
-        const { safe, moderate, ambitious } = categorizePrograms(testScores, programs);
-        const link = await fetchJSON2GridLink({ input:{filterData, testScores}, safe, moderate, ambitious })
+        const { safe, moderate, ambitious } = categorizePrograms(testScores, programs, mode);
+        const link = await fetchJSON2GridLink({ input: { filterData, testScores }, safe, moderate, ambitious })
         res.send(link);
     } catch (error) {
         console.error("Error fetching programs:", error);
