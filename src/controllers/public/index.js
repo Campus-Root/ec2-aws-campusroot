@@ -630,10 +630,12 @@ export const getDestinationById = errorWrapper(async (req, res) => {
 })
 export const getRecommendations = async (req, res) => {
     try {
-        const { mode = "student" } = req.query;
+        const { mode: queryMode } = req.query;
+        const allowedModes = ["Student", "Counsellor"];
+        const mode = allowedModes.includes(queryMode) ? queryMode : "Student";
         const { filterData, testScores } = req.body;
         if (!testScores || !Array.isArray(testScores) || testScores.length === 0) return res.status(400).json({ error: "Please provide valid testScores as an array." });
-        const { filter, projections } = constructFilters(filterData, testScores, mode);
+        const { filter, projections } = constructFilters(filterData, testScores);
         const client = await MongoClient.connect(process.env.mongoRecommendations);
         let db = client.db('campusroot');
         const collection = db.collection("Postgraduate");

@@ -76,12 +76,24 @@ export const calculateMatchPercentage = (testScores, program) => {
     }
     return ((matchScore / totalWeight) + bonus);
 };
-export const categorizePrograms = (testScores, programs) => {
+export const categorizePrograms = (testScores, programs, mode) => {
     const results = { safe: [], moderate: [], ambitious: [] };
-    programs = programs.filter(ele => {
-        ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-        return ele.matchPercentage >= 50;
-    });
+    switch (mode) {
+        case "Student":
+            programs = programs.filter(ele => {
+                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
+                return ele.matchPercentage >= 50;
+            });
+            break;
+        case "Counsellor":
+            programs = programs.filter(ele => {
+                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
+                return true;
+            });
+            break;
+        default:
+            break;
+    }
     const rankings = [...new Set(programs.map(p => p.WebomatricsNationalRanking))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
     const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
@@ -97,7 +109,7 @@ export const categorizePrograms = (testScores, programs) => {
     });
     return results;
 };
-export const constructFilters = (filterData, testScores, mode) => {
+export const constructFilters = (filterData, testScores) => {
     const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], IsOnlineCourse: false }, projections = { Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
@@ -127,7 +139,6 @@ export const constructFilters = (filterData, testScores, mode) => {
     if (testScores && Array.isArray(testScores)) {
         testScores.forEach(({ testType, overallScore, sectionScore, ugOutOf }) => {
             // skip this iteration if overallScore doesn't exist
-            if (!overallScore) return;
             const score = Number(overallScore);
             if (!score) return;
             switch (testType) {
@@ -197,5 +208,7 @@ export const constructFilters = (filterData, testScores, mode) => {
         });
     }
     if (filter["$or"].length == 0) delete filter["$or"]
+    console.log(filter);
+
     return { filter, projections };
 }
