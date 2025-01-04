@@ -127,7 +127,7 @@ export const constructFilters = (filterData, testScores, mode) => {
     if (testScores && Array.isArray(testScores)) {
         testScores.forEach(({ testType, overallScore, sectionScore, ugOutOf }) => {
             // skip this iteration if overallScore doesn't exist
-            // if (!overallScore) return;
+            if (!overallScore) return;
             const score = Number(overallScore);
             if (!score) return;
             switch (testType) {
