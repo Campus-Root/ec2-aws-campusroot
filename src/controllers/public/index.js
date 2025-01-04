@@ -641,7 +641,7 @@ export const getRecommendations = async (req, res) => {
         const programs = await collection.aggregate(pipeline).toArray();
         const { safe, moderate, ambitious } = categorizePrograms(testScores, programs, mode);
         const link = await fetchJSON2GridLink({ input: { filterData, testScores }, safe, moderate, ambitious })
-        res.send(link);
+        return res.status(200).json({ link: link, data: { input: { filterData, testScores }, safe, moderate, ambitious }, message: "recommendations" })
     } catch (error) {
         console.error("Error fetching programs:", error);
         res.status(500).json({ error: "Internal server error." });
