@@ -20,7 +20,7 @@ export const getMatchScoreFromGPA = (score, outOf, program) => {
     return result
 };
 export const calculateMargin = (score, required, max, min) => {
-    let diff = (student_score - required_score) / (max_score - min_score)
+    let diff = (score - required) / (max - min)
     if (diff < -0.1) return 0; // If the score is significantly below the required value, return 0
     else if (diff > 1) return 1
     else return 3.26446281 * diff**3 - 7.02892562 * diff**2 + 4.26446281 * diff + 0.6
@@ -127,6 +127,8 @@ export const constructFilters = (filterData, testScores, mode) => {
     // Process test scores
     if (testScores && Array.isArray(testScores)) {
         testScores.forEach(({ testType, overallScore, sectionScore, ugOutOf }) => {
+            // skip this iteration if overallScore doesn't exist
+            // if (!overallScore) return;
             const score = Number(overallScore);
             if (!score) return;
             switch (testType) {
@@ -196,6 +198,5 @@ export const constructFilters = (filterData, testScores, mode) => {
         });
     }
     if (filter["$or"].length == 0) delete filter["$or"]
-    console.log(filter);
     return { filter, projections };
 }
