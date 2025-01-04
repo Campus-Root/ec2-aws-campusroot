@@ -110,7 +110,7 @@ export const categorizePrograms = (testScores, programs, mode) => {
     return results;
 };
 export const constructFilters = (filterData, testScores) => {
-    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], IsOnlineCourse: false }, projections = { _id:-1,Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
+    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], IsOnlineCourse: false }, projections = { _id:0,Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
