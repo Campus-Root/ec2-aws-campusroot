@@ -35,7 +35,7 @@ export const calculateMatchPercentage = (testScores, program) => {
             case "GPA":
                 weight = program.weights?.GPA || 70
                 totalWeight += weight
-                matchScore += getMatchScoreFromGPA(ele.overallScore, ele.ugOutOf, program) * weight;
+                matchScore += getMatchScoreFromGPA(ele.overallScore, Number(ele.ugOutOf), program) * weight;
                 break;
             case "GMAT":
                 if (program.GmatScore !== null) {
@@ -208,7 +208,5 @@ export const constructFilters = (filterData, testScores) => {
         });
     }
     if (filter["$or"].length == 0) delete filter["$or"]
-    console.log(filter);
-
     return { filter, projections };
 }
