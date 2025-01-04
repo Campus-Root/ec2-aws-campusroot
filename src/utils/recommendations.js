@@ -21,9 +21,11 @@ export const getMatchScoreFromGPA = (score, outOf, program) => {
 };
 export const calculateMargin = (score, required, max, min) => {
     let diff = (score - required) / (max - min)
-    if (diff < -0.1) return 0; // If the score is significantly below the required value, return 0
-    else if (diff > 1) return 1
-    else return 3.26446281 * diff**3 - 7.02892562 * diff**2 + 4.26446281 * diff + 0.6
+    let margin
+    if (diff < -0.1) margin = 0; // If the score is significantly below the required value, margin = 0
+    else if (diff > 1) margin = 100
+    margin = 3.26446281 * diff ** 3 - 7.02892562 * diff ** 2 + 4.26446281 * diff + 0.6
+    return margin * 100
 };
 export const calculateMatchPercentage = (testScores, program) => {
     let matchScore = 0, totalWeight = 0, bonus = 0;
@@ -52,8 +54,7 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "WorkExperience":
-                if (program?.WorkExp !== undefined && program.WorkExp !== null) bonus += Math.min((ele.overallScore - program.WorkExp) * 3, 15);
-                break;
+                if (program?.WorkExp !== undefined && program.WorkExp !== null) bonus += Math.min((ele.overallScore - program.WorkExp) * 3, 15); break;
             case "Publications":
                 switch (ele.level) {
                     case "National":
@@ -66,16 +67,14 @@ export const calculateMatchPercentage = (testScores, program) => {
                 break;
             case "Backlogs":
                 if (program?.backlog !== undefined && program.backlog !== null) {
+                    bonus += Math.min(15, (program.backlog - ele.overallScore) * 2)
                     weight = program.weights?.Backlogs || 30
                     totalWeight += weight
-                    // margin = Math.max(0, 1 - (ele.overallScore / program.backlog) * (1 - 0.7));
-                    margin = Math.min(15, (program.backlog - ele.overallScore) * 2)
-                    matchScore += margin * weight;
                 }
                 break;
         }
     }
-    return ((matchScore / totalWeight) * 100) + bonus;
+    return ((matchScore / totalWeight) + bonus);
 };
 export const categorizePrograms = (testScores, programs) => {
     const results = { safe: [], moderate: [], ambitious: [] };
