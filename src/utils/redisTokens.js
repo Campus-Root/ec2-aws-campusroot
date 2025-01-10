@@ -7,7 +7,10 @@ export const generateTokens = async (userId, source, DeviceToken) => {
     const newAccessToken = jwt.sign({ id: userId }, ACCESS_SECRET, { expiresIn: '1h' });
     const newRefreshToken = jwt.sign({ id: userId }, REFRESH_SECRET, { expiresIn: '30d' });
     await redisClient.set(`accessToken:${userId}:${source}`, newAccessToken, { 'EX': 3600 }); // 1 hour
-    if (DeviceToken) await redisClient.set(`DeviceToken:${userId}:${source}`, DeviceToken, { 'EX': 2592000 }); // 30 days
+    if (DeviceToken) {
+        await redisClient.set(`DeviceToken:${userId}:${source}`, DeviceToken, { 'EX': 2592000 });
+        console.log(`DeviceToken:${userId}:${source}`,`token ${DeviceToken}`);
+    } // 30 days
     await redisClient.set(`refreshToken:${userId}:${source}`, newRefreshToken, { 'EX': 2592000 }); // 30 days
     return { newAccessToken, newRefreshToken };
 };
@@ -68,7 +71,7 @@ export const deleteTokens = async (userId, source) => {
 };
 export const storeNewToken = async (name, newAccessToken) => {
     try {
-        await redisClient.set(`${name}`, newAccessToken, {'EX': 3600}); // 1 hour
+        await redisClient.set(`${name}`, newAccessToken, { 'EX': 3600 }); // 1 hour
     } catch (error) {
         console.error('Error storing token:', error);
         throw error;
