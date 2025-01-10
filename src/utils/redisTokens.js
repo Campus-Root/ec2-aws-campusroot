@@ -9,9 +9,13 @@ export const generateTokens = async (userId, source, DeviceToken) => {
     await redisClient.set(`accessToken:${userId}:${source}`, newAccessToken, { 'EX': 3600 }); // 1 hour
     if (DeviceToken) {
         await redisClient.set(`DeviceToken:${userId}:${source}`, DeviceToken, { 'EX': 2592000 });
-        console.log(`DeviceToken:${userId}:${source}`,`token ${DeviceToken}`);
     } // 30 days
     await redisClient.set(`refreshToken:${userId}:${source}`, newRefreshToken, { 'EX': 2592000 }); // 30 days
+    console.log("generated tokens: ",{
+        [`accessToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
+        [`refreshToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
+        [`DeviceToken:${userId}:${source}`]: `${await redisClient.get(`DeviceToken:${userId}:${source}`)}`,
+    });
     return { newAccessToken, newRefreshToken };
 };
 export const verifyTokens = async (source, accessToken, refreshToken) => {
@@ -55,22 +59,28 @@ export const deleteTokens = async (userId, source) => {
         if (!source) {
             // Delete all tokens for the user if source is not provided
             const keys = await redisClient.keys(`*:${userId}:*`);
-            console.log(keys);
-            
             // Delete all matching access tokens
             for (const key of keys) {
                 await redisClient.del(key);
             }
-            console.log(await redisClient.keys(`*:${userId}:*`))
-
         } else {
             // Delete specific access and refresh tokens for the given source
             console.log("source exists");
-            
+            console.log("tokens before deletion: ",{
+                [`accessToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
+                [`refreshToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
+                [`DeviceToken:${userId}:${source}`]: `${await redisClient.get(`DeviceToken:${userId}:${source}`)}`,
+            });
+
             await redisClient.del(`accessToken:${userId}:${source}`);
             await redisClient.del(`refreshToken:${userId}:${source}`);
             await redisClient.del(`DeviceToken:${userId}:${source}`);
-            console.log(await redisClient.keys(`*:${userId}:*`))
+
+            console.log("tokens after deletion: ",{
+                [`accessToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
+                [`refreshToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
+                [`DeviceToken:${userId}:${source}`]: `${await redisClient.get(`DeviceToken:${userId}:${source}`)}`,
+            });
         }
     } catch (error) {
         console.error('Error deleting tokens:', error);
