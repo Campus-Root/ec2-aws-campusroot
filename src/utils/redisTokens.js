@@ -55,10 +55,14 @@ export const deleteTokens = async (userId, source) => {
         if (!source) {
             // Delete all tokens for the user if source is not provided
             const keys = await redisClient.keys(`*:${userId}:*`);
+            console.log(keys);
+            
             // Delete all matching access tokens
             for (const key of keys) {
                 await redisClient.del(key);
             }
+            console.log(await redisClient.keys(`*:${userId}:*`);)
+
         } else {
             // Delete specific access and refresh tokens for the given source
             await redisClient.del(`accessToken:${userId}:${source}`);
