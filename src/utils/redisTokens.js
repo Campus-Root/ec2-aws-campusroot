@@ -61,12 +61,15 @@ export const deleteTokens = async (userId, source) => {
             for (const key of keys) {
                 await redisClient.del(key);
             }
-            console.log(await redisClient.keys(`*:${userId}:*`);)
+            console.log(await redisClient.keys(`*:${userId}:*`))
 
         } else {
             // Delete specific access and refresh tokens for the given source
+            console.log("source exists");
+            
             await redisClient.del(`accessToken:${userId}:${source}`);
             await redisClient.del(`refreshToken:${userId}:${source}`);
+            console.log(await redisClient.keys(`*:${userId}:*`))
         }
     } catch (error) {
         console.error('Error deleting tokens:', error);
