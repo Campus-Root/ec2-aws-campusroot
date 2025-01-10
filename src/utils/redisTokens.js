@@ -69,6 +69,7 @@ export const deleteTokens = async (userId, source) => {
             
             await redisClient.del(`accessToken:${userId}:${source}`);
             await redisClient.del(`refreshToken:${userId}:${source}`);
+            await redisClient.del(`DeviceToken:${userId}:${source}`);
             console.log(await redisClient.keys(`*:${userId}:*`))
         }
     } catch (error) {
