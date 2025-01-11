@@ -234,7 +234,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             totalPages = Math.ceil(totalDocs / perPage);
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
-            let aggregationPipeline = []
+            let aggregationPipeline = [], needForAggregation = false
             for (const ele of req.body.filterData) {
                 switch (ele.type) {
                     case "country":
