@@ -234,7 +234,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             totalPages = Math.ceil(totalDocs / perPage);
             return ({ statusCode: 200, message: `list of all universities`, data: { list: listOfUniversities, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "courses":
-            let aggregationPipeline = [], needForAggregation = false,courses
+            let aggregationPipeline = [], courses
             for (const ele of req.body.filterData) {
                 switch (ele.type) {
                     case "country":
@@ -278,14 +278,13 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 "index": "vector_index"
                             }
                         });
-                        needForAggregation = true
                         break;
                     // Add cases for other filters
                     default:
                         break;
                 }
             }
-            if (needForAggregation) {
+            if (aggregationPipeline.length > 0) {
                 aggregationPipeline.push({
                     $match: {
                         multipleLocations: { $exists: false },
@@ -388,182 +387,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             }
             if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5);
             return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } });
-        // case "courses":
-        //     let aggregationPipeline = []
-        //     for (const ele of req.body.filterData) {
-        //         switch (ele.type) {
-        //             case "country":
-        //                 filter["location.country"] = { $in: ele.data };
-        //                 break;
-        //             case "city":
-        //                 filter["location.city"] = { $in: ele.data };
-        //                 break;
-        //             case "state":
-        //                 filter["location.state"] = { $in: ele.data };
-        //                 break;
-        //             case "universityId":
-        //                 filter.university = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
-        //                 break;
-        //             case "courseId":
-        //                 filter._id = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
-        //                 break;
-        //             case "studyLevel":
-        //                 filter.studyLevel = { $in: ele.data };
-        //                 break;
-        //             case "studyMode":
-        //                 filter.studyMode = { $in: ele.data };
-        //                 break;
-        //             case "discipline":
-        //                 filter.discipline = { $in: ele.data };
-        //                 break;
-        //             case "subDiscipline":
-        //                 filter.subDiscipline = { $in: ele.data };
-        //                 break;
-        //             case "type":
-        //                 filter.type = ele.data[0];
-        //                 break;
-        //             case "name":
-        //                 let vector = await stringToEmbedding(ele.data) // extract content from db  such as plot and courseLink 
-        //                 aggregationPipeline.push({
-        //                     $vectorSearch: {
-        //                         "queryVector": vector,
-        //                         "path": "embeddingVector",
-        //                         "numCandidates": 100,
-        //                         "limit": 40,
-        //                         "index": "vector_index"
-        //                     }
-        //                 })
-        //                 break;
-        //             case "GRE":
-        //                 filter.GRE = ele.data[0];
-        //                 break;
-        //             case "GPA":
-        //                 filter.GPA = ele.data[0];
-        //                 break;
-        //             case "GMAT":
-        //                 filter.GMAT = ele.data[0];
-        //                 break;
-        //             case "Duolingo":
-        //                 filter.Duolingo = ele.data[0];
-        //                 break;
-        //             case "IELTS":
-        //                 filter.IELTS = ele.data[0];
-        //                 break;
-        //             case "PTE":
-        //                 filter.PTE = ele.data[0];
-        //                 break;
-        //             case "TOEFL":
-        //                 filter.TOEFL = ele.data[0];
-        //                 break;
-        //             case "waiver":
-        //                 filter["applicationDetails.applicationFeeWaiver"] = true;
-        //                 break;
-        //             case "openNow":
-        //                 break;
-        //             case "stem":
-        //                 filter["stemDetails.stem"] = true;
-        //                 break;
-        //             case "budget":
-        //                 let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
-        //                 if (!filter["$or"]) filter["$or"] = []
-        //                 filter["$or"].push(...currencyFilter.map(element => {
-        //                     ele.data[0] = ele.data[0] ? ele.data[0] : 0
-        //                     ele.data[1] = ele.data[1] ? ele.data[1] : Math.min()
-        //                     let lowerLimit = costConversion(ele.data[0], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-        //                     let upperLimit = costConversion(ele.data[1], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
-        //                     return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
-        //                 }));
-        //                 break;
-        //             case "courseStartingMonth":
-        //                 const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
-        //                 let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
-        //                 filter.startDate = { $elemMatch: period };
-        //                 break;
-        //             default:
-        //                 break;
-        //         }
-        //     }
-        //     aggregationPipeline.push({
-        //         $match: {
-        //             multipleLocations: { $exists: false },
-        //             ...filter // Dynamic filters based on the input
-        //         }
-        //     }, {
-        //         $lookup: {
-        //             from: "universities", // Related collection name
-        //             localField: "university",
-        //             foreignField: "_id",
-        //             as: "university",
-        //             pipeline: [
-        //                 {
-        //                     $project: {
-        //                         name: 1,
-        //                         location: 1,
-        //                         logoSrc: 1,
-        //                         type: 1,
-        //                         uni_rating: 1,
-        //                         rank: 1
-        //                     }
-        //                 }
-        //             ]
-        //         }
-        //     },
-        //         {
-        //             $addFields: {
-        //                 university: { $arrayElemAt: ["$university", 0] } // Extract the first element
-        //             }
-        //         },{
-        //         $facet: {
-        //             metadata: [{ $count: "totalDocs" }], // Count total matching documents
-        //             data: [
-        //                 {
-        //                     $project: {
-        //                         name: 1,
-        //                         university: 1,
-        //                         discipline: 1,
-        //                         subDiscipline: 1,
-        //                         studyLevel: 1,
-        //                         applicationDetails: 1,
-        //                         "tuitionFee.tuitionFeeType": 1,
-        //                         "tuitionFee.tuitionFee": 1,
-        //                         startDate: 1,
-        //                         schoolName: 1,
-        //                         duration: 1,
-        //                         courseType: 1,
-        //                         studyMode: 1,
-        //                         currency: 1,
-        //                         "stemDetails.stem": 1,
-        //                         "AdmissionsRequirements.AcademicRequirements": 1,
-        //                         elite: 1,
-        //                         globalRankingPosition: 1,
-        //                         "AdmissionsRequirements.LanguageRequirements": 1
-        //                     }
-        //                 },
-        //                 {
-        //                     $sort: { globalRankingPosition: 1 } // First by sortOrder, then by position
-        //                 },
-        //                 { $skip: skip }, // Pagination skip
-        //                 { $limit: perPage }, // Pagination limit
-
-        //             ]
-        //         }
-        //     });
-        //     let result = await courseModel.aggregate(aggregationPipeline);
-        //     let courses = result[0]?.data || [];
-        //     totalDocs = result[0]?.metadata[0]?.totalDocs || 0;
-        //     totalPages = Math.ceil(totalDocs / perPage);
-        //     if (req.body.currency) {
-        //         courses = courses.map(ele => {
-        //             if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
-        //             if (ele.currency.code != req.body.currency) {
-        //                 ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.body.currency, rates[ele.currency.code], rates[req.body.currency])
-        //                 ele.currency = { code: req.body.currency, symbol: currencySymbols[req.body.currency] }
-        //             }
-        //             return ele;
-        //         });
-        //     }
-        //     if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
-        //     return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "destinations":
             const destinations = await destinationModel.find({}, "-content").populate("author", "firstName lastName displayPicSrc email userType role").sort({ createdAt: -1 }).skip(skip).limit(perPage);
             totalDocs = await destinationModel.countDocuments({})
@@ -792,3 +615,180 @@ export const getRecommendations = async (req, res) => {
         res.status(500).json({ error: "Internal server error." });
     }
 }
+
+        // case "courses":
+        //     let aggregationPipeline = []
+        //     for (const ele of req.body.filterData) {
+        //         switch (ele.type) {
+        //             case "country":
+        //                 filter["location.country"] = { $in: ele.data };
+        //                 break;
+        //             case "city":
+        //                 filter["location.city"] = { $in: ele.data };
+        //                 break;
+        //             case "state":
+        //                 filter["location.state"] = { $in: ele.data };
+        //                 break;
+        //             case "universityId":
+        //                 filter.university = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
+        //                 break;
+        //             case "courseId":
+        //                 filter._id = { $in: ele.data.map(i => new mongoose.Types.ObjectId(i)) };
+        //                 break;
+        //             case "studyLevel":
+        //                 filter.studyLevel = { $in: ele.data };
+        //                 break;
+        //             case "studyMode":
+        //                 filter.studyMode = { $in: ele.data };
+        //                 break;
+        //             case "discipline":
+        //                 filter.discipline = { $in: ele.data };
+        //                 break;
+        //             case "subDiscipline":
+        //                 filter.subDiscipline = { $in: ele.data };
+        //                 break;
+        //             case "type":
+        //                 filter.type = ele.data[0];
+        //                 break;
+        //             case "name":
+        //                 let vector = await stringToEmbedding(ele.data) // extract content from db  such as plot and courseLink 
+        //                 aggregationPipeline.push({
+        //                     $vectorSearch: {
+        //                         "queryVector": vector,
+        //                         "path": "embeddingVector",
+        //                         "numCandidates": 100,
+        //                         "limit": 40,
+        //                         "index": "vector_index"
+        //                     }
+        //                 })
+        //                 break;
+        //             case "GRE":
+        //                 filter.GRE = ele.data[0];
+        //                 break;
+        //             case "GPA":
+        //                 filter.GPA = ele.data[0];
+        //                 break;
+        //             case "GMAT":
+        //                 filter.GMAT = ele.data[0];
+        //                 break;
+        //             case "Duolingo":
+        //                 filter.Duolingo = ele.data[0];
+        //                 break;
+        //             case "IELTS":
+        //                 filter.IELTS = ele.data[0];
+        //                 break;
+        //             case "PTE":
+        //                 filter.PTE = ele.data[0];
+        //                 break;
+        //             case "TOEFL":
+        //                 filter.TOEFL = ele.data[0];
+        //                 break;
+        //             case "waiver":
+        //                 filter["applicationDetails.applicationFeeWaiver"] = true;
+        //                 break;
+        //             case "openNow":
+        //                 break;
+        //             case "stem":
+        //                 filter["stemDetails.stem"] = true;
+        //                 break;
+        //             case "budget":
+        //                 let currencyFilter = [{ "currency.code": "USD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "GBP", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "NZD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "CAD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "AUD", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }, { "currency.code": "EUR", "tuitionFee.tuitionFee": { "$gte": 0, "$lte": 0 } }];
+        //                 if (!filter["$or"]) filter["$or"] = []
+        //                 filter["$or"].push(...currencyFilter.map(element => {
+        //                     ele.data[0] = ele.data[0] ? ele.data[0] : 0
+        //                     ele.data[1] = ele.data[1] ? ele.data[1] : Math.min()
+        //                     let lowerLimit = costConversion(ele.data[0], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
+        //                     let upperLimit = costConversion(ele.data[1], req.body.currency, element["currency.code"], rates[req.body.currency], rates[element["currency.code"]]);
+        //                     return { ...element, "tuitionFee.tuitionFee": { "$gte": lowerLimit, "$lte": upperLimit } };
+        //                 }));
+        //                 break;
+        //             case "courseStartingMonth":
+        //                 const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
+        //                 let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
+        //                 filter.startDate = { $elemMatch: period };
+        //                 break;
+        //             default:
+        //                 break;
+        //         }
+        //     }
+        //     aggregationPipeline.push({
+        //         $match: {
+        //             multipleLocations: { $exists: false },
+        //             ...filter // Dynamic filters based on the input
+        //         }
+        //     }, {
+        //         $lookup: {
+        //             from: "universities", // Related collection name
+        //             localField: "university",
+        //             foreignField: "_id",
+        //             as: "university",
+        //             pipeline: [
+        //                 {
+        //                     $project: {
+        //                         name: 1,
+        //                         location: 1,
+        //                         logoSrc: 1,
+        //                         type: 1,
+        //                         uni_rating: 1,
+        //                         rank: 1
+        //                     }
+        //                 }
+        //             ]
+        //         }
+        //     },
+        //         {
+        //             $addFields: {
+        //                 university: { $arrayElemAt: ["$university", 0] } // Extract the first element
+        //             }
+        //         },{
+        //         $facet: {
+        //             metadata: [{ $count: "totalDocs" }], // Count total matching documents
+        //             data: [
+        //                 {
+        //                     $project: {
+        //                         name: 1,
+        //                         university: 1,
+        //                         discipline: 1,
+        //                         subDiscipline: 1,
+        //                         studyLevel: 1,
+        //                         applicationDetails: 1,
+        //                         "tuitionFee.tuitionFeeType": 1,
+        //                         "tuitionFee.tuitionFee": 1,
+        //                         startDate: 1,
+        //                         schoolName: 1,
+        //                         duration: 1,
+        //                         courseType: 1,
+        //                         studyMode: 1,
+        //                         currency: 1,
+        //                         "stemDetails.stem": 1,
+        //                         "AdmissionsRequirements.AcademicRequirements": 1,
+        //                         elite: 1,
+        //                         globalRankingPosition: 1,
+        //                         "AdmissionsRequirements.LanguageRequirements": 1
+        //                     }
+        //                 },
+        //                 {
+        //                     $sort: { globalRankingPosition: 1 } // First by sortOrder, then by position
+        //                 },
+        //                 { $skip: skip }, // Pagination skip
+        //                 { $limit: perPage }, // Pagination limit
+
+        //             ]
+        //         }
+        //     });
+        //     let result = await courseModel.aggregate(aggregationPipeline);
+        //     let courses = result[0]?.data || [];
+        //     totalDocs = result[0]?.metadata[0]?.totalDocs || 0;
+        //     totalPages = Math.ceil(totalDocs / perPage);
+        //     if (req.body.currency) {
+        //         courses = courses.map(ele => {
+        //             if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
+        //             if (ele.currency.code != req.body.currency) {
+        //                 ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.body.currency, rates[ele.currency.code], rates[req.body.currency])
+        //                 ele.currency = { code: req.body.currency, symbol: currencySymbols[req.body.currency] }
+        //             }
+        //             return ele;
+        //         });
+        //     }
+        //     if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
+        //     return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
