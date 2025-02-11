@@ -3,6 +3,9 @@ import universityModel from "../../models/University.js"
 import communityModel from "../../models/Community.js"
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { packageModel } from "../../models/Package.js";
+import { isValidObjectId } from "mongoose";
+import { ChannelModel } from "../../models/Channels.js";
+import contextModel from "../../models/Context.js";
 export const devDetails = async (req, res) => {
     try {
         return ({ statusCode: 200, message: `all Details of Developer`, data: req.user })
@@ -294,6 +297,32 @@ export const createCommunity = errorWrapper(async (req, res, next, session) => {
     req.user.communities.push(community._id)
     await Promise.all([req.user.save(), university.save()]);
     return ({ statusCode: 200, message: `Community created`, data: community })
+})
+export const createChannel = errorWrapper(async (req) => {
+    const { name, description, owner, privacy } = req.body;
+    const channel = await ChannelModel.create({ name, description, owner, privacy });
+    return ({ statusCode: 200, message: `Channel created`, data: channel })
+})
+export const fetchChannels = errorWrapper(async (req) => {
+    const { id } = req.params;
+    if (id) {
+        if (!isValidObjectId(id)) return res.status(400).json({ error: 'Invalid ID format' });
+        const channel = await ChannelModel.findById(id);
+        if (!channel) return { statusCode: 404, message: `Channel not found`, data: null }
+        return { statusCode: 200, message: `Channel`, data: channel }
+    }
+    return { statusCode: 200, message: `Channels`, data: await ChannelModel.find() }
+})
+export const deleteChannel = errorWrapper(async (req) => {
+    const { channelId, DeleteAllMessages } = req.query
+    await ChannelModel.findByIdAndDelete(channelId)
+    if (DeleteAllMessages) { await contextModel.deleteMany({ channel: channelId }) }
+    return ({ statusCode: 200, message: `Channel deleted`, data: null })
+})
+export const updateChannel = errorWrapper(async (req) => {
+    const updatedChannel = await ChannelModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedChannel) return ({ statusCode: 404, message: `Channel not found`, data: null })
+    return ({ statusCode: 200, message: `Channel updated`, data: updatedChannel })
 })
 export const deleteCommunity = errorWrapper(async (req, res, next, session) => {
     const { communityId } = req.params

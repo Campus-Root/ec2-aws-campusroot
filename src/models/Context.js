@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const contextSchema = mongoose.Schema({
     post: { type: mongoose.Schema.Types.ObjectId, ref: "post" },
+    channel: { type: mongoose.Schema.Types.ObjectId, ref: 'channel', },
     contextType: { type: String },
     creator: { type: mongoose.Types.ObjectId, ref: "user", },
     attachment: { type: mongoose.Types.ObjectId, ref: "document" },

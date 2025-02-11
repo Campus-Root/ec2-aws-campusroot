@@ -7,6 +7,7 @@ import contextModel from "../../models/Context.js"
 import fs from "fs"
 import Document from "../../models/Uploads.js";
 import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../utils/CRMintegrations.js";
+import { ChannelModel } from "../../models/Channels.js";
 
 export const joinInCommunity = errorWrapper(async (req, res, next, session) => {
     const { communityId } = req.body
@@ -26,6 +27,117 @@ export const joinInCommunity = errorWrapper(async (req, res, next, session) => {
     await userModel.populate(community, { path: "participants", select: "firstName lastName displayPicSrc" })
     await universityModel.populate(community, { path: "university", select: "name logoSrc location type establishedYear" })
     return ({ statusCode: 200, message: `join success`, data: community })
+})
+export const JoinInChannel = errorWrapper(async (req, res, next) => {
+    const { channelId } = req.params
+    const existingChannel = await ChannelModel.findByIdAndUpdate(
+        channelId,
+        { $addToSet: { members: req.user._id } },
+        { new: true }
+    );
+    if (!existingChannel) return ({ statusCode: 404, message: "Channel not found", data: null })
+    return ({ statusCode: 200, message: `Successfully joined the channel`, data: existingChannel })
+})
+export const postInChannel = errorWrapper(async (req, res, next) => {
+    const { action, body, header, fileIdentifier, contextId } = req.body
+    const user = await userModel.findById(req.decoded.id)
+    let context
+    switch (action) {
+        case "create":
+            const { channelId } = req.body
+            const existingChannel = await ChannelModel.findById(channelId)
+            if ((body === undefined && header === undefined) || !existingChannel || !existingChannel.owner.toString() !== req.user._id.toString()) {
+                if (req.file && req.file.path) unlinkSync(req.file.path);
+                return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
+            }
+            const newPost = await contextModel.create({
+                contextType: "Announcement",
+                creator: req.decoded.id,
+                content: {
+                    header: header,
+                    body: body
+                }
+            })
+            if (req.file) {
+                const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier, folder_ID: req.user.docData.folder })
+                if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+                if (uploadedFileResponse.data.new) {
+                    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+                    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Chat", viewers: [] };
+                    const newDoc = await Document.create(docDetails);
+                    newPost.attachment = newDoc._id
+                }
+            }
+            user.logs.push({
+                action: "New Post",
+                details: `contextId:${newPost._id}`
+            })
+            await Promise.all([user.save(), newPost.save()])
+            return ({ statusCode: 200, message: `${action} successful`, data: newPost })
+        case "update":
+            const { deleteAttachment } = req.body
+            context = await contextModel.findById(contextId)
+            if (!context || context.creator.toString() != req.decoded.id) {
+                if (req.file && req.file.path) unlinkSync(req.file.path);
+                return { statusCode: 400, data: null, message: `Invalid input for ${action} action` }
+            }
+            if (body !== undefined) context.content.body = body
+            if (header !== undefined) context.content.header = header
+            if (deleteAttachment && context.attachment) {
+                const document = await Document.findById(context.attachment)
+                await Promise.all([deleteFileInWorkDrive(document.data.resource_id), Document.findByIdAndDelete(context.attachment)])
+                context.attachment = null
+            }
+            if (req.file) {
+                const uploadedFileResponse = await uploadFileToWorkDrive({ originalname: req.file.originalname, path: req.file.path, mimetype: req.file.mimetype, fileIdentifier: fileIdentifier || "", folder_ID: req.user.docData.folder })
+                if (!uploadedFileResponse.success) return { statusCode: 500, message: uploadedFileResponse.message, data: uploadedFileResponse.data }
+                if (uploadedFileResponse.data.new) {
+                    const { FileName, resource_id, mimetype, originalname, preview_url } = uploadedFileResponse.data
+                    const docDetails = { data: { FileName, resource_id, mimetype, originalname, fileIdentifier, preview_url }, user: req.user._id, type: "Post", viewers: [] };
+                    const newDoc = await Document.create(docDetails);
+                    context.attachment = newDoc._id
+                }
+            }
+            user.logs.push({
+                action: "updated a query",
+                details: `contextId:${contextId}`
+            })
+            await Promise.all([user.save(), context.save()])
+            return ({ statusCode: 200, message: `${action} successful`, data: context })
+        case "delete":
+            const { contextId } = req.body
+            const document = await Document.findById(context.attachment)
+            await Promise.all([deleteFileInWorkDrive(document.data.resource_id), Document.findByIdAndDelete(context.attachment), contextModel.findByIdAndDelete(contextId)])
+            return ({ statusCode: 200, message: `${action} successful`, data: null })
+        default: return { statusCode: 400, data: null, message: `invalid action:${action}` }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+})
+export const ExitFromChannel = errorWrapper(async (req, res, next) => {
+    const { channelId } = req.params
+    const existingChannel = await ChannelModel.findByIdAndUpdate(channelId, { $pull: { members: req.user._id } }, { new: true });
+    if (!existingChannel) return ({ statusCode: 404, message: "Channel not found", data: null })
+    return ({ statusCode: 200, message: `Successfully exited the channel`, data: existingChannel })
 })
 export const fetchJoinedCommunities = errorWrapper(async (req, res, next, session) => {
     const user = await userModel.findById(req.decoded.id)
