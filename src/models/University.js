@@ -63,13 +63,18 @@ const universitySchema = mongoose.Schema(
             snapchat: { type: String },
             linkedIn: { type: String },
             officialWebsite: { type: String }
-        }
+        },
+        geoCoordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: [Number],
+        },
     },
     { timestamps: true }
 );
 universitySchema.index({
     name: "text",
-    code: "text"
+    code: "text",
+    geoCoordinates: '2dsphere'
 });
 const universityModel = mongoose.model("university", universitySchema);
 export default universityModel

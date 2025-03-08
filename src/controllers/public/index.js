@@ -216,7 +216,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         break;
                 }
             });
-            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, rank: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1 }).sort(sort).skip(skip).limit(perPage);
+            const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, rank: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1, geoCoordinates: 1 }).sort(sort).skip(skip).limit(perPage);
             totalDocs = await universityModel.countDocuments(filter)
             for (const university of listOfUniversities) {
                 if (req.body.currency && university.currency.code !== req.body.currency) {
@@ -602,14 +602,16 @@ export const getRecommendations = async (req, res) => {
         const { filterData, testScores } = req.body;
         if (!testScores || !Array.isArray(testScores) || testScores.length === 0) return res.status(400).json({ error: "Please provide valid testScores as an array." });
         const { filter, projections } = constructFilters(filterData, testScores);
-        const client = await MongoClient.connect(process.env.mongoRecommendations);
-        let db = client.db('campusroot');
-        const collection = db.collection("Postgraduate");
+        const client = await MongoClient.connect(process.env.MONGO_URL);
+        let db = client.db('CampusRoot');
+        const collection = db.collection("courses");
         let pipeline = [{ $match: filter }, { $project: projections }]
         const programs = await collection.aggregate(pipeline).toArray();
         const { safe, moderate, ambitious } = categorizePrograms(testScores, programs, mode);
         const link = await fetchJSON2GridLink({ input: { filterData, testScores }, safe, moderate, ambitious })
         return res.status(200).json({ link: link, data: { input: { filterData, testScores }, safe, moderate, ambitious }, message: "recommendations" })
+        // return res.status(200).json({ filter, projections})
+
     } catch (error) {
         console.error("Error fetching programs:", error);
         res.status(500).json({ error: "Internal server error." });

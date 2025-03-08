@@ -31,8 +31,66 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
     ug_gpa: ug_gpa,
     gre: gre,
     sub_discipline: req.user.preference.courses,
-    country: req.user.preference.country
+    // country: req.user.preference.country
   }
+
+  // if (country) {
+  //   query.filterData.push({
+  //     type: "Country",
+  //     data: [country]
+  //   });
+  // }
+
+  // if (subcategory) {
+  //   query.filterData.push({
+  //     type: "SubCategory",
+  //     data: [subcategory]
+  //   });
+  // }
+
+  // // Add test scores to query if values are entered
+  // if (greScore) query.testScores.push({ testType: "GRE", overallScore: parseInt(greScore) });
+  // if (gmatScore) query.testScores.push({ testType: "GMAT", overallScore: parseInt(gmatScore) });
+  // if (ieltsScore) query.testScores.push({ testType: "IELTS", overallScore: parseFloat(ieltsScore) });
+  // if (toeflScore) query.testScores.push({ testType: "TOEFL", overallScore: parseFloat(toeflScore) });
+  // if (gpaOverallScore && gpaOutOf) query.testScores.push({
+  //   testType: "GPA",
+  //   overallScore: parseFloat(gpaOverallScore),
+  //   ugOutOf: parseFloat(gpaOutOf)
+  // });
+  // if (workExperience) query.testScores.push({ testType: "WorkExperience", overallScore: parseFloat(workExperience) });
+  // if (publicationsLevel) query.testScores.push({ testType: "Publications", level: publicationsLevel });
+  // if (backlogs) query.testScores.push({ testType: "Backlogs", overallScore: parseInt(backlogs) });
+
+
+
+  let filterData = []
+  req.user.preference.country || filterData.push({ type: "Country", data: req.user.preference.country })
+
+  //   export const getRecommendations = async (req, res) => {
+  //     try {
+  //         const { mode: queryMode } = req.query;
+  //         const allowedModes = ["Student", "Counsellor"];
+  //         const mode = allowedModes.includes(queryMode) ? queryMode : "Student";
+  //         const { filterData, testScores } = req.body;
+  //         if (!testScores || !Array.isArray(testScores) || testScores.length === 0) return res.status(400).json({ error: "Please provide valid testScores as an array." });
+  //         const { filter, projections } = constructFilters(filterData, testScores);
+  //         const client = await MongoClient.connect(process.env.MONGO_URL);
+  //         let db = client.db('CampusRoot');
+  //         const collection = db.collection("courses");
+  //         let pipeline = [{ $match: filter }, { $project: projections }]
+  //         const programs = await collection.aggregate(pipeline).toArray();
+  //         const { safe, moderate, ambitious } = categorizePrograms(testScores, programs, mode);
+  //         const link = await fetchJSON2GridLink({ input: { filterData, testScores }, safe, moderate, ambitious })
+  //         return res.status(200).json({ link: link, data: { input: { filterData, testScores }, safe, moderate, ambitious }, message: "recommendations" })
+  //         // return res.status(200).json({ filter, projections})
+
+  //     } catch (error) {
+  //         console.error("Error fetching programs:", error);
+  //         res.status(500).json({ error: "Internal server error." });
+  //     }
+  // }
+
   const response = await fetch("http://localhost:4321/predict/", {
     method: "POST",
     headers: { "Content-Type": "application/json", },

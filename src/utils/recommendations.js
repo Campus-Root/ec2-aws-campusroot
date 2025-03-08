@@ -2,19 +2,19 @@ export const getMatchScoreFromGPA = (score, outOf, program) => {
     let result;
     switch (outOf) {
         case 100:
-            result = calculateMargin(score, program.EntryRequirementUgOutOf100, 100, 36)
+            result = calculateMargin(score, program.coursefinder_EntryRequirementUgOutOf100, 100, 36)
             break;
         case 10:
-            result = calculateMargin(score, program.EntryRequirementUgOutOf10, 10, 4)
+            result = calculateMargin(score, program.coursefinder_EntryRequirementUgOutOf10, 10, 4)
             break;
         case 7:
-            result = calculateMargin(score, program.EntryRequirementUgOutOf7, 7, 2)
+            result = calculateMargin(score, program.coursefinder_EntryRequirementUgOutOf7, 7, 2)
             break;
         case 5:
-            result = calculateMargin(score, program.EntryRequirementUgOutOf5, 5, 2)
+            result = calculateMargin(score, program.coursefinder_EntryRequirementUgOutOf5, 5, 2)
             break;
         case 4:
-            result = calculateMargin(score, program.EntryRequirementUgOutOf4, 4, 2)
+            result = calculateMargin(score, program.coursefinder_EntryRequirementUgOutOf4, 4, 2)
             break;
     }
     return result
@@ -33,28 +33,28 @@ export const calculateMatchPercentage = (testScores, program) => {
         let margin, weight
         switch (ele.testType) {
             case "GPA":
-                weight = program.weights?.GPA || 70
+                weight = program.coursefinder_weights?.GPA || 70
                 totalWeight += weight
                 matchScore += getMatchScoreFromGPA(ele.overallScore, Number(ele.ugOutOf), program) * weight;
                 break;
             case "GMAT":
-                if (program.GmatScore !== null) {
-                    weight = program.weights?.GMAT || 30
+                if (program.coursefinder_GmatScore !== null) {
+                    weight = program.coursefinder_weights?.GMAT || 30
                     totalWeight += weight
-                    margin = calculateMargin(ele.overallScore, program.GmatScore, 805, 205)
+                    margin = calculateMargin(ele.overallScore, program.coursefinder_GmatScore, 805, 205)
                     matchScore += margin * weight;
                 }
                 break;
             case "GRE":
-                if (program?.GreScore !== undefined && program.GreScore !== null) {
-                    weight = program.weights?.GRE || 30
+                if (program?.coursefinder_GreScore !== undefined && program.coursefinder_GreScore !== null) {
+                    weight = program.coursefinder_weights?.GRE || 30
                     totalWeight += weight
-                    margin = calculateMargin(ele.overallScore, program.GreScore, 340, 260)
+                    margin = calculateMargin(ele.overallScore, program.coursefinder_GreScore, 340, 260)
                     matchScore += margin * weight;
                 }
                 break;
             case "WorkExperience":
-                if (program?.WorkExp !== undefined && program.WorkExp !== null) bonus += Math.min((ele.overallScore - program.WorkExp) * 3, 15); break;
+                if (program?.coursefinder_WorkExp !== undefined && program.coursefinder_WorkExp !== null) bonus += Math.min((ele.overallScore - program.coursefinder_WorkExp) * 3, 15); break;
             case "Publications":
                 switch (ele.level) {
                     case "National":
@@ -66,9 +66,9 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "Backlogs":
-                if (program?.backlog !== undefined && program.backlog !== null) {
-                    bonus += Math.min(15, (program.backlog - ele.overallScore) * 2)
-                    weight = program.weights?.Backlogs || 30
+                if (program?.coursefinder_backlog !== undefined && program.coursefinder_backlog !== null) {
+                    bonus += Math.min(15, (program.coursefinder_backlog - ele.overallScore) * 2)
+                    weight = program.coursefinder_weights?.Backlogs || 30
                     totalWeight += weight
                 }
                 break;
@@ -94,11 +94,11 @@ export const categorizePrograms = (testScores, programs, mode) => {
         default:
             break;
     }
-    const rankings = [...new Set(programs.map(p => p.WebomatricsNationalRanking))].sort((a, b) => a - b);
+    const rankings = [...new Set(programs.map(p => p.coursefinder_WebomatricsNationalRanking))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
     const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
     programs.forEach(program => {
-        const rank = program.WebomatricsNationalRanking;
+        const rank = program.coursefinder_WebomatricsNationalRanking;
         if (rank <= ambitiousRange) {
             results.ambitious.push(program);
         } else if (rank <= moderateRange) {
@@ -110,26 +110,26 @@ export const categorizePrograms = (testScores, programs, mode) => {
     return results;
 };
 export const constructFilters = (filterData, testScores) => {
-    const filter = { WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], IsOnlineCourse: false }, projections = { _id:0,Name: 1, University: 1, WebomatricsNationalRanking: 1, weights: 1, backlog: 1 }
+    const filter = { coursefinder_WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], coursefinder_IsOnlineCourse: false }, projections = { _id:1,coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
                 switch (type) {
                     case 'Country':
-                        filter.Country = { $in: data };
-                        projections.Country = 1
+                        filter.coursefinder_Country = { $in: data };
+                        projections.coursefinder_Country = 1
                         break;
                     case 'Category':
-                        filter.CategoryNames = { $in: data };
-                        projections.CategoryNames = 1
+                        filter.coursefinder_CategoryNames = { $in: data };// get their indexes
+                        projections.coursefinder_CategoryNames = 1
                         break;
                     case 'SubCategory':
-                        filter.SubCategoryNames = { $in: data };
-                        projections.SubCategoryNames = 1
+                        filter.coursefinder_SubCategoryNames = { $in: data };
+                        projections.coursefinder_SubCategoryNames = 1
                         break;
                     case 'StudyLevel':
-                        filter.StudyLvl = { $in: data };
-                        projections.StudyLvl = 1
+                        filter.coursefinder_StudyLvl = { $in: data };
+                        projections.coursefinder_StudyLvl = 1
                         break;
                 }
             }
@@ -144,63 +144,63 @@ export const constructFilters = (filterData, testScores) => {
             switch (testType) {
                 case 'IELTS':
                     // filter["IeltsRequired"] = true;
-                    filter["IeltsOverall"] = { $lte: score };
-                    if (sectionScore) filter["IeltsNoBandLessThan"] = { $lte: Number(sectionScore) };
-                    projections["IeltsOverall"] = 1
+                    filter["coursefinder_IeltsOverall"] = { $lte: score };
+                    if (sectionScore) filter["coursefinder_IeltsNoBandLessThan"] = { $lte: Number(sectionScore) };
+                    projections["coursefinder_IeltsOverall"] = 1
                     break;
                 case 'TOEFL':
                     // filter["ToeflRequired"] = true;
-                    filter["ToeflScore"] = { $lte: score };
-                    if (sectionScore) filter["TOEFLNoSectionLessThan"] = { $lte: Number(sectionScore) };
-                    projections["ToeflScore"] = 1
+                    filter["coursefinder_ToeflScore"] = { $lte: score };
+                    if (sectionScore) filter["coursefinder_TOEFLNoSectionLessThan"] = { $lte: Number(sectionScore) };
+                    projections["coursefinder_ToeflScore"] = 1
                     break;
                 case 'PTE':
                     // filter["PteRequired"] = true;
-                    filter["PteScore"] = { $lte: score };
-                    projections["PteScore"] = 1
+                    filter["coursefinder_PteScore"] = { $lte: score };
+                    projections["coursefinder_PteScore"] = 1
                     break;
                 case 'DET':
                     // filter["DETRequired"] = true;
-                    filter["DETScore"] = { $lte: score };
-                    projections["DETScore"] = 1
+                    filter["coursefinder_DETScore"] = { $lte: score };
+                    projections["coursefinder_DETScore"] = 1
                     break;
                 case 'WorkExperience':
-                    filter["WorkExp"] = { $lte: score };
-                    projections["WorkExp"] = 1
+                    filter["coursefinder_WorkExp"] = { $lte: score };
+                    projections["coursefinder_WorkExp"] = 1
                     break;
                 case 'GRE':
-                    filter["$or"].push({ GreScore: { $lte: Math.min(340, score + 10) } }, { GreScore: null });
-                    projections["GreScore"] = 1
+                    filter["$or"].push({ coursefinder_GreScore: { $lte: Math.min(340, score + 10) } }, { coursefinder_GreScore: null });
+                    projections["coursefinder_GreScore"] = 1
                     break;
                 case 'GMAT':
-                    filter["$or"].push({ GmatScore: { $lte: Math.min(805, score + 40) } }, { GmatScore: null });
-                    projections["GmatScore"] = 1
+                    filter["$or"].push({ coursefinder_GmatScore: { $lte: Math.min(805, score + 40) } }, { coursefinder_GmatScore: null });
+                    projections["coursefinder_GmatScore"] = 1
                     break;
                 case "Backlogs":
-                    filter["$or"].push({ backlog: { $gte: Math.max(0, score) } }, { backlog: null });
-                    projections["backlog"] = 1
+                    filter["$or"].push({ coursefinder_backlog: { $gte: Math.max(0, score) } }, { coursefinder_backlog: null });
+                    projections["coursefinder_backlog"] = 1
                     break;
                 case 'GPA':
                     switch (Number(ugOutOf)) {
                         case 4:
-                            filter["EntryRequirementUgOutOf4"] = { $lte: score + 0.2 };
-                            projections["EntryRequirementUgOutOf4"] = 1
+                            filter["coursefinder_EntryRequirementUgOutOf4"] = { $lte: score + 0.2 };
+                            projections["coursefinder_EntryRequirementUgOutOf4"] = 1
                             break;
                         case 5:
-                            filter["EntryRequirementUgOutOf5"] = { $lte: score + 0.2 };
-                            projections["EntryRequirementUgOutOf5"] = 1
+                            filter["coursefinder_EntryRequirementUgOutOf5"] = { $lte: score + 0.2 };
+                            projections["coursefinder_EntryRequirementUgOutOf5"] = 1
                             break;
                         case 7:
-                            filter["EntryRequirementUgOutOf7"] = { $lte: score + 0.2 };
-                            projections["EntryRequirementUgOutOf7"] = 1
+                            filter["coursefinder_EntryRequirementUgOutOf7"] = { $lte: score + 0.2 };
+                            projections["coursefinder_EntryRequirementUgOutOf7"] = 1
                             break;
                         case 10:
-                            filter["EntryRequirementUgOutOf10"] = { $lte: score + 0.4 };
-                            projections["EntryRequirementUgOutOf10"] = 1
+                            filter["coursefinder_EntryRequirementUgOutOf10"] = { $lte: score + 0.4 };
+                            projections["coursefinder_EntryRequirementUgOutOf10"] = 1
                             break;
                         case 100:
-                            filter["EntryRequirementUgOutOf100"] = { $lte: score + 8 };
-                            projections["EntryRequirementUgOutOf100"] = 1
+                            filter["coursefinder_EntryRequirementUgOutOf100"] = { $lte: score + 8 };
+                            projections["coursefinder_EntryRequirementUgOutOf100"] = 1
                             break;
                     }
                     break;
