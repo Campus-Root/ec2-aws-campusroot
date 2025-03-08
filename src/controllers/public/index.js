@@ -362,7 +362,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 multipleLocations: { $exists: false },
                                 ...filter
                             }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements elite globalRankingPosition AdmissionsRequirements.LanguageRequirements")
-                            .populate("university", "name location logoSrc type uni_rating rank")
+                            .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
                             .sort({ globalRankingPosition: 1 })
                             .skip(skip)
                             .limit(perPage),
