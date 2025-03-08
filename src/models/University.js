@@ -73,8 +73,8 @@ const universitySchema = mongoose.Schema(
 );
 universitySchema.index({
     name: "text",
-    code: "text",
-    geoCoordinates: '2dsphere'
+    code: "text"
 });
+universitySchema.index({ geoCoordinates: "2dsphere" });
 const universityModel = mongoose.model("university", universitySchema);
 export default universityModel

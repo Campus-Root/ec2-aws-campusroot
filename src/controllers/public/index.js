@@ -212,6 +212,15 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         filter[`rank.${ele.data[0]}`] = { $exists: true, $ne: 0 };
                         sort[`rank.${ele.data[0]}`] = 1;
                         break;
+                    case "pointer":
+                        let lat = parseFloat(ele.data[0]), lng = parseFloat(ele.data[1]), zoomLevel = parseInt(ele.data[2]), radius = parseFloat(ele.data[3])
+                        const calculatedRadius = Math.pow(2, 20 - zoomLevel) * 100; // Dynamic radius calculation
+                        const finalRadius = radius ? Math.min(radius, calculatedRadius) : calculatedRadius;
+                        filter["geoCoordinates"] = {
+                            $geoWithin: {
+                                $centerSphere: [[lng, lat], finalRadius / 6378100], // Convert meters to radians
+                            }    };
+                        break;
                     default:
                         break;
                 }
@@ -305,7 +314,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                     type: 1,
                                     uni_rating: 1,
                                     rank: 1,
-                                    geoCoordinates:1
+                                    geoCoordinates: 1
                                 }
                             }
                         ]
