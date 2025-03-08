@@ -304,7 +304,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                     logoSrc: 1,
                                     type: 1,
                                     uni_rating: 1,
-                                    rank: 1
+                                    rank: 1,
+                                    geoCoordinates:1
                                 }
                             }
                         ]
