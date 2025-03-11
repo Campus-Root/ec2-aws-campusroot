@@ -25,7 +25,7 @@ export const cookieOptions = {
 	httpOnly: true,
 	sameSite: 'strict'
 }
-const whitelist = ["http://localhost:5500","null","http://127.0.0.1:5500","https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000","https://d3mjeyzjhheqlz.cloudfront.net"];
+const whitelist = ["http://localhost:5500", "null", "http://127.0.0.1:5500", "https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000", "https://d3mjeyzjhheqlz.cloudfront.net"];
 app.set('trust proxy', 1) // trust first proxy
 const corsOptions = {
 	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
@@ -44,25 +44,25 @@ app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet.contentSecurityPolicy({
 	directives: {
-	  defaultSrc: ["'self'"],
-	  imgSrc: [
-		"'self'", 
-		"data:", 
-		"https://lh3.googleusercontent.com", 
-		"https://res.cloudinary.com", 
-		"https://icon-library.com/", 
-		"https://flagcdn.com/", 
-		"https://www.4icu.org", 
-		"https://onewindow.co", // Add this domain
-		"blob:"
-	  ],
-	  connectSrc: ["'self'", "https://ipapi.co", "blob:"],
-	  scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
-	  workerSrc: ["'self'", "blob:"],
-	  frameSrc: ["'self'", "https://accounts.google.com", "https://workdrive.zoho.in"], // Allow Zoho WorkDrive to be framed
+		defaultSrc: ["'self'"],
+		imgSrc: [
+			"'self'",
+			"data:",
+			"https://lh3.googleusercontent.com",
+			"https://res.cloudinary.com",
+			"https://icon-library.com/",
+			"https://flagcdn.com/",
+			"https://www.4icu.org",
+			"https://onewindow.co", // Add this domain
+			"blob:"
+		],
+		connectSrc: ["'self'", "https://ipapi.co", "https://campusroot.com", "blob:"],
+		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
+		workerSrc: ["'self'", "blob:"],
+		frameSrc: ["'self'", "https://accounts.google.com", "https://workdrive.zoho.in"], // Allow Zoho WorkDrive to be framed
 	},
-  }));
-  
+}));
+
 app.use(helmet.frameguard({ action: 'sameorigin' }));
 app.use(helmet.noSniff());
 app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
