@@ -4,104 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Anurag Recommender</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJ03vX3e1HCPt3w1E5f5wYr9O0gQvFHZExO9G8Jbslw5NTO3G0oJHceG4Vfm" crossorigin="anonymous">
-  <style>
-    body {
-      background-color: #f1f8ff; /* Light blue background */
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .container {
-      max-width: 1200px; /* Set max-width for larger screens */
-      padding-top: 30px;
-    }
-    .form-container {
-      display: flex;
-      justify-content: center;
-    }
-    .form-section {
-      background-color: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-    .form-section label {
-      font-weight: bold;
-      color: #2a3d66;
-    }
-    .form-control, .form-select {
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      padding: 15px; /* Increased padding */
-      font-size: 1.1rem; /* Increased font size */
-    }
-    .form-control:focus, .form-select:focus {
-      border-color: #0066cc; /* Focus border color */
-      box-shadow: 0 0 5px rgba(0, 102, 204, 0.5); /* Focus shadow */
-    }
-    .btn {
-      background-color: #0066cc;
-      color: #fff;
-      border: none;
-      padding: 15px; /* Increased padding */
-      border-radius: 8px;
-      font-size: 1.4rem; /* Increased font size */
-    }
-    .btn:hover {
-      background-color: #005bb5;
-      cursor: pointer;
-    }
-    .btn:active {
-      background-color: #004b99;
-    }
-    .mb-3 {
-      margin-bottom: 20px;
-    }
-    .form-select {
-      font-size: 0.7rem; /* Increased font size */
-    }
-    hr {
-      margin-top: 40px;
-      border: 0;
-      border-top: 1px solid #ddd;
-    }
-    #resultSection {
-      display: none;
-      padding: 20px;
-      background-color: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-    pre {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 8px;
-    }
-    @media (max-width: 768px) {
-      .container {
-        padding-left: 15px;
-        padding-right: 15px;
-      }
-      .form-section {
-        padding: 15px;
-      }
-      .btn {
-        font-size: 1.2rem; /* Adjusted for smaller screens */
-        padding: 12px; /* Adjusted padding */
-      }
-    }
-  </style>
 </head>
 <body>
   <div class="container">
-    <center><h2 class="text-center mb-4">Anurag Recommender</h2></center>
     <div class="form-container">
       <form id="queryForm" class="col-12 col-md-8 col-lg-6">
-        
         <!-- Country Dropdown -->
         <div class="form-section">
           <label for="country">Country</label>
@@ -140,7 +47,6 @@
             <option value="South Korea">South Korea</option> -->
           </select>
         </div>
-        
         <!-- SubCategory Dropdown -->
         <div class="form-section">
           <label for="subcategory">SubCategory</label>
@@ -659,7 +565,6 @@
             
           </select>
         </div>
-
         <!-- Test Scores Section -->
         <div class="form-section">
           <h4 class="text-center">Test Scores</h4>
@@ -667,37 +572,30 @@
             <label for="greScore">GRE Score</label>
             <input type="number" class="form-control" id="greScore" placeholder="GRE Overall Score">
           </div>
-
           <div class="mb-3">
             <label for="gmatScore">GMAT Score</label>
             <input type="number" class="form-control" id="gmatScore" placeholder="GMAT Overall Score">
           </div>
-
           <div class="mb-3">
             <label for="ieltsScore">IELTS Score</label>
             <input type="number" class="form-control" id="ieltsScore" step="0.1" placeholder="IELTS Overall Score (e.g., 7.5)">
           </div>
-
           <div class="mb-3">
             <label for="toeflScore">TOEFL Score</label>
             <input type="number" class="form-control" id="toeflScore" step="0.1" placeholder="TOEFL Overall Score (e.g., 100)">
           </div>
-
           <div class="mb-3">
             <label for="gpaOverallScore">GPA Overall Score</label>
             <input type="number" class="form-control" id="gpaOverallScore" placeholder="GPA Overall Score">
           </div>
-
           <div class="mb-3">
             <label for="gpaOutOf">GPA Out Of</label>
             <input type="number" class="form-control" id="gpaOutOf" placeholder="GPA Out Of">
           </div>
-
           <div class="mb-3">
             <label for="workExperience">Work Experience (in years)</label>
             <input type="number" class="form-control" id="workExperience" step="0.1" placeholder="Work Experience (e.g., 3.5)">
           </div>
-
           <div class="mb-3">
             <label for="publicationsLevel">Publications Level</label>
             <select class="form-select" id="publicationsLevel">
@@ -706,28 +604,15 @@
               <option value="None">None</option>
             </select>
           </div>
-
           <div class="mb-3">
             <label for="backlogs">Backlogs</label>
             <input type="number" class="form-control" id="backlogs" placeholder="Backlogs">
           </div>
         </div>
-
         <!-- Submit Button -->
         <button type="submit" class="btn w-100">Generate Results</button>
       </form>
     </div>
-
     <hr>
-
-    <!-- Display API Result -->
-    <div id="resultSection" class="form-section">
-      <h5>API Response:</h5>
-      <pre id="apiResult"></pre> <!-- Here we'll display the API response -->
-    </div>
-  </div>
-
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pzjw8f+ua7Kw1TIq0VxC7xIF9EXDb2mRmxg7gJpDlaYsbgK5s8x9JbL3Vd+g6WmM" crossorigin="anonymous"></script>
 </body>
 </html>
