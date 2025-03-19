@@ -53,6 +53,7 @@ app.use(helmet.contentSecurityPolicy({
 			"https://icon-library.com/",
 			"https://flagcdn.com/",
 			"https://workdrive.zoho.in",
+			"https://previewengine-accl.zohopublic.in",
 			"https://onewindow.co", // Add this domain
 			"blob:"
 		],
