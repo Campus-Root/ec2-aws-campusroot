@@ -52,7 +52,7 @@ app.use(helmet.contentSecurityPolicy({
 			"https://res.cloudinary.com",
 			"https://icon-library.com/",
 			"https://flagcdn.com/",
-			"https://www.4icu.org",
+			"https://workdrive.zoho.in",
 			"https://onewindow.co", // Add this domain
 			"blob:"
 		],

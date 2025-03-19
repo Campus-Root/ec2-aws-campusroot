@@ -252,6 +252,8 @@ const Student = mongoose.Schema(
             degree: { type: String },
             intake: { type: Date },
             budget: { upper: { type: Number }, lower: { type: Number, } },
+            category:[String],
+            subCategory:[String],
             courses: {
                 type: [String],
                 // validate: {
