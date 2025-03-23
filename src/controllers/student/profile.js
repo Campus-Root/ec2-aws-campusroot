@@ -73,12 +73,10 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
             action: `profile info updated`,
             details: `isPlanningToTakeLanguageTest updated`
         })
-    } if (familyDetails) {
+    }
+    if (familyDetails) {
         req.user.familyDetails = familyDetails;
-        req.user.logs.push({
-            action: `profile info updated`,
-            details: `familyDetails updated`
-        })
+        req.user.logs.push({ action: `profile info updated`, details: `familyDetails updated` })
     }
     if (extraCurriculumActivities) {
         req.user.extraCurriculumActivities = extraCurriculumActivities;
@@ -113,6 +111,20 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         req.user.logs.push({
             action: `profile info updated`,
             details: `LeadSource updated`
+        })
+    }
+    if (skills) {
+        req.user.skills = skills;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `skills updated`
+        })
+    }
+    if (preference) {
+        req.user.preference = preference;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `preference updated`
         })
     }
     if (tests) {
@@ -162,20 +174,6 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         req.user.logs.push({
             action: `profile info updated`,
             details: `postGraduation updated`
-        })
-    }
-    if (skills) {
-        req.user.skills = skills;
-        req.user.logs.push({
-            action: `profile info updated`,
-            details: `skills updated`
-        })
-    }
-    if (preference) {
-        req.user.preference = preference;
-        req.user.logs.push({
-            action: `profile info updated`,
-            details: `preference updated`
         })
     }
     if (education) {

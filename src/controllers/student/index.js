@@ -17,106 +17,75 @@ import { packageModel } from "../../models/Package.js";
 import sendMail from "../../utils/sendEMAIL.js";
 import chatModel from "../../models/Chat.js";
 import { recycleBinModel } from "../../models/recycleBin.js";
+import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next, session) => {
-  const GRE = req.user.tests.find(ele => ele.name == "Graduate Record Examination")
-  if (GRE == undefined) return { statusCode: 400, data: null, message: "add GRE test details" }
-  const totalScore = GRE.scores.find(ele => ele.description === "totalScore")
-  const gre = totalScore ? totalScore.count : GRE.scores.reduce((acc, { description, count }) => (description === "Quantitative Reasoning" || description === "Verbal Reasoning") ? acc + count : acc, 0);
-  const ug = req.user.education.underGraduation
-  if (!ug || !ug.totalScore) return { statusCode: 400, data: null, message: "add ug gpa" }
-  let ug_gpa = (req.user.education.underGraduation.gradingSystem != "gpa") ? gradeConversions(ug.gradingSystem, "gpa", ug.totalScore) : ug.totalScore
-  if (!req.user.preference.courses) return { statusCode: 400, data: null, message: "add course preferences" }
-  let criteria = {
-    ug_gpa: ug_gpa,
-    gre: gre,
-    sub_discipline: req.user.preference.courses,
-    // country: req.user.preference.country
-  }
-
-  // if (country) {
-  //   query.filterData.push({
-  //     type: "Country",
-  //     data: [country]
-  //   });
-  // }
-
-  // if (subcategory) {
-  //   query.filterData.push({
-  //     type: "SubCategory",
-  //     data: [subcategory]
-  //   });
-  // }
-
-  // // Add test scores to query if values are entered
-  // if (greScore) query.testScores.push({ testType: "GRE", overallScore: parseInt(greScore) });
-  // if (gmatScore) query.testScores.push({ testType: "GMAT", overallScore: parseInt(gmatScore) });
-  // if (ieltsScore) query.testScores.push({ testType: "IELTS", overallScore: parseFloat(ieltsScore) });
-  // if (toeflScore) query.testScores.push({ testType: "TOEFL", overallScore: parseFloat(toeflScore) });
-  // if (gpaOverallScore && gpaOutOf) query.testScores.push({
-  //   testType: "GPA",
-  //   overallScore: parseFloat(gpaOverallScore),
-  //   ugOutOf: parseFloat(gpaOutOf)
-  // });
-  // if (workExperience) query.testScores.push({ testType: "WorkExperience", overallScore: parseFloat(workExperience) });
-  // if (publicationsLevel) query.testScores.push({ testType: "Publications", level: publicationsLevel });
-  // if (backlogs) query.testScores.push({ testType: "Backlogs", overallScore: parseInt(backlogs) });
-
-
-
-  let filterData = []
-  req.user.preference.country || filterData.push({ type: "Country", data: req.user.preference.country })
-
-  //   export const getRecommendations = async (req, res) => {
-  //     try {
-  //         const { mode: queryMode } = req.query;
-  //         const allowedModes = ["Student", "Counsellor"];
-  //         const mode = allowedModes.includes(queryMode) ? queryMode : "Student";
-  //         const { filterData, testScores } = req.body;
-  //         if (!testScores || !Array.isArray(testScores) || testScores.length === 0) return res.status(400).json({ error: "Please provide valid testScores as an array." });
-  //         const { filter, projections } = constructFilters(filterData, testScores);
-  //         const client = await MongoClient.connect(process.env.MONGO_URL);
-  //         let db = client.db('CampusRoot');
-  //         const collection = db.collection("courses");
-  //         let pipeline = [{ $match: filter }, { $project: projections }]
-  //         const programs = await collection.aggregate(pipeline).toArray();
-  //         const { safe, moderate, ambitious } = categorizePrograms(testScores, programs, mode);
-  //         const link = await fetchJSON2GridLink({ input: { filterData, testScores }, safe, moderate, ambitious })
-  //         return res.status(200).json({ link: link, data: { input: { filterData, testScores }, safe, moderate, ambitious }, message: "recommendations" })
-  //         // return res.status(200).json({ filter, projections})
-
-  //     } catch (error) {
-  //         console.error("Error fetching programs:", error);
-  //         res.status(500).json({ error: "Internal server error." });
-  //     }
-  // }
-
-  const response = await fetch("http://localhost:4321/predict/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", },
-    body: JSON.stringify(criteria)
+  let filterData = [], testScores = []
+  if (req.user.preference.country.length > 0) filterData.push({ type: "Country", data: req.user.preference.country })
+  if (req.user.preference.category.length > 0) filterData.push({ type: "Category", data: req.user.preference.category })
+  if (req.user.preference.subCategory.length > 0) filterData.push({ type: "SubCategory", data: req.user.preference.subCategory })
+  if (req.user.preference.subCategory.degree) filterData.push({ type: "StudyLevel", data: req.user.preference.degree })
+  const testScoreMapping = {
+    "Graduate Record Examination": ["Total", "Quantitative Reasoning", "Verbal Reasoning"],
+    "Graduate Management Admission Test": ["Total", "Quantitative", "Verbal"],
+    "Test of English as a Foreign Language": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+    "International English Language Testing System": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+    "Duolingo English Test": ["Total"],
+    "Pearson Test of English": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+    "American College Testing": ["Total", "English", "Math", "Reading", "Science"]
+  };
+  Object.entries(testScoreMapping).forEach(([testName, descriptions]) => {
+    const test = req.user.tests.find(ele => ele.name === testName);
+    if (test && test.scores) {
+      const totalScore = test.scores.find(ele => ele.description === "Total");
+      let score = null;
+      score = (totalScore) ? totalScore.count : test.scores.reduce((acc, { description, count }) => descriptions.includes(description) ? acc + count : acc, 0);
+      if (score !== null && !isNaN(score)) testScores.push({ testType: testName, overallScore: parseInt(score) });
+    }
   });
-  const result = await response.json();
-  let recommendations = []
-  for (const item of result) {
-    recommendations.push({
-      course: item.CID,
-      possibilityOfAdmit: item.Category
-    })
+  const { backlogs, totalScore, maxScore } = req.user.education.underGraduation
+  if (totalScore && maxScore) testScores.push({ testType: "GPA", overallScore: parseFloat(totalScore), ugOutOf: parseFloat(maxScore) });
+  if (backlogs) testScores.push({ testType: "Backlogs", overallScore: parseInt(backlogs) });
+  if (req.user.workExperience.length > 0) {
+    let totalWorkExperience = 0;
+    req.user.workExperience.forEach(experience => {
+      if (experience.startDate) {
+        const startDate = new Date(experience.startDate);
+        const endDate = experience.Ongoing ? new Date() : new Date(experience.endDate);
+
+        if (!isNaN(startDate) && !isNaN(endDate) && startDate < endDate) {
+          const years = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
+          totalWorkExperience += years;
+        }
+      }
+    });
+    testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2)) });
   }
-  req.user.recommendations.criteria = {
-    ug_gpa: JSON.stringify(ug),
-    gre: JSON.stringify(GRE.scores),
-    sub_discipline: JSON.stringify(req.user.preference.courses),
-    country: JSON.stringify(req.user.preference.country)
+  if (req.user.researchPapers.length > 0) {
+    let hasInternational = false, hasNational = false;
+    req.user.researchPapers.forEach(paper => {
+      if (paper.publicationsLevel === "International") hasInternational = true;
+      if (paper.publicationsLevel === "National") hasNational = true;
+    });
+    testScores.push({ testType: "Publications", level: hasInternational ? "International" : hasNational ? "National" : null });
   }
+  const { filter, projections } = constructFilters(filterData, testScores);
+  let pipeline = [{ $match: filter }, { $project: projections }]
+  const programs = await courseModel.aggregate(pipeline).toArray();
+  const { safe, moderate, ambitious } = categorizePrograms(testScores, programs, mode);
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
+  let recommendations = []
+  req.user.recommendations.criteria = [...filterData, ...testScores]
+  recommendations.push(...safe.map(ele => ({ course: ele._id, possibilityOfAdmit: "Safe" })))
+  recommendations.push(...moderate.map(ele => ({ course: ele._id, possibilityOfAdmit: "Moderate" })))
+  recommendations.push(...moderate.map(ele => ({ course: ele._id, possibilityOfAdmit: "Ambitious" })))
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
   req.user.logs.push({
     action: `recommendations Generated`,
     details: `recommendations${req.user.recommendations.data.length}`
   })
   await req.user.save();
+
   await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate" })
   await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear" })
   if (req.user.preference.currency) {
@@ -135,6 +104,37 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
     req.user.recommendations.data.forEach(applyCurrencyConversion);
   }
   return ({ statusCode: 200, message: "Recommendations Generated", data: req.user.recommendations });
+
+
+
+
+  // const response = await fetch("http://localhost:4321/predict/", {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json", },
+  //   body: JSON.stringify(criteria)
+  // });
+  // const result = await response.json();
+  // let recommendations = []
+  // for (const item of result) {
+  //   recommendations.push({
+  //     course: item.CID,
+  //     possibilityOfAdmit: item.Category
+  //   })
+  // }
+  // req.user.recommendations.criteria = {
+  //   ug_gpa: JSON.stringify(ug),
+  //   gre: JSON.stringify(GRE.scores),
+  //   sub_discipline: JSON.stringify(req.user.preference.courses),
+  //   country: JSON.stringify(req.user.preference.country)
+  // }
+  // req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
+  // req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
+  // req.user.logs.push({
+  //   action: `recommendations Generated`,
+  //   details: `recommendations${req.user.recommendations.data.length}`
+  // })
+  // await req.user.save();
+
 })
 export const hideRecommendation = errorWrapper(async (req, res) => {
   const { recommendationId } = req.body

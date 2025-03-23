@@ -12,11 +12,6 @@ export const generateTokens = async (userId, source, DeviceToken) => {
         await redisClient.set(`DeviceToken:${userId}:${source}`, DeviceToken, { 'EX': 2592000 });
     } // 30 days
     await redisClient.set(`refreshToken:${userId}:${source}`, newRefreshToken, { 'EX': 2592000 }); // 30 days
-    console.log("generated tokens: ", {
-        [`accessToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
-        [`refreshToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
-        [`DeviceToken:${userId}:${source}`]: `${await redisClient.get(`DeviceToken:${userId}:${source}`)}`,
-    });
     return { newAccessToken, newRefreshToken };
 };
 export const verifyTokens = async (source, accessToken, refreshToken) => {

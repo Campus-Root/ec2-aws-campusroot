@@ -7,125 +7,62 @@ const Student = mongoose.Schema(
         blockList: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         blockedBy: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         active: { type: Boolean, default: true },
-        LeadSource: { type: String },
+        LeadSource: String,
         IEH: {
             institution: { type: mongoose.Types.ObjectId, ref: 'institution' },
-            verificationStatus: { type: String },
+            verificationStatus: String,
             verifiedAccess: { type: Boolean, default: false },
-            verificationDocName: { type: String },
+            verificationDocName: String,
             verificationDocument: { type: mongoose.Types.ObjectId, ref: "document" },
         },
         personalDetails: {
             DOB: { type: Date },
-            Gender: { type: String }, // enum
+            Gender: String, // enum
             temporaryAddress: {
-                city: { type: String },
-                state: { type: String },
+                city: String,
+                state: String,
                 pinCode: { type: Number },
-                country: { type: String },
-                addressLine1: { type: String },
-                addressLine2: { type: String },
-                addressLine3: { type: String }
+                country: String,
+                addressLine1: String,
+                addressLine2: String,
+                addressLine3: String
             },
             permanentAddress: {
-                city: { type: String },
-                state: { type: String },
+                city: String,
+                state: String,
                 pinCode: { type: Number },
-                country: { type: String },
-                addressLine1: { type: String },
-                addressLine2: { type: String },
-                addressLine3: { type: String }
+                country: String,
+                addressLine1: String,
+                addressLine2: String,
+                addressLine3: String
             },
-            nationality: { type: String },// enum
-            countyOfBirth: { type: String }, // enum
-            maritalStatus: { type: String }, // enum 
-            validPassport: { type: String },// enum yes no and processing
-            validPassportNumber: { type: String },// enum yes no and processing
-            validPermit: { type: String },// enum yes no and processing,
-            visaRejectedDetails: { type: String },
+            nationality: String,// enum
+            countyOfBirth: String, // enum
+            maritalStatus: String, // enum 
+            validPassport: String,// enum yes no and processing
+            validPassportNumber: String,// enum yes no and processing
+            validPermit: String,// enum yes no and processing,
+            visaRejectedDetails: String
         },
+        isPlanningToTakeAcademicTest: { type: Boolean, default: false },
+        isPlanningToTakeLanguageTest: { type: Boolean, default: false },
+        familyDetails: [{
+            GuardianFirstName: String,
+            GuardianLastName: String,
+            GuardianEmail: String,
+            GuardianOccupation: String,
+            GuardianQualification: String,
+            RelationshipWithStudent: String, // enum father, mother, spouse, guardian
+            GuardianContactNumber: { countryCode: String, number: String },
+        }],
         extraCurriculumActivities: [{
-            activity: { type: String },
-            designation: { type: String },
-            status: { type: String },
-            description: { type: String },
+            activity: String,
+            designation: String,
+            status: String,
+            description: String,
             startDate: { type: Date },
             endDate: { type: Date }
         }],
-        familyDetails: [{
-            GuardianFirstName: { type: String },
-            GuardianLastName: { type: String },
-            GuardianEmail: { type: String },
-            GuardianOccupation: { type: String },
-            GuardianQualification: { type: String },
-            RelationshipWithStudent: { type: String }, // enum father, mother, spouse, guardian
-            GuardianContactNumber: { countryCode: { type: String }, number: { type: String } },
-        }],
-        education: {
-            school: {
-                custom: { type: Boolean },
-                instituteName: { type: String, },
-                city: { type: String },
-                state: { type: String },
-                country: { type: String },
-                languageOfInstruction: { type: String }, // enum hindi telugu eng other
-                gradingSystem: { type: String }, // enum % grade gpa 
-                board: { type: String },// enum 
-                totalScore: { type: String }, // for grade A+..., for Percent 0-100, gpa 0-10
-                startDate: { type: Date },
-                endDate: { type: Date },
-            },
-            plus2: {
-                custom: { type: Boolean },
-                instituteName: { type: String, },
-                city: { type: String },
-                state: { type: String },
-                country: { type: String },
-                languageOfInstruction: { type: String }, // enum hindi telugu eng other
-                gradingSystem: { type: String }, // enum % grade gpa 
-                board: { type: String },// enum ISC, state, 
-                totalScore: { type: String }, // for grade A+..., for Percent 0-100, gpa 0-10
-                startDate: { type: Date },
-                endDate: { type: Date },
-                stream: { type: String }, // enum mpc,bipc,mec....
-                backlogs: { type: Number },
-                isCompleted: { type: Boolean }
-            },
-            underGraduation: {
-                custom: { type: Boolean },
-                instituteName: { type: String, },
-                city: { type: String },
-                state: { type: String },
-                country: { type: String },
-                programMajor: { type: String },// enum  eee,ese,ece
-                degreeProgram: { type: String },// enum btech,bedu,bsc.... 
-                gradingSystem: { type: String },// enum % grade gpa cgpa
-                affiliatedUniversity: { type: String },
-                totalScore: { type: String }, // for grade A+..., for Percent 0-100, gpa 0-10
-                startDate: { type: Date },
-                endDate: { type: Date, },
-                backlogs: { type: Number },
-                isCompleted: { type: Boolean },
-            },
-            postGraduation: {
-                custom: { type: Boolean },
-                instituteName: { type: String, },
-                city: { type: String },
-                state: { type: String },
-                country: { type: String },
-                specialization: { type: String },// enum  power and energy systems,computer engineering,data science
-                degreeProgram: { type: String },// enum mtech,medu,msc.... 
-                gradingSystem: { type: String },// enum % grade gpa cgpa
-                affiliatedUniversity: { type: String },
-                totalScore: { type: String }, // for grade A+..., for Percent 0-100, gpa 0-10
-                startDate: { type: Date },
-                endDate: { type: Date, },
-                backlogs: { type: Number },
-                isCompleted: { type: Boolean }
-            },
-        },
-        isPlanningToTakeAcademicTest: { type: Boolean },
-        isPlanningToTakeLanguageTest: { type: Boolean },
         tests: [{
             name: { type: String, enum: { values: Object.values(TestNamesEnum), message: "Invalid Type of Test Name" } },
             scores: [{
@@ -139,6 +76,71 @@ const Student = mongoose.Schema(
             assignedCountries: [{ type: String, enum: { values: Object.values(DestinationTypeEnum), message: "Invalid Type" } }],
             info: { type: mongoose.Types.ObjectId, ref: 'user' }
         }],
+        education: {
+            school: {
+                custom: { type: Boolean },
+                instituteName: String,
+                city: String,
+                state: String,
+                country: String,
+                languageOfInstruction: String, // enum hindi telugu eng other
+                gradingSystem: String, // enum % grade gpa 
+                board: String,// enum 
+                totalScore: String, // for grade A+..., for Percent 0-100, gpa 0-10
+                startDate: { type: Date },
+                endDate: { type: Date },
+            },
+            plus2: {
+                custom: { type: Boolean },
+                instituteName: String,
+                city: String,
+                state: String,
+                country: String,
+                languageOfInstruction: String, // enum hindi telugu eng other
+                gradingSystem: String, // enum % grade gpa 
+                board: String,// enum ISC, state, 
+                totalScore: String, // for grade A+..., for Percent 0-100, gpa 0-10
+                startDate: { type: Date },
+                endDate: { type: Date },
+                stream: String, // enum mpc,bipc,mec....
+                backlogs: { type: Number },
+                isCompleted: { type: Boolean }
+            },
+            underGraduation: {
+                custom: { type: Boolean },
+                instituteName: String,
+                city: String,
+                state: String,
+                country: String,
+                programMajor: String,// enum  eee,ese,ece
+                degreeProgram: String,// enum btech,bedu,bsc.... 
+                gradingSystem: String,// enum % grade gpa cgpa
+                affiliatedUniversity: String,
+                totalScore: String, // for grade A+..., for Percent 0-100, gpa 0-10
+                maxScore: { type: String, default: "100" },
+                startDate: { type: Date },
+                endDate: { type: Date, },
+                backlogs: { type: Number },
+                isCompleted: { type: Boolean },
+            },
+            postGraduation: {
+                custom: { type: Boolean },
+                instituteName: String,
+                city: String,
+                state: String,
+                country: String,
+                specialization: String,// enum  power and energy systems,computer engineering,data science
+                degreeProgram: String,// enum mtech,medu,msc.... 
+                gradingSystem: String,// enum % grade gpa cgpa
+                affiliatedUniversity: String,
+                totalScore: String, // for grade A+..., for Percent 0-100, gpa 0-10
+                maxScore: { type: String, default: "100" },
+                startDate: { type: Date },
+                endDate: { type: Date, },
+                backlogs: { type: Number },
+                isCompleted: { type: Boolean }
+            },
+        },
         workExperience: [{
             companyName: { type: String, },
             sector: { type: String, },
@@ -150,20 +152,15 @@ const Student = mongoose.Schema(
             docId: { type: mongoose.Types.ObjectId, ref: "document" },
         }],
         researchPapers: [{
-            title: { type: String, },
-            publication: { type: String, },
-            fieldOfStudy: { type: String },
+            title: String,
+            publication: String,
+            fieldOfStudy: String,
             publishedDate: { type: Date, },
+            publicationsLevel: { type: String, enum: ["National", "International"] },
         }],
         recommendations: {
-            criteria: {
-                ug_gpa: { type: String, },
-                gre: { type: String, },
-                sub_discipline: { type: String },
-                country: { type: String },
-            },
+            criteria: [Object],
             data: [{
-                // university: { type: mongoose.Types.ObjectId, ref: "university" },
                 course: { type: mongoose.Types.ObjectId, ref: "course" },
                 possibilityOfAdmit: {
                     type: String, enum: {
@@ -249,11 +246,11 @@ const Student = mongoose.Schema(
             // }
         },
         preference: {
-            degree: { type: String },
+            degree: String,
             intake: { type: Date },
             budget: { upper: { type: Number }, lower: { type: Number, } },
-            category:[String],
-            subCategory:[String],
+            category: [String],
+            subCategory: [String],
             courses: {
                 type: [String],
                 // validate: {
@@ -270,9 +267,9 @@ const Student = mongoose.Schema(
                 // }
             },
             exploreButton: { type: Boolean },
-            theme: { type: String },
-            currency: { type: String },
-            language: { type: String },
+            theme: String,
+            currency: String,
+            language: String
         },
     }
 );
