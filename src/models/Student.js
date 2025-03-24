@@ -140,6 +140,40 @@ const Student = mongoose.Schema(
                 backlogs: { type: Number },
                 isCompleted: { type: Boolean }
             },
+            diploma: {
+                custom: { type: Boolean },
+                instituteName: String,
+                city: String,
+                state: String,
+                country: String,
+                specialization: String,// enum  power and energy systems,computer engineering,data science
+                degreeProgram: String,// enum mtech,medu,msc.... 
+                gradingSystem: String,// enum % grade gpa cgpa
+                affiliatedUniversity: String,
+                totalScore: String, // for grade A+..., for Percent 0-100, gpa 0-10
+                maxScore: { type: String, default: "100" },
+                startDate: { type: Date },
+                endDate: { type: Date, },
+                backlogs: { type: Number },
+                isCompleted: { type: Boolean }
+            },
+            others: {
+                custom: { type: Boolean },
+                instituteName: String,
+                city: String,
+                state: String,
+                country: String,
+                specialization: String,// enum  power and energy systems,computer engineering,data science
+                degreeProgram: String,// enum mtech,medu,msc.... 
+                gradingSystem: String,// enum % grade gpa cgpa
+                affiliatedUniversity: String,
+                totalScore: String, // for grade A+..., for Percent 0-100, gpa 0-10
+                maxScore: { type: String, default: "100" },
+                startDate: { type: Date },
+                endDate: { type: Date, },
+                backlogs: { type: Number },
+                isCompleted: { type: Boolean }
+            }
         },
         workExperience: [{
             companyName: { type: String, },
