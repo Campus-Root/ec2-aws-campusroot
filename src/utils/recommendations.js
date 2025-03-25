@@ -76,7 +76,7 @@ export const calculateMatchPercentage = (testScores, program) => {
     }
     return ((matchScore / totalWeight) + bonus);
 };
-export const categorizePrograms = (testScores, programs, mode) => {
+export const categorizePrograms = (testScores, programs, mode="Student") => {
     const results = { safe: [], moderate: [], ambitious: [] };
     switch (mode) {
         case "Student":
