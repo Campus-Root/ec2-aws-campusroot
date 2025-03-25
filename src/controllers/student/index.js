@@ -72,21 +72,12 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
   const { filter, projections } = constructFilters(filterData, testScores);
   let pipeline = [{ $match: filter }, { $project: projections }]
   const programs = await courseModel.aggregate(pipeline);
-  let mode = "Student"
-  const { safe, moderate, ambitious } = categorizePrograms(testScores, programs, mode);
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
-  let recommendations = []
+  let recommendations = categorizePrograms(testScores, programs);
   req.user.recommendations.criteria = [...filterData, ...testScores]
-  recommendations.push(...safe.map(ele => ({ course: ele._id, possibilityOfAdmit: "Safe" })))
-  recommendations.push(...moderate.map(ele => ({ course: ele._id, possibilityOfAdmit: "Moderate" })))
-  recommendations.push(...moderate.map(ele => ({ course: ele._id, possibilityOfAdmit: "Ambitious" })))
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
-  req.user.logs.push({
-    action: `recommendations Generated`,
-    details: `recommendations${req.user.recommendations.data.length}`
-  })
+  req.user.logs.push({ action: `recommendations Generated`, details: `recommendations${req.user.recommendations.data.length}` })
   await req.user.save();
-
   await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate" })
   await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear" })
   if (req.user.preference.currency) {
@@ -105,37 +96,6 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
     req.user.recommendations.data.forEach(applyCurrencyConversion);
   }
   return ({ statusCode: 200, message: "Recommendations Generated", data: req.user.recommendations });
-
-
-
-
-  // const response = await fetch("http://localhost:4321/predict/", {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json", },
-  //   body: JSON.stringify(criteria)
-  // });
-  // const result = await response.json();
-  // let recommendations = []
-  // for (const item of result) {
-  //   recommendations.push({
-  //     course: item.CID,
-  //     possibilityOfAdmit: item.Category
-  //   })
-  // }
-  // req.user.recommendations.criteria = {
-  //   ug_gpa: JSON.stringify(ug),
-  //   gre: JSON.stringify(GRE.scores),
-  //   sub_discipline: JSON.stringify(req.user.preference.courses),
-  //   country: JSON.stringify(req.user.preference.country)
-  // }
-  // req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
-  // req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
-  // req.user.logs.push({
-  //   action: `recommendations Generated`,
-  //   details: `recommendations${req.user.recommendations.data.length}`
-  // })
-  // await req.user.save();
-
 })
 export const hideRecommendation = errorWrapper(async (req, res) => {
   const { recommendationId } = req.body

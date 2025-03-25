@@ -37,7 +37,7 @@ export const calculateMatchPercentage = (testScores, program) => {
                 totalWeight += weight
                 matchScore += getMatchScoreFromGPA(ele.overallScore, Number(ele.ugOutOf), program) * weight;
                 break;
-            case "GMAT":
+            case "Graduate Management Admission Test":
                 if (program.coursefinder_GmatScore !== null) {
                     weight = program.coursefinder_weights?.GMAT || 30
                     totalWeight += weight
@@ -45,7 +45,7 @@ export const calculateMatchPercentage = (testScores, program) => {
                     matchScore += margin * weight;
                 }
                 break;
-            case "GRE":
+            case "Graduate Record Examination":
                 if (program?.coursefinder_GreScore !== undefined && program.coursefinder_GreScore !== null) {
                     weight = program.coursefinder_weights?.GRE || 30
                     totalWeight += weight
@@ -76,41 +76,41 @@ export const calculateMatchPercentage = (testScores, program) => {
     }
     return ((matchScore / totalWeight) + bonus);
 };
-export const categorizePrograms = (testScores, programs, mode="Student") => {
-    const results = { safe: [], moderate: [], ambitious: [] };
-    switch (mode) {
-        case "Student":
-            programs = programs.filter(ele => {
-                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-                return ele.matchPercentage >= 50;
-            });
-            break;
-        case "Counsellor":
-            programs = programs.filter(ele => {
-                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-                return true;
-            });
-            break;
-        default:
-            break;
-    }
+export const categorizePrograms = (testScores, programs, mode = "Student") => {
+    const results = [];
+    // switch (mode) {
+    //     case "Student":
+    //         programs = programs.filter(ele => {
+    //             ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
+    //             return ele.matchPercentage >= 50;
+    //         });
+    //         break;
+    //     case "Counsellor":
+    //         programs = programs.filter(ele => {
+    //             ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
+    //             return true;
+    //         });
+    //         break;
+    //     default:
+    //         break;
+    // }
     const rankings = [...new Set(programs.map(p => p.coursefinder_WebomatricsNationalRanking))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
     const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
     programs.forEach(program => {
         const rank = program.coursefinder_WebomatricsNationalRanking;
         if (rank <= ambitiousRange) {
-            results.ambitious.push(program);
+            results.push({ course: program._id, possibilityOfAdmit: "Ambitious" });
         } else if (rank <= moderateRange) {
-            results.moderate.push(program);
+            results.push({ course: program._id, possibilityOfAdmit: "Moderate" });
         } else {
-            results.safe.push(program);
+            results.push({ course: program._id, possibilityOfAdmit: "Safe" });
         }
     });
     return results;
 };
 export const constructFilters = (filterData, testScores) => {
-    const filter = { coursefinder_WebomatricsNationalRanking: { $lt: 2147483647 }, "$or": [], coursefinder_IsOnlineCourse: false }, projections = { _id:1,coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1 }
+    const filter = { coursefinder_WebomatricsNationalRanking: { $lte: 2147483647 }, "$or": [], coursefinder_IsOnlineCourse: false }, projections = { _id: 1, coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
