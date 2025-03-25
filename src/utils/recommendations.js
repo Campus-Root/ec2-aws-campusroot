@@ -78,22 +78,22 @@ export const calculateMatchPercentage = (testScores, program) => {
 };
 export const categorizePrograms = (testScores, programs, mode = "Student") => {
     const results = [];
-    // switch (mode) {
-    //     case "Student":
-    //         programs = programs.filter(ele => {
-    //             ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-    //             return ele.matchPercentage >= 50;
-    //         });
-    //         break;
-    //     case "Counsellor":
-    //         programs = programs.filter(ele => {
-    //             ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-    //             return true;
-    //         });
-    //         break;
-    //     default:
-    //         break;
-    // }
+    switch (mode) {
+        case "Student":
+            programs = programs.filter(ele => {
+                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
+                return ele.matchPercentage >= 50;
+            });
+            break;
+        case "Counsellor":
+            programs = programs.filter(ele => {
+                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
+                return true;
+            });
+            break;
+        default:
+            break;
+    }
     const rankings = [...new Set(programs.map(p => p.coursefinder_WebomatricsNationalRanking))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
     const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
@@ -142,24 +142,24 @@ export const constructFilters = (filterData, testScores) => {
             const score = Number(overallScore);
             if (!score) return;
             switch (testType) {
-                case 'IELTS':
+                case 'International English Language Testing System':
                     // filter["IeltsRequired"] = true;
                     filter["coursefinder_IeltsOverall"] = { $lte: score };
                     if (sectionScore) filter["coursefinder_IeltsNoBandLessThan"] = { $lte: Number(sectionScore) };
                     projections["coursefinder_IeltsOverall"] = 1
                     break;
-                case 'TOEFL':
+                case 'Test of English as a Foreign Language':
                     // filter["ToeflRequired"] = true;
                     filter["coursefinder_ToeflScore"] = { $lte: score };
                     if (sectionScore) filter["coursefinder_TOEFLNoSectionLessThan"] = { $lte: Number(sectionScore) };
                     projections["coursefinder_ToeflScore"] = 1
                     break;
-                case 'PTE':
+                case 'Pearson Test of English':
                     // filter["PteRequired"] = true;
                     filter["coursefinder_PteScore"] = { $lte: score };
                     projections["coursefinder_PteScore"] = 1
                     break;
-                case 'DET':
+                case 'Duolingo English Test':
                     // filter["DETRequired"] = true;
                     filter["coursefinder_DETScore"] = { $lte: score };
                     projections["coursefinder_DETScore"] = 1
@@ -168,11 +168,11 @@ export const constructFilters = (filterData, testScores) => {
                     filter["coursefinder_WorkExp"] = { $lte: score };
                     projections["coursefinder_WorkExp"] = 1
                     break;
-                case 'GRE':
+                case 'Graduate Record Examination':
                     filter["$or"].push({ coursefinder_GreScore: { $lte: Math.min(340, score + 10) } }, { coursefinder_GreScore: null });
                     projections["coursefinder_GreScore"] = 1
                     break;
-                case 'GMAT':
+                case 'Graduate Management Admission Test':
                     filter["$or"].push({ coursefinder_GmatScore: { $lte: Math.min(805, score + 40) } }, { coursefinder_GmatScore: null });
                     projections["coursefinder_GmatScore"] = 1
                     break;
