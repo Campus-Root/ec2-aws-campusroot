@@ -144,28 +144,28 @@ export const constructFilters = (filterData, testScores) => {
             switch (testType) {
                 case 'International English Language Testing System':
                     // filter["IeltsRequired"] = true;
-                    filter["coursefinder_IeltsOverall"] = { $lte: score };
+                    filter["$or"].push({ coursefinder_IeltsOverall: { $lte: score } }, { coursefinder_IeltsOverall: null });
                     if (sectionScore) filter["coursefinder_IeltsNoBandLessThan"] = { $lte: Number(sectionScore) };
                     projections["coursefinder_IeltsOverall"] = 1
                     break;
                 case 'Test of English as a Foreign Language':
                     // filter["ToeflRequired"] = true;
-                    filter["coursefinder_ToeflScore"] = { $lte: score };
+                    filter["$or"].push({ coursefinder_ToeflScore: { $lte: score } }, { coursefinder_ToeflScore: null });
                     if (sectionScore) filter["coursefinder_TOEFLNoSectionLessThan"] = { $lte: Number(sectionScore) };
                     projections["coursefinder_ToeflScore"] = 1
                     break;
                 case 'Pearson Test of English':
                     // filter["PteRequired"] = true;
-                    filter["coursefinder_PteScore"] = { $lte: score };
+                    filter["$or"].push({ coursefinder_PteScore: { $lte: score } }, { coursefinder_PteScore: null });
                     projections["coursefinder_PteScore"] = 1
                     break;
                 case 'Duolingo English Test':
                     // filter["DETRequired"] = true;
-                    filter["coursefinder_DETScore"] = { $lte: score };
+                    filter["$or"].push({ coursefinder_DETScore: { $lte: score } }, { coursefinder_DETScore: null });
                     projections["coursefinder_DETScore"] = 1
                     break;
                 case 'WorkExperience':
-                    filter["coursefinder_WorkExp"] = { $lte: score };
+                    filter["$or"].push({ coursefinder_WorkExp: { $lte: score } }, { coursefinder_WorkExp: null });
                     projections["coursefinder_WorkExp"] = 1
                     break;
                 case 'Graduate Record Examination':
