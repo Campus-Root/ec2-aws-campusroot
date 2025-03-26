@@ -183,23 +183,23 @@ export const constructFilters = (filterData, testScores) => {
                 case 'GPA':
                     switch (Number(ugOutOf)) {
                         case 4:
-                            filter["coursefinder_EntryRequirementUgOutOf4"] = { $lte: score + 0.2 };
+                            filter["$or"].push({ coursefinder_EntryRequirementUgOutOf4: { $lte: score + 0.2 } }, { coursefinder_EntryRequirementUgOutOf4: null });
                             projections["coursefinder_EntryRequirementUgOutOf4"] = 1
                             break;
                         case 5:
-                            filter["coursefinder_EntryRequirementUgOutOf5"] = { $lte: score + 0.2 };
+                            filter["$or"].push({ coursefinder_EntryRequirementUgOutOf5: { $lte: score + 0.2 } }, { coursefinder_EntryRequirementUgOutOf5: null });
                             projections["coursefinder_EntryRequirementUgOutOf5"] = 1
                             break;
                         case 7:
-                            filter["coursefinder_EntryRequirementUgOutOf7"] = { $lte: score + 0.2 };
+                            filter["$or"].push({ coursefinder_EntryRequirementUgOutOf7: { $lte: score + 0.2 } }, { coursefinder_EntryRequirementUgOutOf7: null });
                             projections["coursefinder_EntryRequirementUgOutOf7"] = 1
                             break;
                         case 10:
-                            filter["coursefinder_EntryRequirementUgOutOf10"] = { $lte: score + 0.4 };
+                            filter["$or"].push({ coursefinder_EntryRequirementUgOutOf10: { $lte: score + 0.2 } }, { coursefinder_EntryRequirementUgOutOf10: null });
                             projections["coursefinder_EntryRequirementUgOutOf10"] = 1
                             break;
                         case 100:
-                            filter["coursefinder_EntryRequirementUgOutOf100"] = { $lte: score + 8 };
+                            filter["$or"].push({ coursefinder_EntryRequirementUgOutOf100: { $lte: score + 0.2 } }, { coursefinder_EntryRequirementUgOutOf100: null });
                             projections["coursefinder_EntryRequirementUgOutOf100"] = 1
                             break;
                     }
