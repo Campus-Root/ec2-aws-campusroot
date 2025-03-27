@@ -44,13 +44,14 @@ const Student = mongoose.Schema(
             validPermit: String,// enum yes no and processing,
             visaRejectedDetails: String
         },
-        completedStudies:{ type: Boolean, default: false },
-        oneWindowExclusiveTestPrep:{ type: Boolean, default: false },
+        
+        completedStudies: { type: Boolean, default: false },
+        oneWindowExclusiveTestPrep: { type: Boolean, default: false },
         isPlanningToTakeAcademicTest: { type: Boolean, default: false },
         isPlanningToTakeLanguageTest: { type: Boolean, default: false },
-        financialAid:{ type: Boolean, default: false },
-        educationLoan:{ type: Boolean, default: false },
-        services:[String],
+        financialAid: { type: Boolean, default: false },
+        educationLoan: { type: Boolean, default: false },
+        services: [String],
         familyDetails: [{
             GuardianFirstName: String,
             GuardianLastName: String,
@@ -180,6 +181,8 @@ const Student = mongoose.Schema(
                 isCompleted: { type: Boolean }
             }
         },
+        totalWorkExperience: { type: Number, default: 0 },
+        publicationsLevel: { type: String, enum: ["National", "International"] },
         workExperience: [{
             companyName: { type: String, },
             sector: { type: String, },

@@ -127,10 +127,10 @@ export const constructFilters = (filterData, testScores) => {
                         filter.coursefinder_SubCategoryNames = { $in: data };
                         projections.coursefinder_SubCategoryNames = 1
                         break;
-                    case 'StudyLevel':
-                        filter.coursefinder_StudyLvl = { $in: data };
-                        projections.coursefinder_StudyLvl = 1
-                        break;
+                    // case 'StudyLevel':
+                    //     filter.coursefinder_StudyLvl = { $in: data };
+                    //     projections.coursefinder_StudyLvl = 1
+                    //     break;
                 }
             }
         });

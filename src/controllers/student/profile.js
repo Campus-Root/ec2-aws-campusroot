@@ -52,7 +52,8 @@ export const profile = errorWrapper(async (req, res, next, session) => {
     return ({ statusCode: 200, message: `complete profile`, data: profile });
 })
 export const editProfile = errorWrapper(async (req, res, next, session) => {
-    const { LeadSource, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, extraCurriculumActivities, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education } = req.body;
+    const { LeadSource, personalDetails, isPlanningToTakeAcademicTest, isPlanningToTakeLanguageTest, familyDetails, extraCurriculumActivities, displayPicSrc, school, plus2, underGraduation, postGraduation, firstName, lastName, tests, workExperience, skills, preference, researchPapers, education, totalWorkExperience, publicationsLevel, oneWindowExclusiveTestPrep, completedStudies, services, educationLoan, financialAid } = req.body;
+    let shouldRegenerateRecommendation = false
     if (personalDetails) {
         req.user.personalDetails = personalDetails;
         req.user.logs.push({
@@ -121,6 +122,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (preference) {
+        shouldRegenerateRecommendation = true
         req.user.preference = preference;
         req.user.logs.push({
             action: `profile info updated`,
@@ -128,6 +130,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (tests) {
+        shouldRegenerateRecommendation = true
         req.user.tests = tests;
         req.user.logs.push({
             action: `profile info updated`,
@@ -135,6 +138,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (workExperience) {
+        shouldRegenerateRecommendation = true
         req.user.workExperience = workExperience;
         req.user.logs.push({
             action: `profile info updated`,
@@ -142,6 +146,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (researchPapers) {
+        shouldRegenerateRecommendation = true
         req.user.researchPapers = researchPapers;
         req.user.logs.push({
             action: `profile info updated`,
@@ -149,6 +154,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (school) {
+        shouldRegenerateRecommendation = true
         req.user.education.school = school;
         req.user.logs.push({
             action: `profile info updated`,
@@ -156,6 +162,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (plus2) {
+        shouldRegenerateRecommendation = true
         req.user.education.plus2 = plus2;
         req.user.logs.push({
             action: `profile info updated`,
@@ -163,6 +170,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (underGraduation) {
+        shouldRegenerateRecommendation = true
         req.user.education.underGraduation = underGraduation;
         req.user.logs.push({
             action: `profile info updated`,
@@ -170,6 +178,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (postGraduation) {
+        shouldRegenerateRecommendation = true
         req.user.education.postGraduation = postGraduation;
         req.user.logs.push({
             action: `profile info updated`,
@@ -177,12 +186,79 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (education) {
+        shouldRegenerateRecommendation = true
         req.user.education = education;
         req.user.logs.push({
             action: `profile info updated`,
             details: `education updated`
         })
     }
+    if (totalWorkExperience) {
+        shouldRegenerateRecommendation = true
+        req.user.totalWorkExperience = totalWorkExperience;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `totalWorkExperience updated`
+        })
+    }
+    if (publicationsLevel) {
+        shouldRegenerateRecommendation = true
+        req.user.publicationsLevel = publicationsLevel;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `publicationsLevel updated`
+        })
+    }
+    if (financialAid) {
+        shouldRegenerateRecommendation = true
+        req.user.financialAid = financialAid;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `financialAid updated`
+        })
+    }
+    if (educationLoan) {
+        shouldRegenerateRecommendation = true
+        req.user.educationLoan = educationLoan;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `educationLoan updated`
+        })
+    }
+    if (educationLoan) {
+        shouldRegenerateRecommendation = true
+        req.user.educationLoan = educationLoan;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `educationLoan updated`
+        })
+    }
+    if (services) {
+        shouldRegenerateRecommendation = true
+        req.user.services = services;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `services updated`
+        })
+    }
+    if (completedStudies) {
+        shouldRegenerateRecommendation = true
+        req.user.completedStudies = completedStudies;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `completedStudies updated`
+        })
+    }
+    if (oneWindowExclusiveTestPrep) {
+        shouldRegenerateRecommendation = true
+        req.user.oneWindowExclusiveTestPrep = oneWindowExclusiveTestPrep;
+        req.user.logs.push({
+            action: `profile info updated`,
+            details: `oneWindowExclusiveTestPrep updated`
+        })
+    }
+
+    //  shouldRegenerateRecommendation=true
     await Promise.all([
         await req.user.save(),
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),

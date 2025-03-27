@@ -20,11 +20,12 @@ import { recycleBinModel } from "../../models/recycleBin.js";
 import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next, session) => {
-  let filterData = [], testScores = []
+  let filterData = [], testScores = [], criteria = []
   if (req.user.preference.country.length > 0) filterData.push({ type: "Country", data: req.user.preference.country })
   if (req.user.preference.category.length > 0) filterData.push({ type: "Category", data: req.user.preference.category })
   if (req.user.preference.subCategory.length > 0) filterData.push({ type: "SubCategory", data: req.user.preference.subCategory })
-  if (req.user.preference.subCategory.degree) filterData.push({ type: "StudyLevel", data: req.user.preference.degree })
+  // if (req.user.preference.degree) filterData.push({ type: "StudyLevel", data: req.user.preference.degree })
+  criteria = filterData.map(ele => ({ label: ele.type, data: { editLink: "/preference", value: ele.data } }))
   const testScoreMapping = {
     "Graduate Record Examination": ["Total", "Quantitative Reasoning", "Verbal Reasoning"],
     "Graduate Management Admission Test": ["Total", "Quantitative", "Verbal"],
@@ -40,41 +41,57 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
       const totalScore = test.scores.find(ele => ele.description === "Total");
       let score = null;
       score = (totalScore) ? totalScore.count : test.scores.reduce((acc, { description, count }) => descriptions.includes(description) ? acc + count : acc, 0);
-      if (score !== null && !isNaN(score)) testScores.push({ testType: testName, overallScore: parseInt(score) });
+      if (score !== null && !isNaN(score)) {
+        testScores.push({ testType: testName, overallScore: parseInt(score) });
+        criteria.push({ label: testName, data: { editLink: "/test", value: parseInt(score) } })
+      }
     }
   });
   const { backlogs, totalScore, maxScore } = req.user.education.underGraduation
-  if (totalScore && maxScore) testScores.push({ testType: "GPA", overallScore: parseFloat(totalScore), ugOutOf: parseFloat(maxScore) });
-  if (backlogs) testScores.push({ testType: "Backlogs", overallScore: parseInt(backlogs) });
-  if (req.user.workExperience.length > 0) {
+  if (totalScore && maxScore) {
+    testScores.push({ testType: "GPA", overallScore: parseFloat(totalScore), ugOutOf: parseFloat(maxScore) });
+    criteria.push({ label: "GPA", data: { editLink: "/education", value: parseFloat(totalScore) + " / " + parseFloat(maxScore) } })
+  }
+  if (backlogs) {
+    testScores.push({ testType: "Backlogs", overallScore: parseInt(backlogs) });
+    criteria.push({ label: "Backlogs", data: { editLink: "/education", value: parseInt(backlogs) } })
+  }
+  if (req.user.totalWorkExperience > 0) {
+    testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2) / 12) });
+    criteria.push({ label: "WorkExperience", data: { editLink: "/WorkExperience", value: parseInt(backlogs) } })
+  } else if (req.user.workExperience.length > 0) {
     let totalWorkExperience = 0;
     req.user.workExperience.forEach(experience => {
       if (experience.startDate) {
         const startDate = new Date(experience.startDate);
         const endDate = experience.Ongoing ? new Date() : new Date(experience.endDate);
-
         if (!isNaN(startDate) && !isNaN(endDate) && startDate < endDate) {
           const years = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
           totalWorkExperience += years;
         }
       }
     });
-    testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2)) });
+    testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2) / 12) });
+    criteria.push({ label: "WorkExperience", data: { editLink: "/WorkExperience", value: parseFloat(totalWorkExperience.toFixed(2) / 12) } })
   }
-  if (req.user.researchPapers.length > 0) {
+  if (req.user.publicationsLevel) {
+    testScores.push({ testType: "Publications", level: req.user.publicationsLevel || null });
+    criteria.push({ label: "Publications", data: { editLink: "/Publications", value: req.user.publicationsLevel || null } })
+  } else if (req.user.researchPapers.length > 0) {
     let hasInternational = false, hasNational = false;
     req.user.researchPapers.forEach(paper => {
       if (paper.publicationsLevel === "International") hasInternational = true;
       if (paper.publicationsLevel === "National") hasNational = true;
     });
     testScores.push({ testType: "Publications", level: hasInternational ? "International" : hasNational ? "National" : null });
+    criteria.push({ label: "Publications", data: { editLink: "/Publications", value: hasInternational ? "International" : hasNational ? "National" : null } })
   }
   const { filter, projections } = constructFilters(filterData, testScores);
   let pipeline = [{ $match: filter }, { $project: projections }]
   const programs = await courseModel.aggregate(pipeline);
   req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
   let recommendations = categorizePrograms(testScores, programs);
-  req.user.recommendations.criteria = [...filterData, ...testScores]
+  req.user.recommendations.criteria = criteria
   req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
   req.user.logs.push({ action: `recommendations Generated`, details: `recommendations${req.user.recommendations.data.length}` })
   await req.user.save();
@@ -169,7 +186,7 @@ export const downloadDocument = errorWrapper(async (req, res, next, session) => 
   const { documentId } = req.params;
   const document = await Document.findById(documentId);
   if (!document) return { statusCode: 400, data: null, message: `invalid document ID` };
-  // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return { statusCode: 400, data: student , message:    `access denied`};
+  // if (!document.viewers.includes(req.decoded.id) && document.user.toString != req.decode.id) return {statusCode: 400, data: student , message:    `access denied`};
   return res.contentType(document.contentType).send(document.data);
 })
 export const allStudents = errorWrapper(async (req, res, next, session) => {
@@ -241,38 +258,38 @@ export const deleteData = errorWrapper(async (req, res, next, session) => {
     to: "developer.campusroot@gmail.com",
     subject: "Delete Data",
     html: `
-        <html lang="en">
-            <head>
-                <meta charset="UTF-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <title>Document</title>
-                <style>
-                    .container {
-                        font-family: Arial, sans-serif;
-                        text-align: center;
-                        padding: 20px;
+                            <html lang="en">
+                              <head>
+                                <meta charset="UTF-8" />
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                                <title>Document</title>
+                                <style>
+                                  .container {
+                                    font - family: Arial, sans-serif;
+                                  text-align: center;
+                                  padding: 20px;
                     }
-                    img {
-                        max-width: 200px;
-                        margin-bottom: 20px;
+                                  img {
+                                    max - width: 200px;
+                                  margin-bottom: 20px;
                     }
-                    h3 {
-                        color: #333;
+                                  h3 {
+                                    color: #333;
                     }
-                    h2 {
-                        color: #0073e6;
+                                  h2 {
+                                    color: #0073e6;
                     }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
-                    <h3>studentId:  ${req.user._id}</h3>
-                    <p>This student is requesting to delete data</p>
-                </div>
-            </body>
-        </html>
-    `
+                                </style>
+                              </head>
+                              <body>
+                                <div class="container">
+                                  <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                                  <h3>studentId:  ${req.user._id}</h3>
+                                  <p>This student is requesting to delete data</p>
+                                </div>
+                              </body>
+                            </html>
+                            `
   });
   return { statusCode: 200, message: "data cleared successfully", data: null }
 })
@@ -284,76 +301,76 @@ export const deleteAccount = errorWrapper(async (req, res, next, session) => {
     to: req.user.email,
     subject: "Account Deletion",
     html: `
-        <html lang="en">
-            <head>
-                <meta charset="UTF-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <title>Document</title>
-                <style>
-                    .container {
-                        font-family: Arial, sans-serif;
-                        text-align: center;
-                        padding: 20px;
+                            <html lang="en">
+                              <head>
+                                <meta charset="UTF-8" />
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                                <title>Document</title>
+                                <style>
+                                  .container {
+                                    font - family: Arial, sans-serif;
+                                  text-align: center;
+                                  padding: 20px;
                     }
-                    img {
-                        max-width: 200px;
-                        margin-bottom: 20px;
+                                  img {
+                                    max - width: 200px;
+                                  margin-bottom: 20px;
                     }
-                    h3 {
-                        color: #333;
+                                  h3 {
+                                    color: #333;
                     }
-                    h2 {
-                        color: #0073e6;
+                                  h2 {
+                                    color: #0073e6;
                     }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
-                    <h3>Dear ${req.user.firstName} ${req.user.lastName},</h3>
-                    <h2>Your account will be deleted permanently after 60 days</h2>
-                    <p>After you delete your account, we retain your data for a period of 60 days. This period allows us to ensure that the deletion was intentional and provides time for account recovery if needed. It also allows us to complete any remaining transactions or address potential security, fraud, or regulatory issues. After 60 days, your data will be permanently deleted from our systems.</p>
-                </div>
-            </body>
-        </html>
-    `
+                                </style>
+                              </head>
+                              <body>
+                                <div class="container">
+                                  <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                                  <h3>Dear ${req.user.firstName} ${req.user.lastName},</h3>
+                                  <h2>Your account will be deleted permanently after 60 days</h2>
+                                  <p>After you delete your account, we retain your data for a period of 60 days. This period allows us to ensure that the deletion was intentional and provides time for account recovery if needed. It also allows us to complete any remaining transactions or address potential security, fraud, or regulatory issues. After 60 days, your data will be permanently deleted from our systems.</p>
+                                </div>
+                              </body>
+                            </html>
+                            `
   });
   await sendMail({
     to: "developer.campusroot@gmail.com",
     subject: "Delete Account",
     html: `
-        <html lang="en">
-            <head>
-                <meta charset="UTF-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <title>Document</title>
-                <style>
-                    .container {
-                        font-family: Arial, sans-serif;
-                        text-align: center;
-                        padding: 20px;
+                            <html lang="en">
+                              <head>
+                                <meta charset="UTF-8" />
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                                <title>Document</title>
+                                <style>
+                                  .container {
+                                    font - family: Arial, sans-serif;
+                                  text-align: center;
+                                  padding: 20px;
                     }
-                    img {
-                        max-width: 200px;
-                        margin-bottom: 20px;
+                                  img {
+                                    max - width: 200px;
+                                  margin-bottom: 20px;
                     }
-                    h3 {
-                        color: #333;
+                                  h3 {
+                                    color: #333;
                     }
-                    h2 {
-                        color: #0073e6;
+                                  h2 {
+                                    color: #0073e6;
                     }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
-                    <h3>studentId:  ${req.user._id}</h3>
-                    <p>This student is requesting to delete account</p>
-                </div>
-            </body>
-        </html>
-    `
+                                </style>
+                              </head>
+                              <body>
+                                <div class="container">
+                                  <img src="https://campusroot.com/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png" alt="Campusroot Logo" />
+                                  <h3>studentId:  ${req.user._id}</h3>
+                                  <p>This student is requesting to delete account</p>
+                                </div>
+                              </body>
+                            </html>
+                            `
   });
   await userModel.deleteOne({ _id: req.user._id })
   return { statusCode: 200, message: "Requested to delete Account", data: null }
