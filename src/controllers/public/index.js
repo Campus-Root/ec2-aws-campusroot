@@ -102,7 +102,7 @@ export const filters = errorWrapper(async (req, res, next) => {
 
 
             });
-            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
+            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "featured", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
@@ -219,7 +219,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         filter["geoCoordinates"] = {
                             $geoWithin: {
                                 $centerSphere: [[lng, lat], finalRadius / 6378100], // Convert meters to radians
-                            }    };
+                            }
+                        };
                         break;
                     default:
                         break;
@@ -370,7 +371,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             .find({
                                 multipleLocations: { $exists: false },
                                 ...filter
-                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements elite globalRankingPosition AdmissionsRequirements.LanguageRequirements")
+                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements elite featured globalRankingPosition AdmissionsRequirements.LanguageRequirements")
                             .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
                             .sort({ globalRankingPosition: 1 })
                             .skip(skip)
