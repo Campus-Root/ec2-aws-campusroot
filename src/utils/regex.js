@@ -1,16 +1,24 @@
+import courseModel from "../models/Course.js";
 import { subDisciplineEnum, disciplineEnum, keywords } from "./enum.js"
 import { destinationList } from "./lists.js";
-export const disciplineRegexMatch = (search, skip = 0, perPage = 5) => {
+export const disciplineRegexMatch = async (search, skip = 0, perPage = 5, custom) => {
     const regex = new RegExp(search, "i");
-    const arr = Object.values(disciplineEnum).filter(ele => regex.test(ele))
-    const totalDocs = arr.length;
-    return { arr: arr.slice(skip, skip + perPage), totalDocs };
+
+    const facetsPipeline = [{ $unwind: "$discipline" }, { $match: { discipline: regex } }, { $group: { _id: "$discipline" } }, { $facet: { results: [{ $project: { _id: 0, discipline: "$_id" } }], totalCount: [{ $count: "count" }] } }];
+    if (custom) facetsPipeline.unshift({$match: { coursefinder_Name: { $exists: true } }})
+    const results = await courseModel.aggregate(facetsPipeline);
+    const disciplines = results[0]?.results.map(doc => doc.discipline) || [];
+    const totalDocs = results[0]?.totalCount[0]?.count || 0;
+    return { arr: disciplines.slice(Number(skip), Number(skip) + Number(perPage)), totalDocs };
 }
-export const subDisciplineRegexMatch = (search, skip = 0, perPage = 5) => {
+export const subDisciplineRegexMatch = async (search, skip = 0, perPage = 5, custom) => {
     const regex = new RegExp(search, "i");
-    const arr = Object.values(subDisciplineEnum).filter(ele => regex.test(ele))
-    const totalDocs = arr.length;
-    return { arr: arr.slice(skip, skip + perPage), totalDocs };
+    const facetsPipeline = [{ $unwind: "$subDiscipline" }, { $match: { subDiscipline: regex } }, { $group: { _id: "$subDiscipline" } }, { $facet: { results: [{ $project: { _id: 0, subDiscipline: "$_id" } }], totalCount: [{ $count: "count" }] } }];
+    if (custom) facetsPipeline.unshift({$match: { coursefinder_Name: { $exists: true } }})
+    const results = await courseModel.aggregate(facetsPipeline);
+    const subDisciplines = results[0]?.results.map(doc => doc.subDiscipline) || [];
+    const totalDocs = results[0]?.totalCount[0]?.count || 0;
+    return { arr: subDisciplines.slice(Number(skip), Number(skip) + Number(perPage)), totalDocs };
 }
 export const searchSimilarWords = (inputWord) => {
     let bestMatches = [];
@@ -30,7 +38,7 @@ export const searchSimilarWords = (inputWord) => {
 
     return bestSimilarity >= 0.5 ? bestMatches.slice(0, 5) : [];
 };
-export const locationRegexMatch = (search, skip = 0, perPage = 5, hint = {}) => {
+export const locationRegexMatch = async (search, skip = 0, perPage = 5, hint = {}) => {
     const regex = new RegExp(search, "i");
     const result = {
         countries: new Set(),

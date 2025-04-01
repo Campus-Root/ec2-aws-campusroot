@@ -471,75 +471,71 @@ export const counsellors = errorWrapper(async (req, res, next, session) => {
     return { statusCode: 200, message: `all counsellors`, data: counsellors }
 })
 export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
-    let { page = 1, perPage = 5, search, institutions, universities, disciplines, subDisciplines, location, country, state } = req.query, skip = (page - 1) * perPage;
-    let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = [], countrySearchResults = [], stateSearchResults = [], citySearchResults = [], totalPages = 0
+    let { page = 1, perPage = 5, search, institutions, universities, disciplines, subDisciplines, location, country, state, custom = false } = req.query, skip = (page - 1) * perPage;
+    let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = [], countrySearchResults = [], stateSearchResults = [], citySearchResults = [], totalPages = 1, queries = []
     if (!search) return res.status(400).json({ success: false, message: `blank search`, data: null })
     const specialCharRegex = /[^a-zA-Z0-9\s]/;
     if (specialCharRegex.test(search)) return res.status(400).json({ success: false, message: 'Invalid search. Special characters are not allowed.', data: null });
-
-    if (institutions == 1) {
-        const [regexResults, textResults, totalDocs] = await Promise.all([
-            institutionModel.find({ InstitutionName: { $regex: search, $options: "i" } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
-            institutionModel.find({ $text: { $search: search } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
-            institutionModel.countDocuments({ InstitutionName: { $regex: search, $options: "i" } })
-        ]);
-        if (regexResults.length <= 3) {
-            institutionSearchResults = [...regexResults, ...textResults].reduce((acc, curr) => {
-                if (!acc.find(item => item._id.equals(curr._id))) acc.push(curr);
-                return acc;
-            }, []);
-            institutionSearchResults.sort((a, b) => a.InstitutionName.localeCompare(b.InstitutionName));
-        }
-        else institutionSearchResults = [...regexResults]
-        totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
-    }
-    if (universities == 1) {
-        const searchPattern = search.replace(" ", "|");
-        const countryFilter = country ? { "location.country": country } : {};
-        const uniKeyword = {
-            $or: [
-                { name: { $regex: searchPattern, $options: "i" } },
-                { code: { $regex: searchPattern, $options: "i" } },
-            ],
-            courses: { $gt: 0 },
-            ...countryFilter
-        };
-        const [regexResults, textResults, totalDocs] = await Promise.all([
-            universityModel.find(uniKeyword, "name location community logoSrc code").skip(skip).limit(perPage),
-            universityModel.find({ $text: { $search: search } }, "name location community logoSrc code").skip(skip).limit(perPage),
-            universityModel.countDocuments(uniKeyword)
-        ]);
-        if (regexResults.length <= 3) {
-            uniSearchResults = [...regexResults, ...textResults].reduce((acc, curr) => {
-                if (!acc.find(item => item._id.equals(curr._id))) acc.push(curr);
-                return acc;
-            }, []);
-            uniSearchResults.sort((a, b) => a.name.localeCompare(b.name));
-        }
-        else uniSearchResults = [...regexResults]
-        totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
-    }
-    if (disciplines == 1) {
-        const { arr, totalDocs } = disciplineRegexMatch(search, skip, perPage)
-        disciplineSearchResults = arr
-        totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
-    }
-    if (subDisciplines == 1) {
-        const { arr, totalDocs } = subDisciplineRegexMatch(search, skip, perPage)
-        subDisciplineSearchResults = arr
-        totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
-    }
-    if (location == 1) {
-        const hint = {
-            country: country && country.length > 0 ? country : null,
-            state: state && state.length > 0 ? state : null
-        }
-        const { countries, states, cities, totalDocs } = locationRegexMatch(search, skip, perPage, hint)
-        countrySearchResults = countries
-        stateSearchResults = states
-        citySearchResults = cities
-        totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
-    }
+    const searchPattern = new RegExp(search.replace(/\s+/g, "|"), "i");
+    if (institutions == 1) queries.push(
+        (async () => {
+            const [regexResults, textResults, totalDocs] = await Promise.all([
+                institutionModel.find({ InstitutionName: { $regex: search, $options: "i" } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
+                institutionModel.find({ $text: { $search: search } }, "InstitutionName State District university IEH.exists").skip(skip).limit(perPage),
+                institutionModel.countDocuments({ InstitutionName: { $regex: search, $options: "i" } })
+            ]);
+            if (regexResults.length <= 3) {
+                institutionSearchResults = [...regexResults, ...textResults].reduce((acc, curr) => {
+                    if (!acc.find(item => item._id.equals(curr._id))) acc.push(curr);
+                    return acc;
+                }, []);
+                institutionSearchResults.sort((a, b) => a.InstitutionName.localeCompare(b.InstitutionName));
+            }
+            else institutionSearchResults = [...regexResults]
+            totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
+        })()
+    );
+    if (universities == 1) queries.push(
+        (async () => {
+            const countryFilter = country ? { "location.country": country } : {};
+            const uniKeyword = { $or: [{ name: { $regex: searchPattern, $options: "i" } }, { code: { $regex: searchPattern, $options: "i" } },], courses: { $gt: 0 }, ...countryFilter };
+            const [regexResults, textResults, totalDocs] = await Promise.all([universityModel.find(uniKeyword, "name location community logoSrc code").skip(skip).limit(perPage), universityModel.find({ $text: { $search: search } }, "name location community logoSrc code").skip(skip).limit(perPage), universityModel.countDocuments(uniKeyword)]);
+            if (regexResults.length <= 3) {
+                uniSearchResults = [...regexResults, ...textResults].reduce((acc, curr) => { if (!acc.find(item => item._id.equals(curr._id))) acc.push(curr); return acc; }, []);
+                uniSearchResults.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            else uniSearchResults = [...regexResults]
+            totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
+        })()
+    );
+    if (disciplines == 1) queries.push(
+        (async () => {
+            const { arr, totalDocs } = await disciplineRegexMatch(search, skip, perPage, custom);
+            disciplineSearchResults = arr;
+            totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
+        })()
+    );
+    if (subDisciplines == 1) queries.push(
+        (async () => {
+            const { arr, totalDocs } = await subDisciplineRegexMatch(search, skip, perPage, custom);
+            subDisciplineSearchResults = arr;
+            totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
+        })()
+    );
+    if (location == 1) queries.push(
+        (async () => {
+            const hint = {
+                country: country?.length > 0 ? country : null,
+                state: state?.length > 0 ? state : null
+            };
+            const { countries, states, cities, totalDocs } = await locationRegexMatch(search, skip, perPage, hint);
+            countrySearchResults = countries;
+            stateSearchResults = states;
+            citySearchResults = cities;
+            totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
+        })()
+    );
+    await Promise.all(queries);
     return ({ statusCode: 200, message: `search Result`, data: { universities: uniSearchResults, subDisciplines: subDisciplineSearchResults, disciplines: disciplineSearchResults, institutions: institutionSearchResults, country: countrySearchResults, state: stateSearchResults, city: citySearchResults, totalPages } });
 })
 export const requestCallBack = errorWrapper(async (req, res, next, session) => {
