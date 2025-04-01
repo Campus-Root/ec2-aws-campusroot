@@ -1,9 +1,8 @@
 import courseModel from "../models/Course.js";
-import { subDisciplineEnum, disciplineEnum, keywords } from "./enum.js"
+import { keywords } from "./enum.js"
 import { destinationList } from "./lists.js";
 export const disciplineRegexMatch = async (search, skip = 0, perPage = 5, custom) => {
     const regex = new RegExp(search, "i");
-
     const facetsPipeline = [{ $unwind: "$discipline" }, { $match: { discipline: regex } }, { $group: { _id: "$discipline" } }, { $facet: { results: [{ $project: { _id: 0, discipline: "$_id" } }], totalCount: [{ $count: "count" }] } }];
     if (custom) facetsPipeline.unshift({$match: { coursefinder_Name: { $exists: true } }})
     const results = await courseModel.aggregate(facetsPipeline);

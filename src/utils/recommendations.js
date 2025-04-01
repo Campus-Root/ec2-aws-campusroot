@@ -120,12 +120,12 @@ export const constructFilters = (filterData, testScores) => {
                         projections.coursefinder_Country = 1
                         break;
                     case 'Category':
-                        filter.coursefinder_CategoryNames = { $in: data };// get their indexes
-                        projections.coursefinder_CategoryNames = 1
+                        filter.discipline = { $in: data };// get their indexes
+                        projections.discipline = 1
                         break;
                     case 'SubCategory':
-                        filter.coursefinder_SubCategoryNames = { $in: data };
-                        projections.coursefinder_SubCategoryNames = 1
+                        filter.subDiscipline = { $in: data };
+                        projections.subDiscipline = 1
                         break;
                     // case 'StudyLevel':
                     //     filter.coursefinder_StudyLvl = { $in: data };
