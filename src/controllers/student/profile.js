@@ -8,6 +8,7 @@ import Handlebars from "handlebars";
 import { isValidObjectId } from "mongoose";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
+import courseModel from "../../models/Course.js"
 import institutionModel from "../../models/IndianColleges.js";
 import Joi from "joi";
 import { loginSchema, uploadInProfileSchema } from "../../schemas/student.js";
@@ -17,6 +18,7 @@ import { sendOTP } from "../../utils/sendSMS.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { studentModel } from "../../models/Student.js";
+import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
 export const profile = errorWrapper(async (req, res, next, session) => {
     await Promise.all([
         userModel.populate(req.user, [
@@ -154,7 +156,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (school) {
-        shouldRegenerateRecommendation = true
+        // shouldRegenerateRecommendation = true
         req.user.education.school = school;
         req.user.logs.push({
             action: `profile info updated`,
@@ -162,7 +164,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (plus2) {
-        shouldRegenerateRecommendation = true
+        // shouldRegenerateRecommendation = true
         req.user.education.plus2 = plus2;
         req.user.logs.push({
             action: `profile info updated`,
@@ -210,7 +212,6 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (financialAid) {
-        shouldRegenerateRecommendation = true
         req.user.financialAid = financialAid;
         req.user.logs.push({
             action: `profile info updated`,
@@ -218,15 +219,6 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (educationLoan) {
-        shouldRegenerateRecommendation = true
-        req.user.educationLoan = educationLoan;
-        req.user.logs.push({
-            action: `profile info updated`,
-            details: `educationLoan updated`
-        })
-    }
-    if (educationLoan) {
-        shouldRegenerateRecommendation = true
         req.user.educationLoan = educationLoan;
         req.user.logs.push({
             action: `profile info updated`,
@@ -234,7 +226,6 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (services) {
-        shouldRegenerateRecommendation = true
         req.user.services = services;
         req.user.logs.push({
             action: `profile info updated`,
@@ -242,7 +233,6 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (completedStudies) {
-        shouldRegenerateRecommendation = true
         req.user.completedStudies = completedStudies;
         req.user.logs.push({
             action: `profile info updated`,
@@ -250,15 +240,12 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         })
     }
     if (oneWindowExclusiveTestPrep) {
-        shouldRegenerateRecommendation = true
         req.user.oneWindowExclusiveTestPrep = oneWindowExclusiveTestPrep;
         req.user.logs.push({
             action: `profile info updated`,
             details: `oneWindowExclusiveTestPrep updated`
         })
     }
-
-    //  shouldRegenerateRecommendation=true
     await Promise.all([
         await req.user.save(),
         await userModel.populate(req.user, { path: "advisors.info", select: "firstName displayPicSrc lastName email role language about expertiseCountry" }),
@@ -288,6 +275,83 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
     const profile = { ...req.user._doc }
     delete profile.logs
     delete profile.activity;
+    if (shouldRegenerateRecommendation) {
+        let filterData = [], testScores = [], criteria = []
+        if (req.user.preference.country.length > 0) filterData.push({ type: "Country", data: req.user.preference.country })
+        if (req.user.preference.category.length > 0) filterData.push({ type: "Category", data: req.user.preference.category })
+        if (req.user.preference.subCategory.length > 0) filterData.push({ type: "SubCategory", data: req.user.preference.subCategory })
+        // if (req.user.preference.degree) filterData.push({ type: "StudyLevel", data: req.user.preference.degree })
+        criteria = filterData.map(ele => ({ label: ele.type, data: { editLink: "/preference", value: ele.data } }))
+        const testScoreMapping = {
+            "Graduate Record Examination": ["Total", "Quantitative Reasoning", "Verbal Reasoning"],
+            "Graduate Management Admission Test": ["Total", "Quantitative", "Verbal"],
+            "Test of English as a Foreign Language": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+            "International English Language Testing System": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+            "Duolingo English Test": ["Total"],
+            "Pearson Test of English": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+            "American College Testing": ["Total", "English", "Math", "Reading", "Science"]
+        };
+        Object.entries(testScoreMapping).forEach(([testName, descriptions]) => {
+            const test = req.user.tests.find(ele => ele.name === testName);
+            if (test && test.scores) {
+                const totalScore = test.scores.find(ele => ele.description === "Total");
+                let score = null;
+                score = (totalScore) ? totalScore.count : test.scores.reduce((acc, { description, count }) => descriptions.includes(description) ? acc + count : acc, 0);
+                if (score !== null && !isNaN(score)) {
+                    testScores.push({ testType: testName, overallScore: parseInt(score) });
+                    criteria.push({ label: testName, data: { editLink: "/test", value: parseInt(score) } })
+                }
+            }
+        });
+        const { backlogs, totalScore, maxScore } = req.user.education.underGraduation
+        if (totalScore && maxScore) {
+            testScores.push({ testType: "GPA", overallScore: parseFloat(totalScore), ugOutOf: parseFloat(maxScore) });
+            criteria.push({ label: "GPA", data: { editLink: "/education", value: parseFloat(totalScore) + " / " + parseFloat(maxScore) } })
+        }
+        if (backlogs) {
+            testScores.push({ testType: "Backlogs", overallScore: parseInt(backlogs) });
+            criteria.push({ label: "Backlogs", data: { editLink: "/education", value: parseInt(backlogs) } })
+        }
+        if (req.user.totalWorkExperience > 0) {
+            testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2) / 12) });
+            criteria.push({ label: "WorkExperience", data: { editLink: "/WorkExperience", value: parseInt(backlogs) } })
+        } else if (req.user.workExperience.length > 0) {
+            let totalWorkExperience = 0;
+            req.user.workExperience.forEach(experience => {
+                if (experience.startDate) {
+                    const startDate = new Date(experience.startDate);
+                    const endDate = experience.Ongoing ? new Date() : new Date(experience.endDate);
+                    if (!isNaN(startDate) && !isNaN(endDate) && startDate < endDate) {
+                        const years = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
+                        totalWorkExperience += years;
+                    }
+                }
+            });
+            testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2) / 12) });
+            criteria.push({ label: "WorkExperience", data: { editLink: "/WorkExperience", value: parseFloat(totalWorkExperience.toFixed(2) / 12) } })
+        }
+        if (req.user.publicationsLevel) {
+            testScores.push({ testType: "Publications", level: req.user.publicationsLevel || null });
+            criteria.push({ label: "Publications", data: { editLink: "/Publications", value: req.user.publicationsLevel || null } })
+        } else if (req.user.researchPapers.length > 0) {
+            let hasInternational = false, hasNational = false;
+            req.user.researchPapers.forEach(paper => {
+                if (paper.publicationsLevel === "International") hasInternational = true;
+                if (paper.publicationsLevel === "National") hasNational = true;
+            });
+            testScores.push({ testType: "Publications", level: hasInternational ? "International" : hasNational ? "National" : null });
+            criteria.push({ label: "Publications", data: { editLink: "/Publications", value: hasInternational ? "International" : hasNational ? "National" : null } })
+        }
+        const { filter, projections } = constructFilters(filterData, testScores);
+        let pipeline = [{ $match: filter }, { $project: projections }]
+        const programs = await courseModel.aggregate(pipeline);
+        req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
+        let recommendations = categorizePrograms(testScores, programs);
+        req.user.recommendations.criteria = criteria
+        req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
+        req.user.logs.push({ action: `recommendations Updated`, details: `recommendations${req.user.recommendations.data.length}` })
+        await req.user.save();
+    }
     return ({ statusCode: 200, message: `profile edited successfully`, data: profile });
 })
 export const uploadInProfile = errorWrapper(async (req, res, next, session) => {
