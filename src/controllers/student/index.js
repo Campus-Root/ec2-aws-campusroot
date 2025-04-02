@@ -17,7 +17,7 @@ import { packageModel } from "../../models/Package.js";
 import sendMail from "../../utils/sendEMAIL.js";
 import chatModel from "../../models/Chat.js";
 import { recycleBinModel } from "../../models/recycleBin.js";
-import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
+import { calculateMatchPercentage, categorizePrograms, constructFilters } from "../../utils/recommendations.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const generateRecommendations = errorWrapper(async (req, res, next, session) => {
   let filterData = [], testScores = [], criteria = []
@@ -113,6 +113,59 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
     req.user.recommendations.data.forEach(applyCurrencyConversion);
   }
   return ({ statusCode: 200, message: "Recommendations Generated", data: req.user.recommendations });
+})
+export const PercentMatch = errorWrapper(async (req, res, next) => {
+  const { courseId } = req.params
+  const program = await courseModel.findById(courseId, { _id: 1, coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1, coursefinder_WorkExp: 1, coursefinder_GreScore: 1, coursefinder_GmatScore: 1, coursefinder_backlog: 1, coursefinder_EntryRequirementUgOutOf4: 1, coursefinder_EntryRequirementUgOutOf5: 1, coursefinder_EntryRequirementUgOutOf7: 1, coursefinder_EntryRequirementUgOutOf10: 1, coursefinder_EntryRequirementUgOutOf100: 1 })
+  if (!program) return { statusCode: 400, message: "Invalid course", data: null }
+  // program and testScores
+  let testScores = []
+  const testScoreMapping = {
+    "Graduate Record Examination": ["Total", "Quantitative Reasoning", "Verbal Reasoning"],
+    "Graduate Management Admission Test": ["Total", "Quantitative", "Verbal"],
+    "Test of English as a Foreign Language": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+    "International English Language Testing System": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+    "Duolingo English Test": ["Total"],
+    "Pearson Test of English": ["Total", "Reading", "Listening", "Speaking", "Writing"],
+    "American College Testing": ["Total", "English", "Math", "Reading", "Science"]
+  };
+  Object.entries(testScoreMapping).forEach(([testName, descriptions]) => {
+    const test = req.user.tests.find(ele => ele.name === testName);
+    if (test && test.scores) {
+      const totalScore = test.scores.find(ele => ele.description === "Total");
+      let score = null;
+      score = (totalScore) ? totalScore.count : test.scores.reduce((acc, { description, count }) => descriptions.includes(description) ? acc + count : acc, 0);
+      if (score !== null && !isNaN(score)) testScores.push({ testType: testName, overallScore: parseInt(score) });
+    }
+  });
+  const { backlogs, totalScore, maxScore } = req.user.education.underGraduation
+  if (totalScore && maxScore) testScores.push({ testType: "GPA", overallScore: parseFloat(totalScore), ugOutOf: parseFloat(maxScore) });
+  if (backlogs) testScores.push({ testType: "Backlogs", overallScore: parseInt(backlogs) });
+  if (req.user.totalWorkExperience > 0) testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2) / 12) });
+  else if (req.user.workExperience.length > 0) {
+    let totalWorkExperience = 0;
+    req.user.workExperience.forEach(experience => {
+      if (experience.startDate) {
+        const startDate = new Date(experience.startDate);
+        const endDate = experience.Ongoing ? new Date() : new Date(experience.endDate);
+        if (!isNaN(startDate) && !isNaN(endDate) && startDate < endDate) {
+          const years = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
+          totalWorkExperience += years;
+        }
+      }
+    });
+    testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2) / 12) });
+  }
+  if (req.user.publicationsLevel) testScores.push({ testType: "Publications", level: req.user.publicationsLevel || null });
+  else if (req.user.researchPapers.length > 0) {
+    let hasInternational = false, hasNational = false;
+    req.user.researchPapers.forEach(paper => {
+      if (paper.publicationsLevel === "International") hasInternational = true;
+      if (paper.publicationsLevel === "National") hasNational = true;
+    });
+    testScores.push({ testType: "Publications", level: hasInternational ? "International" : hasNational ? "National" : null });
+  }
+  return { statusCode: 200, message: "Match percentage", data: { testScores, match: Number(calculateMatchPercentage(testScores, program)) } }
 })
 export const hideRecommendation = errorWrapper(async (req, res) => {
   const { recommendationId } = req.body

@@ -29,32 +29,34 @@ export const calculateMargin = (score, required, max, min) => {
 };
 export const calculateMatchPercentage = (testScores, program) => {
     let matchScore = 0, totalWeight = 0, bonus = 0;
+    const plainProgram = program.toObject(); // or program.toJSON()
     for (const ele of testScores) {
-        let margin, weight
+        let margin = 0, weight = 0
         switch (ele.testType) {
             case "GPA":
-                weight = program.coursefinder_weights?.GPA || 70
+                weight = plainProgram.coursefinder_weights?.GPA || 70
                 totalWeight += weight
-                matchScore += getMatchScoreFromGPA(ele.overallScore, Number(ele.ugOutOf), program) * weight;
+                matchScore += getMatchScoreFromGPA(ele.overallScore, Number(ele.ugOutOf), plainProgram) * weight;
                 break;
             case "Graduate Management Admission Test":
-                if (program.coursefinder_GmatScore !== null) {
-                    weight = program.coursefinder_weights?.GMAT || 30
+                if (plainProgram.coursefinder_GmatScore !== null) {
+                    weight = plainProgram.coursefinder_weights?.GMAT || 30
                     totalWeight += weight
-                    margin = calculateMargin(ele.overallScore, program.coursefinder_GmatScore, 805, 205)
+                    margin = calculateMargin(ele.overallScore, plainProgram.coursefinder_GmatScore, 805, 205)
                     matchScore += margin * weight;
                 }
                 break;
             case "Graduate Record Examination":
-                if (program?.coursefinder_GreScore !== undefined && program.coursefinder_GreScore !== null) {
+                if (plainProgram?.coursefinder_GreScore !== undefined && plainProgram.coursefinder_GreScore !== null) {
                     weight = program.coursefinder_weights?.GRE || 30
                     totalWeight += weight
-                    margin = calculateMargin(ele.overallScore, program.coursefinder_GreScore, 340, 260)
+                    margin = calculateMargin(ele.overallScore, plainProgram.coursefinder_GreScore, 340, 260)
                     matchScore += margin * weight;
                 }
                 break;
             case "WorkExperience":
-                if (program?.coursefinder_WorkExp !== undefined && program.coursefinder_WorkExp !== null) bonus += Math.min((ele.overallScore - program.coursefinder_WorkExp) * 3, 15); break;
+                if (plainProgram?.coursefinder_WorkExp !== undefined && plainProgram.coursefinder_WorkExp !== null) bonus += Math.min((ele.overallScore - plainProgram.coursefinder_WorkExp) * 3, 15);
+                break;
             case "Publications":
                 switch (ele.level) {
                     case "National":
@@ -66,8 +68,8 @@ export const calculateMatchPercentage = (testScores, program) => {
                 }
                 break;
             case "Backlogs":
-                if (program?.coursefinder_backlog !== undefined && program.coursefinder_backlog !== null) {
-                    bonus += Math.min(15, (program.coursefinder_backlog - ele.overallScore) * 2)
+                if (plainProgram?.coursefinder_backlog !== undefined && plainProgram.coursefinder_backlog !== null) {
+                    bonus += Math.min(15, (plainProgram.coursefinder_backlog - ele.overallScore) * 2)
                     weight = program.coursefinder_weights?.Backlogs || 30
                     totalWeight += weight
                 }

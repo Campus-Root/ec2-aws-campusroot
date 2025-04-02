@@ -5,7 +5,7 @@ import { authMiddleware, isStudent } from "../middleware/auth.js";
 import { checkDisposableEmail, isPaid, validatePayment, validateProducts } from "../middleware/validations.js";
 import { bookSlot, getEvents, modifySlot } from "../controllers/student/slots.js";
 import { editReview, postReview } from "../controllers/student/review.js";
-import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation, deleteData, deleteAccount, blockUser } from "../controllers/student/index.js";
+import { dashboard, allStudents, downloadDocument, generateRecommendations, singleStudent, hideRecommendation, deleteData, deleteAccount, blockUser, PercentMatch } from "../controllers/student/index.js";
 import { addPhoneOrEmail, deleteUploadedInProfile, editProfile, IEH, profile, requestCounsellor, uploadInProfile, verifyStudentOTP } from "../controllers/student/profile.js";
 import { wishList, deleteUploadedFromApplication, forceForwardApply, removeForceApply, requestCancellation, checkout, uploadInApplication, paymentVerification, orderInfo, Cart, reCheckout, paySummary, addingProductsToOrder } from "../controllers/student/application.js";
 const router = express.Router();
@@ -23,6 +23,7 @@ router.get("/events/:teamMemberId", authMiddleware, isStudent, getEvents)
 router.post("/book-slot/:teamMemberId", authMiddleware, isStudent, bookSlot)
 router.post("/modify-slot", authMiddleware, isStudent, modifySlot)
 router.put("/generate-recommendations", authMiddleware, isStudent, generateRecommendations);
+router.get("/match/:courseId", authMiddleware, isStudent, PercentMatch);
 router.put("/hide-recommendation", authMiddleware, isStudent, hideRecommendation);
 router.post("/wish-list", authMiddleware, isStudent, wishList);
 router.post("/cart", authMiddleware, isStudent, Cart)
