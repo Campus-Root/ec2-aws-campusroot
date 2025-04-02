@@ -498,7 +498,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
     if (universities == 1) queries.push(
         (async () => {
             const countryFilter = country ? { "location.country": country } : {};
-            const uniKeyword = { $or: [{ name: { $regex: searchPattern, $options: "i" } }, { code: { $regex: searchPattern, $options: "i" } },], courses: { $gt: 0 }, ...countryFilter };
+            const uniKeyword = { $or: [{ name: { $regex: new RegExp(searchPattern, "i") } }, { code: { $regex: new RegExp(searchPattern, "i") } }], courses: { $gt: 0 }, ...countryFilter };
             const [regexResults, textResults, totalDocs] = await Promise.all([universityModel.find(uniKeyword, "name location community logoSrc code").skip(skip).limit(perPage), universityModel.find({ $text: { $search: search } }, "name location community logoSrc code").skip(skip).limit(perPage), universityModel.countDocuments(uniKeyword)]);
             if (regexResults.length <= 3) {
                 uniSearchResults = [...regexResults, ...textResults].reduce((acc, curr) => { if (!acc.find(item => item._id.equals(curr._id))) acc.push(curr); return acc; }, []);
