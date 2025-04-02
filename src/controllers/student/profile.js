@@ -277,9 +277,9 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
     delete profile.activity;
     if (shouldRegenerateRecommendation) {
         let filterData = [], testScores = [], criteria = []
-        if (req.user.preference.country.length > 0) filterData.push({ type: "Country", data: req.user.preference.country })
-        if (req.user.preference.category.length > 0) filterData.push({ type: "Category", data: req.user.preference.category })
-        if (req.user.preference.subCategory.length > 0) filterData.push({ type: "SubCategory", data: req.user.preference.subCategory })
+        if (req.user.preference?.country?.length > 0) filterData.push({ type: "Country", data: req.user.preference.country })
+        if (req.user.preference?.category?.length > 0) filterData.push({ type: "Category", data: req.user.preference.category })
+        if (req.user.preference?.subCategory?.length > 0) filterData.push({ type: "SubCategory", data: req.user.preference.subCategory })
         // if (req.user.preference.degree) filterData.push({ type: "StudyLevel", data: req.user.preference.degree })
         criteria = filterData.map(ele => ({ label: ele.type, data: { editLink: "/preference", value: ele.data } }))
         const testScoreMapping = {
@@ -315,7 +315,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         if (req.user.totalWorkExperience > 0) {
             testScores.push({ testType: "WorkExperience", overallScore: parseFloat(totalWorkExperience.toFixed(2) / 12) });
             criteria.push({ label: "WorkExperience", data: { editLink: "/WorkExperience", value: parseInt(backlogs) } })
-        } else if (req.user.workExperience.length > 0) {
+        } else if (req.user.workExperience?.length > 0) {
             let totalWorkExperience = 0;
             req.user.workExperience.forEach(experience => {
                 if (experience.startDate) {
@@ -333,7 +333,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         if (req.user.publicationsLevel) {
             testScores.push({ testType: "Publications", level: req.user.publicationsLevel || null });
             criteria.push({ label: "Publications", data: { editLink: "/Publications", value: req.user.publicationsLevel || null } })
-        } else if (req.user.researchPapers.length > 0) {
+        } else if (req.user.researchPapers?.length > 0) {
             let hasInternational = false, hasNational = false;
             req.user.researchPapers.forEach(paper => {
                 if (paper.publicationsLevel === "International") hasInternational = true;
