@@ -29,7 +29,7 @@ export const calculateMargin = (score, required, max, min) => {
 };
 export const calculateMatchPercentage = (testScores, program) => {
     let matchScore = 0, totalWeight = 0, bonus = 0;
-    const plainProgram = program.toObject(); // or program.toJSON()
+    const plainProgram = program // or program.toJSON()
     for (const ele of testScores) {
         let margin = 0, weight = 0
         switch (ele.testType) {
