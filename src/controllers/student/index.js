@@ -24,7 +24,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
   if (req.user.preference.country.length > 0) filterData.push({ type: "Country", data: req.user.preference.country })
   if (req.user.preference.category.length > 0) filterData.push({ type: "Category", data: req.user.preference.category })
   if (req.user.preference.subCategory.length > 0) filterData.push({ type: "SubCategory", data: req.user.preference.subCategory })
-  // if (req.user.preference.degree) filterData.push({ type: "StudyLevel", data: req.user.preference.degree })
+  if (req.user.preference.degree) filterData.push({ type: "StudyLevel", data: req.user.preference.degree })
   criteria = filterData.map(ele => ({ label: ele.type, data: { editLink: "/preference", value: ele.data } }))
   const testScoreMapping = {
     "Graduate Record Examination": ["Total", "Quantitative Reasoning", "Verbal Reasoning"],
