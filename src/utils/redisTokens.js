@@ -51,8 +51,19 @@ export const verifyRefreshToken = async (refreshToken, source) => {
 };
 export const verifyAccessToken = async (accessToken, source) => {
     try {
-        const decoded = jwt.verify(accessToken, ACCESS_SECRET);
-        const storedAccessToken = await redisClient.get(`accessToken:${decoded.id}:${source}`);
+        let decoded
+        try {
+            decoded = jwt.verify(accessToken, ACCESS_SECRET);
+        }
+        catch (error) {
+            console.log(error);
+        }
+        let storedAccessToken
+        try {
+            storedAccessToken = await redisClient.get(`accessToken:${decoded.id}:${source}`);
+        } catch (error) {
+            console.log(error);
+        }
         if (storedAccessToken !== accessToken) return { success: false, message: 'Invalid Access Token', decoded: null };
         return { success: true, message: "Valid Access Token", decoded };
     } catch (error) {
