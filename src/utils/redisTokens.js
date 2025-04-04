@@ -18,11 +18,20 @@ export const verifyTokens = async (source, accessToken, refreshToken) => {
     try {
         // verify access token
         let accessResult = await verifyAccessToken(accessToken, source)
-        if (accessResult.success && accessResult.message === "Valid Access Token") return { success: true, message: accessResult.message, decoded: accessResult.decoded, accessToken: null, refreshToken: null };
-        if (!accessResult.success && accessResult.message !== "jwt expired") return { success: false, message: accessResult.message, decoded: null, accessToken: null, refreshToken: null };
+        if (accessResult.success && accessResult.message === "Valid Access Token") {
+            console.log("access token verified");
+            return { success: true, message: accessResult.message, decoded: accessResult.decoded, accessToken: null, refreshToken: null };
+        }
+        if (!accessResult.success && accessResult.message !== "jwt expired") {
+            console.log("access token failed, but not expired");
+            return { success: false, message: accessResult.message, decoded: null, accessToken: null, refreshToken: null };
+        }
         // verify refresh token when access token expired
         const refreshResult = await verifyRefreshToken(refreshToken, source)
-        if (refreshResult.success && refreshResult.message === "Valid Refresh Token") return { success: true, message: refreshResult.message, decoded: refreshResult.decoded, accessToken: refreshResult.newAccessToken, refreshToken: refreshResult.newRefreshToken };
+        if (refreshResult.success && refreshResult.message === "Valid Refresh Token") {
+            console.log("refresh token verified");
+            return { success: true, message: refreshResult.message, decoded: refreshResult.decoded, accessToken: refreshResult.newAccessToken, refreshToken: refreshResult.newRefreshToken };
+        }
         return { success: false, message: refreshResult.message, decoded: null, accessToken: null, refreshToken: null }
     } catch (error) {
         console.log(error);
