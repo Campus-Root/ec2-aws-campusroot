@@ -24,6 +24,7 @@ export const verifyTokens = async (source, accessToken, refreshToken) => {
         }
         if (!accessResult.success && accessResult.message !== "jwt expired") {
             console.log("access token failed, but not expired");
+            console.log("reason: ", accessResult.message);
             return { success: false, message: accessResult.message, decoded: null, accessToken: null, refreshToken: null };
         }
         // verify refresh token when access token expired
