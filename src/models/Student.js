@@ -44,7 +44,7 @@ const Student = mongoose.Schema(
             validPermit: String,// enum yes no and processing,
             visaRejectedDetails: String
         },
-        
+
         completedStudies: { type: Boolean, default: false },
         oneWindowExclusiveTestPrep: { type: Boolean, default: false },
         isPlanningToTakeAcademicTest: { type: Boolean, default: false },
@@ -313,7 +313,7 @@ const Student = mongoose.Schema(
             currency: String,
             language: String
         },
-    }
+    }, { timestamps: true }
 );
 
 

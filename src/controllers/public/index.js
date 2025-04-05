@@ -186,7 +186,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
     switch (req.params.name) {
         case "universities":
-            sort.globalRankingPosition = 1
+            sort.globalRankingPosition = 1,
+            sort._id = 1
             sort.courses = -1
             req.body.filterData.forEach(ele => {
                 switch (ele.type) {
@@ -353,7 +354,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 }
                             },
                             {
-                                $sort: { globalRankingPosition: 1 } // Sort by ranking
+                                $sort: { globalRankingPosition: 1, _id: 1 } // Sort by ranking
                             },
                             { $skip: skip }, // Pagination skip
                             { $limit: perPage }, // Pagination limit
@@ -373,7 +374,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 ...filter
                             }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements elite featured globalRankingPosition AdmissionsRequirements.LanguageRequirements")
                             .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
-                            .sort({ globalRankingPosition: 1 })
+                            .sort({ globalRankingPosition: 1, _id: 1 })
                             .skip(skip)
                             .limit(perPage),
                         courseModel.countDocuments({
