@@ -86,13 +86,17 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
     testScores.push({ testType: "Publications", level: hasInternational ? "International" : hasNational ? "National" : null });
     criteria.push({ label: "Publications", data: { editLink: "/Publications", value: hasInternational ? "International" : hasNational ? "National" : null } })
   }
-  const { filter, projections } = constructFilters(filterData, testScores);
+  let counsellorRecommendedPrograms = [], notInterestedPrograms = []
+  req.user.recommendations.data.forEach(ele => {
+    if (ele.counsellorRecommended) counsellorRecommendedPrograms.push(ele)
+    else if (ele.notInterested) notInterestedPrograms.push(ele)
+  })
+  const { filter, projections } = constructFilters(filterData, testScores, [...counsellorRecommendedPrograms, ...notInterestedPrograms]);
   let pipeline = [{ $match: filter }, { $project: projections }]
   const programs = await courseModel.aggregate(pipeline);
-  req.user.recommendations.data = req.user.recommendations.data.filter(ele => ele.counsellorRecommended)
   let recommendations = categorizePrograms(testScores, programs);
   req.user.recommendations.criteria = criteria
-  req.user.recommendations.data = [...req.user.recommendations.data, ...recommendations]
+  req.user.recommendations.data = [...notInterestedPrograms, ...counsellorRecommendedPrograms, ...recommendations]
   req.user.logs.push({ action: `recommendations Generated`, details: `recommendations${req.user.recommendations.data.length}` })
   await req.user.save();
   await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate" })

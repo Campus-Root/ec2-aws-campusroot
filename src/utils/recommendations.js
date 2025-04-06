@@ -111,8 +111,8 @@ export const categorizePrograms = (testScores, programs, mode = "Student") => {
     });
     return results;
 };
-export const constructFilters = (filterData, testScores) => {
-    const filter = { coursefinder_WebomatricsNationalRanking: { $lte: 2147483647 }, "$or": [], coursefinder_IsOnlineCourse: false, studyMode: { $ne: ["Online"] } }, projections = { _id: 1, coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1 }
+export const constructFilters = (filterData, testScores, redundantCourses) => {
+    const filter = { coursefinder_WebomatricsNationalRanking: { $lte: 2147483647 }, "$or": [], coursefinder_IsOnlineCourse: false, studyMode: { $ne: ["Online"] }, _id: { $nin: redundantCourses.map(ele => ele.course) } }, projections = { _id: 1, coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
