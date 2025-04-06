@@ -313,7 +313,7 @@ const Student = mongoose.Schema(
             currency: String,
             language: String
         },
-    }, { timestamps: true }
+    }
 );
 
 
