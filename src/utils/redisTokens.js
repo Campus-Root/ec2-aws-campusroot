@@ -4,6 +4,7 @@ import { getRedisClient } from "./dbConnection.js";
 const redisClient = await getRedisClient();
 const { ACCESS_SECRET, REFRESH_SECRET } = process.env
 export const generateTokens = async (userId, source, DeviceToken) => {
+    console.log("date :", new Date().toString());
     const newAccessToken = jwt.sign({ id: userId }, ACCESS_SECRET, { expiresIn: '1h' });
     const newRefreshToken = jwt.sign({ id: userId }, REFRESH_SECRET, { expiresIn: '30d' });
     await redisClient.set(`accessToken:${userId}:${source}`, newAccessToken, { 'EX': 3600 }); // 1 hour
