@@ -107,7 +107,7 @@ export const filters = errorWrapper(async (req, res, next) => {
             if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("subDiscipline")) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            if (project.includes("subDiscipline")) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { _id: 1 } }]
             if (project.includes("elite")) facets.elite = [{ $group: { _id: "$elite", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             // if (project.includes("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
