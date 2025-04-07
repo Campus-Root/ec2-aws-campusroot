@@ -19,6 +19,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { studentModel } from "../../models/Student.js";
 import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
+import universityModel from "../../models/University.js";
 export const profile = errorWrapper(async (req, res, next, session) => {
     await Promise.all([
         userModel.populate(req.user, [
