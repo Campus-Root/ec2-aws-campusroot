@@ -93,8 +93,8 @@ export const filters = errorWrapper(async (req, res, next) => {
                     case "studyLevel":
                         filter.studyLevel = { $in: ele.data };
                         break;
-                    case "elite":
-                        filter.elite = { $in: ele.data };
+                    case "featured":
+                        filter.featured = { $in: ele.data };
                         break;
                     default:
                         break;
@@ -102,13 +102,13 @@ export const filters = errorWrapper(async (req, res, next) => {
 
 
             });
-            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "elite", "featured", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
+            if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "featured", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("subDiscipline")) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { _id: 1 } }]
-            if (project.includes("elite")) facets.elite = [{ $group: { _id: "$elite", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            if (project.includes("featured")) facets.featured = [{ $group: { _id: "$featured", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             // if (project.includes("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("studyMode")) facets.studyMode = [{ $unwind: "$studyMode" }, { $match: { studyMode: { $nin: [null, "Online"] } } }, { $group: { _id: "$studyMode", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
@@ -348,7 +348,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                     currency: 1,
                                     "stemDetails.stem": 1,
                                     "AdmissionsRequirements.AcademicRequirements": 1,
-                                    elite: 1,
+                                    featured: 1,
                                     globalRankingPosition: 1,
                                     "AdmissionsRequirements.LanguageRequirements": 1
                                 }
@@ -372,7 +372,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             .find({
                                 multipleLocations: { $exists: false },
                                 ...filter
-                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements elite featured globalRankingPosition AdmissionsRequirements.LanguageRequirements")
+                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements featured globalRankingPosition AdmissionsRequirements.LanguageRequirements")
                             .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
                             .sort({ globalRankingPosition: 1, _id: 1 })
                             .skip(skip)
@@ -772,7 +772,6 @@ export const getRecommendations = async (req, res) => {
 //                         currency: 1,
 //                         "stemDetails.stem": 1,
 //                         "AdmissionsRequirements.AcademicRequirements": 1,
-//                         elite: 1,
 //                         globalRankingPosition: 1,
 //                         "AdmissionsRequirements.LanguageRequirements": 1
 //                     }
