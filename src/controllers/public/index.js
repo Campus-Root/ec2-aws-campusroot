@@ -187,7 +187,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     switch (req.params.name) {
         case "universities":
             sort.globalRankingPosition = 1,
-            sort._id = 1
+                sort._id = 1
             sort.courses = -1
             req.body.filterData.forEach(ele => {
                 switch (ele.type) {
@@ -277,6 +277,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         break;
                     case "type":
                         filter.type = ele.data[0];
+                        break;
+                    case "featured":
+                        filter.featured = ele.data[0];
                         break;
                     case "name":
                         let vector = await stringToEmbedding(ele.data) // extract content from db  such as plot and courseLink 
