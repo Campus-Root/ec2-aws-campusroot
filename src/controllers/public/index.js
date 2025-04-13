@@ -353,7 +353,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                     "AdmissionsRequirements.AcademicRequirements": 1,
                                     featured: 1,
                                     globalRankingPosition: 1,
-                                    "AdmissionsRequirements.LanguageRequirements": 1
+                                    "AdmissionsRequirements.LanguageRequirements": 1,
+                                    loanDetails:1
                                 }
                             },
                             {
@@ -375,7 +376,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             .find({
                                 multipleLocations: { $exists: false },
                                 ...filter
-                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements featured globalRankingPosition AdmissionsRequirements.LanguageRequirements")
+                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements featured globalRankingPosition AdmissionsRequirements.LanguageRequirements loanDetails")
                             .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
                             .sort({ globalRankingPosition: 1, _id: 1 })
                             .skip(skip)
