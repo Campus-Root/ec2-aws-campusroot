@@ -83,6 +83,7 @@ const courseSchema = mongoose.Schema(
             stem: { type: Boolean }, // hc  hide 
             stemLink: { type: String }, // hc  hide 
         },
+        loanDetails: { loan: { type: Boolean, default: false } },
         pathway: { type: Boolean }, // hc hide
         language: { type: String },
         courseType: { type: String },
