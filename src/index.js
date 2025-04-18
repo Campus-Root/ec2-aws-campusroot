@@ -24,9 +24,9 @@ export const cookieOptions = {
 	secure: true,
 	httpOnly: true,
 	sameSite: 'strict',
-	expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365) 
+	expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365)
 }
-const whitelist = ["http://localhost:5500", "null", "http://127.0.0.1:5500", "https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000", "https://d3mjeyzjhheqlz.cloudfront.net","https://onewindow.co"];
+const whitelist = ["http://localhost:5500", "null", "http://127.0.0.1:5500", "https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000", "https://d3mjeyzjhheqlz.cloudfront.net", "https://onewindow.co"];
 app.set('trust proxy', 1) // trust first proxy
 const corsOptions = {
 	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
@@ -43,27 +43,48 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(helmet.contentSecurityPolicy({
-	directives: {
-		defaultSrc: ["'self'"],
-		imgSrc: [
-			"'self'",
-			"data:",
-			"https://lh3.googleusercontent.com",
-			"https://res.cloudinary.com",
-			"https://icon-library.com/",
-			"https://flagcdn.com/",
-			"https://workdrive.zoho.in",
-			"https://previewengine-accl.zohopublic.in",
-			"https://onewindow.co", // Add this domain
-			"blob:"
-		],
-		connectSrc: ["'self'", "https://ipapi.co", "https://campusroot.com", "blob:"],
-		scriptSrc: ["'self'", "https://accounts.google.com", "https://cdnjs.cloudflare.com"],
-		workerSrc: ["'self'", "blob:"],
-		frameSrc: ["'self'", "https://accounts.google.com", "https://workdrive.zoho.in"], // Allow Zoho WorkDrive to be framed
-	},
-}));
+app.use(
+	helmet.contentSecurityPolicy({
+		useDefaults: true,
+		reportOnly: true,
+		directives: {
+			defaultSrc: ["'self'"],
+			imgSrc: [
+				"'self'",
+				"data:",
+				"https://lh3.googleusercontent.com",
+				"https://res.cloudinary.com",
+				"https://icon-library.com",
+				"https://flagcdn.com",
+				"https://workdrive.zoho.in",
+				"https://previewengine-accl.zohopublic.in",
+				"https://onewindow.co",
+				"blob:"
+			],
+			connectSrc: [
+				"'self'",
+				"https://ipapi.co",
+				"https://campusroot.com",
+				"blob:"
+			],
+			scriptSrc: [
+				"'self'",
+				"https://accounts.google.com",
+				"https://cdnjs.cloudflare.com",
+				"https://checkout.razorpay.com"
+			],
+			workerSrc: [
+				"'self'",
+				"blob:"
+			],
+			frameSrc: [
+				"'self'",
+				"https://accounts.google.com",
+				"https://workdrive.zoho.in"
+			]
+		},
+	})
+);
 
 app.use(helmet.frameguard({ action: 'sameorigin' }));
 app.use(helmet.noSniff());
