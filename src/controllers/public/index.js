@@ -293,6 +293,27 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             }
                         });
                         break;
+                    case "TOEFL":
+                        filter.TOEFL = { $in: ele.data };
+                        break;
+                    case "PTE":
+                        filter.PTE = { $in: ele.data };
+                        break;
+                    case "IELTS":
+                        filter.IELTS = { $in: ele.data };
+                        break;
+                    case "Duolingo":
+                        filter.Duolingo = { $in: ele.data };
+                        break;
+                    case "GMAT":
+                        filter.GMAT = { $in: ele.data };
+                        break;
+                    case "GPA":
+                        filter.GPA = { $in: ele.data };
+                        break;
+                    case "GRE":
+                        filter.GRE = { $in: ele.data };
+                        break;
                     // Add cases for other filters
                     default:
                         break;
@@ -354,7 +375,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                     featured: 1,
                                     globalRankingPosition: 1,
                                     "AdmissionsRequirements.LanguageRequirements": 1,
-                                    loanDetails:1
+                                    loanDetails: 1
                                 }
                             },
                             {
