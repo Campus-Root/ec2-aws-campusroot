@@ -59,10 +59,10 @@ export const filters = errorWrapper(async (req, res, next) => {
                         filter["location.state"] = { $in: ele.data };
                         stateSelected = true;
                         break;
-                    case "discipline":
-                        filter.discipline = { $in: ele.data };
-                        disciplineSelected = true;
-                        break;
+                    // case "discipline":
+                    //     filter.discipline = { $in: ele.data };
+                    //     disciplineSelected = true;
+                    //     break;
                     case "TOEFL":
                         filter.TOEFL = { $in: ele.data };
                         break;
@@ -106,7 +106,7 @@ export const filters = errorWrapper(async (req, res, next) => {
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            // if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("subDiscipline")) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { _id: 1 } }]
             if (project.includes("featured")) facets.featured = [{ $group: { _id: "$featured", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
