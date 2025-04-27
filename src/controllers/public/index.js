@@ -97,7 +97,7 @@ export const filters = errorWrapper(async (req, res, next) => {
                         filter.featured = { $in: ele.data };
                         break;
                     case "STEM":
-                        filter.stemDetails.stem = { $in: ele.data };
+                        filter["stemDetails.stem"] = { $in: ele.data };
                         break;
                     case "budget":
                         let lowerLimit = ele.data[0], upperLimit = ele.data[1]
@@ -106,7 +106,7 @@ export const filters = errorWrapper(async (req, res, next) => {
                             lowerLimit = costConversion(lowerLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
                             upperLimit = costConversion(upperLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
                         }
-                        filter.budget.budgetAmount = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
+                        filter["budget.budgetAmount"] = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
                         break;
                     default:
                         break;
@@ -325,7 +325,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         filter.GRE = { $in: ele.data };
                         break;
                     case "STEM":
-                        filter.stemDetails.stem = { $in: ele.data };
+                        filter["stemDetails.stem"] = { $in: ele.data };
                         break;
                     case "budget":
                         let lowerLimit = ele.data[0], upperLimit = ele.data[1]
@@ -333,7 +333,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             lowerLimit = costConversion(lowerLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
                             upperLimit = costConversion(upperLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
                         }
-                        filter.budget.budgetAmount = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
+                        filter["budget.budgetAmount"] = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
                         break;
                     // Add cases for other filters
                     default:
@@ -396,7 +396,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                     featured: 1,
                                     globalRankingPosition: 1,
                                     "AdmissionsRequirements.LanguageRequirements": 1,
-                                    loanDetails: 1
+                                    loanDetails: 1,
+                                    budget: 1
                                 }
                             },
                             {
@@ -418,7 +419,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             .find({
                                 multipleLocations: { $exists: false },
                                 ...filter
-                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements featured globalRankingPosition AdmissionsRequirements.LanguageRequirements loanDetails")
+                            }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements featured globalRankingPosition AdmissionsRequirements.LanguageRequirements loanDetails budget")
                             .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
                             .sort({ globalRankingPosition: 1, _id: 1 })
                             .skip(skip)
