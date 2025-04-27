@@ -46,7 +46,7 @@ export const filters = errorWrapper(async (req, res, next) => {
         case "courses":
             filter.university = { $exists: true }
             filter.multipleLocations = { $exists: false }
-            filterData.forEach(ele => {
+            filterData.forEach(async (ele) => {
                 switch (ele.type) {
                     case "country":
                         filter["location.country"] = { $in: ele.data };
@@ -96,11 +96,21 @@ export const filters = errorWrapper(async (req, res, next) => {
                     case "featured":
                         filter.featured = { $in: ele.data };
                         break;
+                    case "STEM":
+                        filter.stemDetails.stem = { $in: ele.data };
+                        break;
+                    case "budget":
+                        let lowerLimit = ele.data[0], upperLimit = ele.data[1]
+                        const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
+                        if (req.body.currency !== "USD") {
+                            lowerLimit = costConversion(lowerLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
+                            upperLimit = costConversion(upperLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
+                        }
+                        filter.budget.budgetAmount = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
+                        break;
                     default:
                         break;
                 }
-
-
             });
             if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "featured", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic"]
             if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
@@ -313,6 +323,17 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         break;
                     case "GRE":
                         filter.GRE = { $in: ele.data };
+                        break;
+                    case "STEM":
+                        filter.stemDetails.stem = { $in: ele.data };
+                        break;
+                    case "budget":
+                        let lowerLimit = ele.data[0], upperLimit = ele.data[1]
+                        if (req.body.currency !== "USD") {
+                            lowerLimit = costConversion(lowerLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
+                            upperLimit = costConversion(upperLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
+                        }
+                        filter.budget.budgetAmount = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
                         break;
                     // Add cases for other filters
                     default:

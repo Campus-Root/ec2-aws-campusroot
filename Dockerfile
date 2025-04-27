@@ -1,25 +1,21 @@
+# Use Node.js LTS version
+FROM node:18-alpine
 
-# Use an official Node.js runtime as a parent image
-FROM node:22
-
-# Set the working directory in the container
-RUN mkdir /opt/app
-WORKDIR /opt/app
-
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+# Create app directory
+WORKDIR /usr/src/app
 
 # Install app dependencies
-RUN npm install 
+COPY package*.json ./
+RUN npm install
 
-# Copy the rest of the application code
-COPY . ./
+# Bundle app source
+COPY . .
 
-# Install PM2 globally
-RUN npm i pm2@latest -g
+# Expose the port on which your application runs
+EXPOSE 1239
 
-# Expose the port on which your application runs (adjust if needed)
-EXPOSE 1234
+# Set environment variables
+ENV NODE_ENV=production
 
-# Start the application using PM2
-CMD ["pm2-runtime", "src/index.js"]
+# Start the application
+CMD ["npm", "start"]
