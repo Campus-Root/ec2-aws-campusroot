@@ -183,7 +183,7 @@ export const filters = errorWrapper(async (req, res, next) => {
                 ]
             }
             if (project.includes("stem")) facets.stem = [{ $group: { _id: "$stemDetails.stem", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("ApplicationFeeWaver")) facets.waver = [{ $group: { _id: "$applicationDetails.applicationFeeWaver", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            if (project.includes("ApplicationFeeWaver")) facets.waver = [{ $group: { _id: "$applicationDetails.applicationFeeWaiver", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
             break;
         default:
@@ -329,7 +329,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         filter["stemDetails.stem"] = { $in: ele.data };
                         break;
                     case "waver":
-                        filter["applicationDetails.applicationFeeWaver"] = { $in: ele.data };
+                        filter["applicationDetails.applicationFeeWaiver"] = { $in: ele.data };
                         break;
                     case "budget":
                         let lowerLimit = ele.data[0], upperLimit = ele.data[1]
