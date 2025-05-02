@@ -182,8 +182,8 @@ export const filters = errorWrapper(async (req, res, next) => {
                     { $sort: { count: -1 } }
                 ]
             }
-            if (project.includes("stem")) facets.stem = [{ $group: { _id: "$stemDetails.stem", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("ApplicationFeeWaver")) facets.waiver = [{ $group: { _id: "$applicationDetails.applicationFeeWaiver", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            // if (project.includes("stem")) facets.stem = [{ $group: { _id: "$stemDetails.stem", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            // if (project.includes("ApplicationFeeWaver")) facets.waiver = [{ $group: { _id: "$applicationDetails.applicationFeeWaiver", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
             break;
         default:
