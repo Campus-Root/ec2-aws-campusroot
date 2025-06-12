@@ -97,6 +97,5 @@ app.use("/webhook/v1", webhookRouter)
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
-
 const port = process.env.PORT
 app.listen(port, () => console.log("Server Running on " + `${port}`));
