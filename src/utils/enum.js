@@ -1,4 +1,6 @@
 export const TestNamesEnum = {
+    PET: "Preliminary English Test",
+    SAT: "Scholastic Assessment Test",
     GRE: "Graduate Record Examination",
     GMAT: "Graduate Management Admission Test",
     TOEFL: "Test of English as a Foreign Language",
