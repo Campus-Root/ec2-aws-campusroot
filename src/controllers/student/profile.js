@@ -22,6 +22,7 @@ import { categorizePrograms, constructFilters } from "../../utils/recommendation
 import universityModel from "../../models/University.js";
 import exchangeModel from "../../models/ExchangeRates.js";
 import { costConversion } from "../../utils/currencyConversion.js";
+import { currencySymbols } from "../../utils/enum.js";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const profile = errorWrapper(async (req, res, next, session) => {
     await Promise.all([
