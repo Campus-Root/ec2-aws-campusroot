@@ -852,3 +852,101 @@ export const getRecommendations = async (req, res) => {
 //     }
 //     if (req.body.filterData.length == 0) courses = courses.sort(() => Math.random() - 0.5)
 //     return ({ statusCode: 200, message: `list of all courses`, data: { list: courses, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
+
+
+
+// const lead = {
+//     "Mobile": "+918096177562",
+//     // primary  
+//     "Full_Name": "SONTE VENKATRAMANA",
+//     "First_Name": null,
+//     "Last_Name": "SONTE VENKATRAMANA",
+//     "Country1": null,
+//     "Destination_School": null,
+//     "Target_Branch": null,
+//     "Preferred_Contact_Time": null,
+//     "Interest_in_studying_abroad": null,
+//     "Test_Preference_I": null,
+//     "Test_Preference_II": null,
+//     "Intake": null,
+
+
+//     // personal
+//     "Salutation": null,
+//     "Gender": null,
+//     "Native_City": null,
+//     "Parent_Mobile": null,
+//     "Email": null,
+//     "Whatsapp_Number": null,
+//     "Student_Email_for_Referral": null,
+//     "Phone": null,
+//     "Secondary_Email": null,
+//     "Message": null,
+//     "Email_Opt_Out": false,
+//     "Unsubscribed_Mode": null,
+
+//     //profile 
+//     "Current_Last_School_or_college": "KMIT-2025",
+//     "IELTS": null,
+//     "GRE_GMAT_Score": null,
+//     "Current_Last_Academic_Grade": "2025",
+//     "DUOLINGO": null,
+//     "ACT": null,
+//     "Select_GRE_GMAT_Score": null,
+//     "Score": 0,
+//     "TOEFL": null,
+//     "Academic_Score": null,
+//     "GMAT": null,
+//     "GRE": null,
+//     "PTE": null,
+//     "SAT": null,
+
+//     // ref
+//     "How_did_student_know_OW": null,
+//     "Team_Member_Referred": null,
+//     "Team_Member_Email_for_Referral": null,
+//     "Lead_Source": "College Data",
+//     "Student_Referred": null,
+//     // analysis
+//     "Touch_Point_Score": 0,
+//     "Negative_Score": 0,
+//     "Positive_Score": 0,
+//     "Negative_Touch_Point_Score": 0,
+//     "Lead_Rating": null,
+//     "Temporary_Notes": null,
+//     "Positive_Touch_Point_Score": 0,
+
+
+//     // next actions 
+//     "Last_Activity_Time": null,
+//     "Lost_Reason": null,
+//     "Class_start_date": null,
+//     "Followup_Status": null,
+//     "Next_Followup_Date": null,
+//     "Lead_Conversion_Time": null,
+
+
+//     // defaults 
+//     "Lead_Status": "New Lead",
+//     "Created_Time": "2025-06-06T10:24:10+05:30",
+//     "Modified_Time": "2025-06-06T10:24:10+05:30",
+//     "Campusroot_DB_ID": null,
+
+//     // unclear fields
+
+//     "Attending_ConnectED": null,
+//     "Campaign_Name": null,
+//     "Record_Image": null,
+//     "Digital_Campaign": null,
+//     "leadchain0__Social_Lead_ID": null,
+//     "CP": null,
+//     "Website_URL": null,
+//     "Converted_Account": null,
+//     "Converted_Deal": null,
+//     "OW_Campaign": "KMIT-2025",
+//     "Unsubscribed_Time": null,
+//     "Converted_Contact": null,
+//     "Subject": null,
+//     "Community": null,
+
+// }
