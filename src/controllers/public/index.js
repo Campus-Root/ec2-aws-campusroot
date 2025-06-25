@@ -37,9 +37,9 @@ export const filters = errorWrapper(async (req, res, next) => {
                 }
             });
             if (project.length === 0) project = ["country", "state", "city", "type"]
-            if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("country")) facets.country = [{ $match: { "location.country": { $ne: null } } }, { $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("state") && countrySelected) facets.state = [{ $match: { "location.state": { $ne: null } } }, { $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $match: { "location.city": { $ne: null } } }, { $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             facetResults = await universityModel.aggregate([{ $match: filter }, { $facet: facets }]);
             break;
@@ -113,9 +113,9 @@ export const filters = errorWrapper(async (req, res, next) => {
                 }
             });
             if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "featured", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic", "stem", "ApplicationFeeWaver"]
-            if (project.includes("country")) facets.country = [{ $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("state") && countrySelected) facets.state = [{ $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("country")) facets.country = [{ $match: { "location.country": { $ne: null } } }, { $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("state") && countrySelected) facets.state = [{ $match: { "location.state": { $ne: null } } }, { $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
+            if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $match: { "location.city": { $ne: null } } }, { $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             // if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
             if (project.includes("subDiscipline")) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { _id: 1 } }]
             if (project.includes("featured")) facets.featured = [{ $group: { _id: "$featured", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
