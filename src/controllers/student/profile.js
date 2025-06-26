@@ -360,7 +360,7 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         req.user.recommendations.data = [...notInterestedPrograms, ...counsellorRecommendedPrograms, ...recommendations]
         req.user.logs.push({ action: `recommendations Updated`, details: `recommendations${req.user.recommendations.data.length}` })
         await req.user.save();
-        await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate" })
+        await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite featured startDate" })
         await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear" })
         if (req.user.preference.currency) {
           const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");

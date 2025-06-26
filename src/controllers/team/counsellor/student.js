@@ -60,7 +60,7 @@ export const recommend = errorWrapper(async (req, res, next, session) => {
     await req.user.save()
     const newRecommend = student.recommendations.data.find(ele => ele.course == courseId)
 
-    await courseModel.populate(newRecommend, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite", },)
+    await courseModel.populate(newRecommend, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite featured", },)
     await universityModel.populate(newRecommend, { path: "course.university", select: "name logoSrc location type establishedYear " },)
     return ({ statusCode: 200, message: "Recommendations Generated", data: newRecommend });
 })

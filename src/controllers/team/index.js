@@ -56,7 +56,7 @@ export const singleStudentProfile = errorWrapper(async (req, res, next, session)
     await orderModel.populate(student, { path: "orders", select: "paymentDetails Package status priceDetails cancellationReason cancellationDate logs products" })
     await packageModel.populate(student, { path: "suggestedPackages purchasedPackages orders.Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
     await productModel.populate(student, [{ path: "activity.products orders.products" }])
-    await courseModel.populate(student, [{ path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite", },])
+    await courseModel.populate(student, [{ path: "recommendations.data.course activity.cart.course activity.wishList activity.products.course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite featured", },])
     await Document.populate(student, [{ path: "documents.personal.resume documents.personal.passportBD documents.personal.passportADD documents.academic.secondarySchool documents.academic.plus2 documents.academic.degree documents.academic.bachelors.transcripts documents.academic.bachelors.bonafide documents.academic.bachelors.CMM documents.academic.bachelors.PCM documents.academic.bachelors.OD documents.academic.masters.transcripts documents.academic.masters.bonafide documents.academic.masters.CMM documents.academic.masters.PCM documents.academic.masters.OD documents.test.general documents.test.languageProf documents.workExperiences workExperience.docId tests.docId", select: "data", },])
     await universityModel.populate(student, [{ path: "recommendations.data.course.university activity.cart.course.university activity.wishList.university activity.products.course.university", select: "name logoSrc location type establishedYear ", },])
     await userModel.populate(student, [{ path: "advisors.info activity.meetings.user activity.meetings.member", select: "firstName lastName email displayPicSrc", },])
@@ -68,7 +68,7 @@ export const singleApplications = errorWrapper(async (req, res, next, session) =
     if (!application) return { statusCode: 400, data: null, message: `invalid applicationId` };
     await userModel.populate(application, { path: "user processCoordinator counsellor", select: "firstName lastName email displayPicSrc" })
     await Document.populate(application, { path: "docChecklist.doc", select: "data" })
-    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await courseModel.populate(application, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite featured" });
     await universityModel.populate(application, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return ({ statusCode: 200, message: `single applications details`, data: application })
 })
@@ -141,7 +141,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             totalDocs = await productModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
             await userModel.populate(applications, { path: "user advisors", select: "firstName lastName email displayPicSrc" })
-            await courseModel.populate(applications, { path: "course", select: "name university unisName startDate" })
+            await courseModel.populate(applications, { path: "course", select: "name university unisName startDate featured" })
             await universityModel.populate(applications, { path: "course.university", select: "name" })
             return ({ statusCode: 200, message: `applications list`, data: { list: applications, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "leads":

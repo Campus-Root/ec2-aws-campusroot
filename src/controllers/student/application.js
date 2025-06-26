@@ -29,7 +29,7 @@ export const Cart = errorWrapper(async (req, res, next, session) => {
     let course, intakeExists;
     switch (action) {
         case 'add':
-            course = await courseModel.findById(courseId, "startDate elite");
+            course = await courseModel.findById(courseId, "startDate elite featured");
             if (!course) return { statusCode: 400, message: `Invalid courseId`, data: [value] };
             if (!category) return { statusCode: 400, message: `category required`, data: [value] };
             if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return { statusCode: 400, message: `category mismatch`, data: [value] };
@@ -48,7 +48,7 @@ export const Cart = errorWrapper(async (req, res, next, session) => {
             break;
         case 'update':
             if (found.length == 0) return { statusCode: 400, message: `item doesn't exists`, data: [value] };
-            course = await courseModel.findById(courseId, "startDate elite");
+            course = await courseModel.findById(courseId, "startDate elite featured");
             if (!course) return { statusCode: 400, message: `Invalid courseId`, data: [value] };
             if ((category === ProductCategoryEnum.ELITE && !course.elite) || (category === ProductCategoryEnum.PREMIUM && course.elite)) return { statusCode: 400, message: `category mismatch`, data: [value] };
             intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(intake).getUTCMonth());
@@ -59,7 +59,7 @@ export const Cart = errorWrapper(async (req, res, next, session) => {
             break;
     }
     await req.user.save();
-    await courseModel.populate(req.user, { path: "activity.cart.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university elite", },)
+    await courseModel.populate(req.user, { path: "activity.cart.course", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university elite featured", },)
     await universityModel.populate(req.user, { path: "activity.cart.course.university", select: "name logoSrc location type establishedYear ", })
     return { statusCode: 200, message: `cart updated successfully`, data: req.user.activity.cart }
 });
@@ -78,7 +78,7 @@ export const wishList = errorWrapper(async (req, res, next, session) => {
             break;
     }
     await Promise.all([
-        await courseModel.populate(student, { path: "activity.wishList", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university elite", },),
+        await courseModel.populate(student, { path: "activity.wishList", select: "name discipline tuitionFee startDate studyMode subDiscipline currency studyMode schoolName studyLevel duration applicationDetails university elite featured", },),
         await universityModel.populate(student, { path: "activity.wishList.university", select: "name logoSrc location type establishedYear ", })
     ])
     return { statusCode: 200, message: `${action} successful`, data: student.activity.wishList };
@@ -112,7 +112,7 @@ export const paySummary = errorWrapper(async (req, res) => {
     }
     if (hasProducts) {
         for (const product of products) {
-            const course = await courseModel.findById(product.courseId, "elite")
+            const course = await courseModel.findById(product.courseId, "elite featured")
             if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });
             if (product.category === ProductCategoryEnum.PREMIUM && course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
             if (product.category === ProductCategoryEnum.ELITE && !course.elite) errorStack.push({ ...product, errorMessage: `${product.category} mismatch` }); // product elite or premium check
@@ -155,7 +155,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
                     intake: new Date(product.intake),
                     category: product.category
                 }
-                course = await courseModel.findById(newProductDetails.course, "elite startDate university")
+                course = await courseModel.findById(newProductDetails.course, "elite startDate university featured")
                 if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });  //product course check
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
                 if (intakeExists.length <= 0) errorStack.push({ ...product, errorMessage: `intake doesn't exist` }); //product intake check
@@ -189,7 +189,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
                 const availableQuantity = productsAdded.get(newProductDetails.category) || 0;
                 if (availableQuantity <= 0) errorStack.push({ ...product, errorMessage: `limit exceeded` })       // quantity check based on category
                 productsAdded.set(newProductDetails.category, availableQuantity - 1);
-                course = await courseModel.findById(newProductDetails.course, "location elite startDate university")
+                course = await courseModel.findById(newProductDetails.course, "location elite startDate university featured")
                 if (!course) errorStack.push({ ...product, errorMessage: `invalid courseId` });             // product course check
                 if (!Package.country.includes(course.location.country)) errorStack.push({ ...product, errorMessage: `country mismatched` }); // product country check
                 intakeExists = course.startDate.filter(ele => ele.courseStartingMonth == new Date(newProductDetails.intake).getUTCMonth())
@@ -290,7 +290,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
         await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
         await productModel.populate(order, [{ path: "products" }])
         await userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
-        await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
+        await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite featured" },])
         await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
         return { statusCode: 200, message: 'order placed', data: { order, razorPay: null } };
     }
@@ -323,7 +323,7 @@ export const checkout = errorWrapper(async (req, res, next) => {
     await studentModel.findOneAndUpdate({ _id: req.user._id }, { $push: { orders: order._id, logs: { action: `order placed`, details: `orderId:${order._id}` } } })
     await packageModel.populate(order, { path: "Package", select: "name description country priceDetails.totalPrice priceDetails.currency requirements benefits products termsAndConditions active" })
     await productModel.populate(order, [{ path: "products" }])
-    await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" },])
+    await courseModel.populate(order, [{ path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite featured" },])
     await userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
     await universityModel.populate(order, [{ path: "products.course.university", select: "name logoSrc location type establishedYear " },])
     return { statusCode: 200, message: 'order placed', data: { razorPay, order } };
@@ -456,7 +456,7 @@ export const orderInfo = errorWrapper(async (req, res, next, session) => {
         packageModel.populate(order, { path: "Package", select: "-logs" }),
         productModel.populate(order, { path: "products" }),
     ])
-    await courseModel.populate(order, { path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite" })
+    await courseModel.populate(order, { path: "products.course", select: "name discipline tuitionFee studyMode subDiscipline schoolName startDate studyLevel duration applicationDetails currency university elite featured" })
     await Promise.all([
         Document.populate(order, { path: "products.docChecklist", select: "data" }),
         userModel.populate(order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" }),
@@ -549,7 +549,7 @@ export const addingProductsToOrder = errorWrapper(async (req, res, next, session
     await packageModel.populate(req.order, { path: "Package" })
     await productModel.populate(req.order, { path: "products" })
     await userModel.populate(req.order, { path: "products.advisors", select: "firstName displayPicSrc lastName email role" })
-    await courseModel.populate(req.order, { path: "products.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite startDate" })
+    await courseModel.populate(req.order, { path: "products.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite startDat featured" })
     await universityModel.populate(req.order, { path: "products.course.university", select: "name logoSrc location type establishedYear" })
     return { statusCode: 200, message: 'order', data: req.order };
 });
@@ -566,7 +566,7 @@ export const requestCancellation = errorWrapper(async (req, res, next, session) 
         details: `applicationId:${req.params.applicationId}`
     })
     await req.user.save()
-    await courseModel.populate(updatedApplication, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite" });
+    await courseModel.populate(updatedApplication, { path: "course", select: "name discipline subDiscipline schoolName studyLevel duration applicationDetails university elite featured" });
     await universityModel.populate(updatedApplication, { path: "course.university", select: "name logoSrc location type establishedYear " });
     return { statusCode: 200, message: 'Application cancellation Request sent to processCoordinator', data: updatedApplication };
 });
@@ -594,7 +594,7 @@ export const uploadInApplication = errorWrapper(async (req, res, next, session) 
         action: `document uploaded in checklist`,
         details: `applicationId:${applicationId}&checklistItemId:${checklistItemId}`
     })
-    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", })
+    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite featured", })
         await Promise.all([
             req.user.save(),
             application.save(),
@@ -627,7 +627,7 @@ export const deleteUploadedFromApplication = errorWrapper(async (req, res, next,
     checklistItem.doc = null
     checklistItem.isChecked = false
     req.user.logs.push({ action: `document deleted in application`, details: `applicationId:${applicationId}` })
-    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite", }),
+    await courseModel.populate(application, { path: "course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName studyLevel duration university elite featured", }),
         await Promise.all([
             application.save(),
             req.user.save(),
