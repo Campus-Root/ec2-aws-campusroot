@@ -70,7 +70,7 @@ app.options('*', cors());
 app.disable('x-powered-by');
 app.use(compression({ level: 6, threshold: 10 * 100 }))
 // app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+// app.options('*', cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
