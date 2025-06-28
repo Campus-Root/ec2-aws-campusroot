@@ -26,18 +26,50 @@ export const cookieOptions = {
 	sameSite: 'strict',
 	expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365)
 }
-const whitelist = ["http://localhost:5500", "null", "http://127.0.0.1:5500", "https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000", "https://d3mjeyzjhheqlz.cloudfront.net", "https://onewindow.co"];
+// const whitelist = ["http://localhost:5500", "null", "http://127.0.0.1:5500", "https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000", "https://d3mjeyzjhheqlz.cloudfront.net", "https://onewindow.co"];
 app.set('trust proxy', 1) // trust first proxy
-const corsOptions = {
-	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
-	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],  // Add necessary headers
-	credentials: true,
-	optionsSuccessStatus: 200
-};
+
+
+// 1️⃣  Declare this before *all* routes, and only once
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, false);          // block non‑browser requests if you like
+    const whitelist = new Set([
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5500',
+      'http://127.0.0.1:5500',
+      'https://campusroot.com',
+      'https://team.campusroot.com',
+      'https://d3mjeyzjhheqlz.cloudfront.net',
+      'https://onewindow.co',
+    ]);
+    return whitelist.has(origin)
+      ? cb(null, origin)                          // echo the exact origin
+      : cb(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  credentials: true,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200,
+}));
+
+// 2️⃣  Optional: explicit pre‑flight handler *after* the main cors() call
+app.options('*', cors());
+
+
+
+
+// const corsOptions = {
+// 	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
+// 	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+// 	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],  // Add necessary headers
+// 	credentials: true,
+// 	optionsSuccessStatus: 200
+// };
 app.disable('x-powered-by');
 app.use(compression({ level: 6, threshold: 10 * 100 }))
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
