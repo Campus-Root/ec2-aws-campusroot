@@ -89,13 +89,8 @@ export const categorizePrograms = (testScores, programs, mode = "Student", limit
     if (scored.length < 5 * limitPerBucket) {
         scored.forEach(program => {
             const rank = program.coursefinder_WebomatricsNationalRanking;
-            if (rank <= ambitiousRange) {
-                results.push({ course: program._id, possibilityOfAdmit: "Ambitious" });
-            } else if (rank <= moderateRange) {
-                results.push({ course: program._id, possibilityOfAdmit: "Moderate" });
-            } else {
-                results.push({ course: program._id, possibilityOfAdmit: "Safe" });
-            }
+            const bucket = rank <= ambitiousRange ? "Ambitious" : (rank <= moderateRange) ? "Moderate" : "Safe";
+            results.push({ course: program._id, possibilityOfAdmit: bucket })
         });
         return results
     }
