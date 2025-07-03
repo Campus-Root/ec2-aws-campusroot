@@ -78,37 +78,37 @@ export const calculateMatchPercentage = (testScores, program) => {
     }
     return ((matchScore / totalWeight) + bonus);
 };
-export const categorizePrograms = (testScores, programs, mode = "Student") => {
+export const categorizePrograms = (testScores, programs, mode = "Student", limitPerBucket = 50) => {
+
     const results = [];
-    switch (mode) {
-        case "Student":
-            programs = programs.filter(ele => {
-                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-                return ele.matchPercentage >= 50;
-            });
-            break;
-        case "Counsellor":
-            programs = programs.filter(ele => {
-                ele.matchPercentage = calculateMatchPercentage(testScores, ele); // Assign the match percentage
-                return true;
-            });
-            break;
-        default:
-            break;
-    }
+    const scored = programs.map(p => ({ ...p, matchPercentage: calculateMatchPercentage(testScores, p) })).filter(p => mode === "Student" ? p.matchPercentage >= 50 : true);
+    if (scored.length === 0) return results;
     const rankings = [...new Set(programs.map(p => p.coursefinder_WebomatricsNationalRanking))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
     const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
-    programs.forEach(program => {
-        const rank = program.coursefinder_WebomatricsNationalRanking;
-        if (rank <= ambitiousRange) {
-            results.push({ course: program._id, possibilityOfAdmit: "Ambitious" });
-        } else if (rank <= moderateRange) {
-            results.push({ course: program._id, possibilityOfAdmit: "Moderate" });
-        } else {
-            results.push({ course: program._id, possibilityOfAdmit: "Safe" });
-        }
+    if (scored.length < 5 * limitPerBucket) {
+        scored.forEach(program => {
+            const rank = program.coursefinder_WebomatricsNationalRanking;
+            if (rank <= ambitiousRange) {
+                results.push({ course: program._id, possibilityOfAdmit: "Ambitious" });
+            } else if (rank <= moderateRange) {
+                results.push({ course: program._id, possibilityOfAdmit: "Moderate" });
+            } else {
+                results.push({ course: program._id, possibilityOfAdmit: "Safe" });
+            }
+        });
+        return results
+    }
+    const buckets = { Ambitious: [], Moderate: [], Safe: [] };
+    scored.forEach(p => {
+        const rank = p.coursefinder_WebomatricsNationalRanking;
+        const bucket = rank <= ambitiousRange ? "Ambitious" : rank <= moderateRange ? "Moderate" : "Safe";
+        buckets[bucket].push(p);
     });
+    const sortByBest = (a, b) => {
+        return b.matchPercentage !== a.matchPercentage ? b.matchPercentage - a.matchPercentage : a.coursefinder_WebomatricsNationalRanking - b.coursefinder_WebomatricsNationalRanking;
+    };
+    ["Ambitious", "Moderate", "Safe"].forEach(bucketName => { buckets[bucketName].sort(sortByBest).slice(0, limitPerBucket).forEach(p => results.push({ course: p._id, possibilityOfAdmit: bucketName })); });
     return results;
 };
 export const constructFilters = (filterData, testScores, redundantCourses) => {
