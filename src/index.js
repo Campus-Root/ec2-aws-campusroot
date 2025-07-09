@@ -24,7 +24,7 @@ export const cookieOptions = {
 	secure: true,
 	httpOnly: true,
 	sameSite: 'strict',
-	expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365)
+	expires: 1000 * 60 * 60 * 24 * 30
 }
 // const whitelist = ["http://localhost:5500", "null", "http://127.0.0.1:5500", "https://campusroot.com", "http://localhost:3000", "https://team.campusroot.com", "http://127.0.0.1:3000", "https://d3mjeyzjhheqlz.cloudfront.net", "https://onewindow.co"];
 app.set('trust proxy', 1) // trust first proxy
