@@ -111,7 +111,8 @@ export const modifySlot = errorWrapper(async (req, res, next, session) => {
 export const getEvents = errorWrapper(async (req, res, next, session) => {
     await userModel.populate(req.user, { path: "advisors.info", select: "googleTokens" })
     const { teamMemberId } = req.params
-    let teamMember = req.user.advisors.find(ele => ele.info._id.toString() == teamMemberId)
+    console.log({ advisors: req.user.advisors });
+    let teamMember = req.user.advisors.find(ele => ele?.info?._id.toString() == teamMemberId)
     if (!teamMember) return { statusCode: 400, data: null, message: `invalid teamMember parameter` };
     oauth2Client.setCredentials(teamMember.info.googleTokens);
     const { data } = await google.calendar({ version: 'v3', auth: oauth2Client }).events.list({
