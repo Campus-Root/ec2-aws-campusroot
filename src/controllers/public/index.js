@@ -340,7 +340,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         filter["budget.budgetAmount"] = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
                         break;
                     case "courseStartingMonth":
-                        filter["startDate.courseStartingMonth"] = { $in: ele.data.flatMap.map(element => Array.from({ length: 3 }, (_, i) => element * 3 + i)) };
+                        filter["startDate.courseStartingMonth"] = { $in: Array.from({ length: 3 }, (_, i) => ele.data * 3 + i) };
                     // Add cases for other filters
                     default:
                         break;
@@ -766,9 +766,9 @@ export const getRecommendations = async (req, res) => {
 //                 }));
 //                 break;
 //             case "courseStartingMonth":
-                // const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
-                // let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
-                // filter.startDate = { $elemMatch: period };
+// const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
+// let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
+// filter.startDate = { $elemMatch: period };
 //                 break;
 //             default:
 //                 break;
