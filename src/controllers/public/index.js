@@ -340,9 +340,16 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         filter["budget.budgetAmount"] = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
                         break;
                     case "courseStartingMonth":
-                        const monthsRange = ["January to March", "April to June", "July to September", "October to December"]
-                        let period = { $and: [{ courseStartingMonth: { $gte: monthsRange.indexOf(ele.data) * 3 } }, { courseStartingMonth: { $lte: (monthsRange.indexOf(ele.data) * 3) + 2 } }] }
-                        filter.startDate = { $elemMatch: period };
+                        const monthsRange = {
+                            "January to March": [0, 1, 2],
+                            "April to June": [3, 4, 5],
+                            "July to September": [6, 7, 8],
+                            "October to December": [9, 10, 11]
+                        };
+                        let allowedMonths = [];
+                        for (const label of ele.data || []) if (monthsRange[label]) allowedMonths = allowedMonths.concat(monthsRange[label]);
+                        // Now use $in for filtering months
+                        if (allowedMonths.length > 0) filter["startDate.courseStartingMonth"] = { $in: allowedMonths };
                         break;
                     // Add cases for other filters
                     default:
