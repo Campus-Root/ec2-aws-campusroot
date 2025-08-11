@@ -72,30 +72,14 @@ export const verifyAccessToken = async (accessToken, source) => {
 export const deleteTokens = async (userId, source) => {
     try {
         if (!source) {
-            // Delete all tokens for the user if source is not provided
             const keys = await redisClient.keys(`*:${userId}:*`);
-            // Delete all matching access tokens
-            for (const key of keys) {
-                await redisClient.del(key);
-            }
+            for (const key of keys) await redisClient.del(key);
         } else {
-            // Delete specific access and refresh tokens for the given source
-            console.log("source exists");
-            console.log("tokens before deletion: ", {
-                [`accessToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
-                [`refreshToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
-                [`DeviceToken:${userId}:${source}`]: `${await redisClient.get(`DeviceToken:${userId}:${source}`)}`,
-            });
             await Promise.all([
                 redisClient.del(`accessToken:${userId}:${source}`),
                 redisClient.del(`refreshToken:${userId}:${source}`),
                 redisClient.del(`DeviceToken:${userId}:${source}`)
             ])
-            console.log("tokens after deletion: ", {
-                [`accessToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
-                [`refreshToken:${userId}:${source}`]: `${await redisClient.get(`accessToken:${userId}:${source}`)}`,
-                [`DeviceToken:${userId}:${source}`]: `${await redisClient.get(`DeviceToken:${userId}:${source}`)}`,
-            });
         }
     } catch (error) {
         console.error('Error deleting tokens:', error);

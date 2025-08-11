@@ -168,7 +168,13 @@ export const DestinationTypeEnum = {
     CANADA: "Canada",
     AUSTRALIA: "Australia",
     IRELAND: "Ireland",
-    NZ: "New Zealand"
+    NZ: "New Zealand",
+    GERMANY: "Germany",
+    FRANCE: "France",
+    ITALY: "Italy",
+    SINGAPORE: "Singapore",
+    UAE: "United Arab Emirates",
+    NETHERLANDS: "Netherlands",
 };
 export const OrderStatusEnum = {
     PENDING: "pending",
