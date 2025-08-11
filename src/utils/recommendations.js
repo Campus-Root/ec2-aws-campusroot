@@ -113,8 +113,8 @@ export const constructFilters = (filterData, testScores, redundantCourses) => {
             if (data && Array.isArray(data)) {
                 switch (type) {
                     case 'Country':
-                        filter.coursefinder_Country = { $in: data };
-                        projections.coursefinder_Country = 1
+                        filter["location.country"] = { $in: data };
+                        projections["location.country"] = 1
                         break;
                     case 'Category':
                         filter.discipline = { $in: data };// get their indexes

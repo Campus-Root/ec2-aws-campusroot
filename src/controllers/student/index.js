@@ -120,7 +120,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
 })
 export const PercentMatch = errorWrapper(async (req, res, next) => {
   const { courseId } = req.params
-  const program = await courseModel.findById(courseId, { _id: 1, coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1, coursefinder_WorkExp: 1, coursefinder_GreScore: 1, coursefinder_GmatScore: 1, coursefinder_backlog: 1, coursefinder_EntryRequirementUgOutOf4: 1, coursefinder_EntryRequirementUgOutOf5: 1, coursefinder_EntryRequirementUgOutOf7: 1, coursefinder_EntryRequirementUgOutOf10: 1, coursefinder_EntryRequirementUgOutOf100: 1 })
+  const program = await courseModel.findById(courseId, { _id: 1,location: 1, coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1, coursefinder_WorkExp: 1, coursefinder_GreScore: 1, coursefinder_GmatScore: 1, coursefinder_backlog: 1, coursefinder_EntryRequirementUgOutOf4: 1, coursefinder_EntryRequirementUgOutOf5: 1, coursefinder_EntryRequirementUgOutOf7: 1, coursefinder_EntryRequirementUgOutOf10: 1, coursefinder_EntryRequirementUgOutOf100: 1 })
   if (!program) return { statusCode: 400, message: "Invalid course", data: null }
   // program and testScores
   let testScores = []
