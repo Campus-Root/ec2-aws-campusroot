@@ -349,12 +349,13 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         }
         let counsellorRecommendedPrograms = [], notInterestedPrograms = []
         req.user.recommendations.data.forEach(ele => {
-          if (ele.counsellorRecommended) counsellorRecommendedPrograms.push(ele)
-          else if (ele.notInterested) notInterestedPrograms.push(ele)
+            if (ele.counsellorRecommended) counsellorRecommendedPrograms.push(ele)
+            else if (ele.notInterested) notInterestedPrograms.push(ele)
         })
         const { filter, projections } = constructFilters(filterData, testScores, [...counsellorRecommendedPrograms, ...notInterestedPrograms]);
         let pipeline = [{ $match: filter }, { $project: projections }]
         const programs = await courseModel.aggregate(pipeline);
+        console.log("Programs found in profile update:", programs.length, JSON.stringify(programs, null, 2));
         let recommendations = categorizePrograms(testScores, programs);
         req.user.recommendations.criteria = criteria
         req.user.recommendations.data = [...notInterestedPrograms, ...counsellorRecommendedPrograms, ...recommendations]
@@ -363,19 +364,19 @@ export const editProfile = errorWrapper(async (req, res, next, session) => {
         await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite featured startDate" })
         await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear" })
         if (req.user.preference.currency) {
-          const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
-          const applyCurrencyConversion = (element) => {
-            if (element.course.currency.code !== req.user.preference.currency) {
-              if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
-                return {
-                  statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available'
-                };
-              }
-              element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
-              element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
-            }
-          };
-          req.user.recommendations.data.forEach(applyCurrencyConversion);
+            const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
+            const applyCurrencyConversion = (element) => {
+                if (element.course.currency.code !== req.user.preference.currency) {
+                    if (!rates[element.course.currency.code] || !rates[req.user.preference.currency]) {
+                        return {
+                            statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available'
+                        };
+                    }
+                    element.course.tuitionFee.tuitionFee = costConversion(element.course.tuitionFee.tuitionFee, element.course.currency.code, req.user.preference.currency, rates[element.course.currency.code], rates[req.user.preference.currency]);
+                    element.course.currency = { code: req.user.preference.currency, symbol: currencySymbols[req.user.preference.currency] };
+                }
+            };
+            req.user.recommendations.data.forEach(applyCurrencyConversion);
         }
     }
     return ({ statusCode: 200, message: `profile edited successfully`, data: profile });
