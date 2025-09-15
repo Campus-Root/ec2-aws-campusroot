@@ -94,7 +94,6 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
   const { filter, projections } = constructFilters(filterData, testScores, [...counsellorRecommendedPrograms, ...notInterestedPrograms]);
   let pipeline = [{ $match: filter }, { $project: projections }]
   const programs = await courseModel.aggregate(pipeline);
-  console.log("pipeline", programs.length, JSON.stringify(pipeline, null, 2));
   let recommendations = categorizePrograms(testScores, programs);
   req.user.recommendations.criteria = criteria
   req.user.recommendations.data = [...notInterestedPrograms, ...counsellorRecommendedPrograms, ...recommendations]
