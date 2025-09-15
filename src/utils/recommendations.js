@@ -83,13 +83,13 @@ export const categorizePrograms = (testScores, programs, mode = "Student", limit
     const results = [];
     const scored = programs.map(p => ({ ...p, matchPercentage: calculateMatchPercentage(testScores, p) })).filter(p => mode === "Student" ? p.matchPercentage >= 50 : true);
     if (scored.length === 0) return results;
-    const rankings = [...new Set(programs.map(p => p.coursefinder_WebomatricsNationalRanking))].sort((a, b) => a - b);
+    const rankings = [...new Set(programs.map(p => p.globalRankingPosition))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
     const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
     console.log({ AllranksSorted:rankings, ambitiousRange, moderateRange });
     if (scored.length < 5 * limitPerBucket) {
         scored.forEach(program => {
-            const rank = program.coursefinder_WebomatricsNationalRanking;
+            const rank = program.globalRankingPosition;
             const bucket = rank <= ambitiousRange ? "Ambitious" : (rank <= moderateRange) ? "Moderate" : "Safe";
             results.push({ course: program._id, possibilityOfAdmit: bucket })
         });
@@ -97,18 +97,18 @@ export const categorizePrograms = (testScores, programs, mode = "Student", limit
     }
     const buckets = { Ambitious: [], Moderate: [], Safe: [] };
     scored.forEach(p => {
-        const rank = p.coursefinder_WebomatricsNationalRanking;
+        const rank = p.globalRankingPosition;
         const bucket = rank <= ambitiousRange ? "Ambitious" : rank <= moderateRange ? "Moderate" : "Safe";
         buckets[bucket].push(p);
     });
     const sortByBest = (a, b) => {
-        return b.matchPercentage !== a.matchPercentage ? b.matchPercentage - a.matchPercentage : a.coursefinder_WebomatricsNationalRanking - b.coursefinder_WebomatricsNationalRanking;
+        return b.matchPercentage !== a.matchPercentage ? b.matchPercentage - a.matchPercentage : a.globalRankingPosition - b.globalRankingPosition;
     };
     ["Ambitious", "Moderate", "Safe"].forEach(bucketName => { buckets[bucketName].sort(sortByBest).slice(0, limitPerBucket).forEach(p => results.push({ course: p._id, possibilityOfAdmit: bucketName })); });
     return results;
 };
 export const constructFilters = (filterData, testScores, redundantCourses) => {
-    const filter = { coursefinder_WebomatricsNationalRanking: { $lte: 2147483647 }, "$or": [], coursefinder_IsOnlineCourse: false, studyMode: { $ne: ["Online"] }, _id: { $nin: redundantCourses.map(ele => ele.course) } }, projections = { _id: 1, coursefinder_Name: 1, coursefinder_University: 1, coursefinder_WebomatricsNationalRanking: 1, coursefinder_weights: 1, coursefinder_backlog: 1 }
+    const filter = { globalRankingPosition: { $lte: 2147483647 }, "$or": [], coursefinder_IsOnlineCourse: false, studyMode: { $ne: ["Online"] }, _id: { $nin: redundantCourses.map(ele => ele.course) } }, projections = { _id: 1, coursefinder_Name: 1, coursefinder_University: 1, globalRankingPosition: 1, coursefinder_weights: 1, coursefinder_backlog: 1 }
     if (filterData && Array.isArray(filterData)) {
         filterData.forEach(({ type, data }) => {
             if (data && Array.isArray(data)) {
