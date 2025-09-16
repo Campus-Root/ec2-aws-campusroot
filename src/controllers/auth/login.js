@@ -100,7 +100,7 @@ export const TeamLogin = errorWrapper(async (req, res, next) => {
     if (!emailResponse.status) return { statusCode: 500, data: emailResponse, message: "Otp not sent" }
     user.otp.emailLoginOtp.data = otp
     user.otp.emailLoginOtp.expiry = expiry
-    user.logs.push({ action: `otp sent for login`, details: `` })
+    user.logs.push({ action: `otp sent for login`, details: `nh` })
     await user.save()
     return { statusCode: 200, message: `otp sent for login, verify before expiry`, data: { expiry: expiry, otp: otp } };// redundant
 });
