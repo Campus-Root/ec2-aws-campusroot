@@ -96,7 +96,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
   const programs = await courseModel.aggregate(pipeline);
   let recommendations = categorizePrograms(testScores, programs);
   req.user.recommendations.criteria = criteria
-  req.user.recommendations.data = [...notInterestedPrograms, ...counsellorRecommendedPrograms, ...recommendations]
+  req.user.recommendations.data = [...counsellorRecommendedPrograms, ...recommendations]
   req.user.logs.push({ action: `recommendations Generated`, details: `recommendations${req.user.recommendations.data.length}` })
   await req.user.save();
   await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate featured" })
