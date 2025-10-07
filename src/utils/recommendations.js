@@ -86,7 +86,6 @@ export const categorizePrograms = (testScores, programs, mode = "Student", limit
     const rankings = [...new Set(programs.map(p => p.globalRankingPosition))].sort((a, b) => a - b);
     const ambitiousRange = rankings[Math.floor(rankings.length * 0.2)];
     const moderateRange = rankings[Math.floor(rankings.length * 0.5)];
-    console.log({ AllranksSorted:rankings, ambitiousRange, moderateRange });
     if (scored.length < 5 * limitPerBucket) {
         scored.forEach(program => {
             const rank = program.globalRankingPosition;
