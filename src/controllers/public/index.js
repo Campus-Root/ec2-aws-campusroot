@@ -46,7 +46,7 @@ export const filters = errorWrapper(async (req, res, next) => {
         case "courses":
             filter.university = { $exists: true }
             filter.multipleLocations = { $exists: false }
-            filterData.forEach(async (ele) => {
+            for (const ele of filterData) {
                 switch (ele.type) {
                     case "country":
                         filter["location.country"] = { $in: ele.data };
@@ -111,7 +111,7 @@ export const filters = errorWrapper(async (req, res, next) => {
                     default:
                         break;
                 }
-            });
+            }
             if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "featured", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic", "stem", "ApplicationFeeWaver"]
             if (project.includes("country")) facets.country = [{ $match: { "location.country": { $ne: null } } }, { $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
             if (project.includes("state") && countrySelected) facets.state = [{ $match: { "location.state": { $ne: null } } }, { $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
