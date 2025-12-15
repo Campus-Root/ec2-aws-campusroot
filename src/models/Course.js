@@ -93,6 +93,18 @@ const courseSchema = mongoose.Schema(
     },
     { timestamps: true }
 );
+courseSchema.index({ "location.country": 1 });
+courseSchema.index({ "location.state": 1 });
+courseSchema.index({ "location.city": 1 });
+courseSchema.index({ studyLevel: 1 });
+courseSchema.index({ studyMode: 1 });
+courseSchema.index({ featured: 1 });
+courseSchema.index({ subDiscipline: 1 });
+courseSchema.index({ discipline: 1 });
+courseSchema.index({ TOEFL: 1, IELTS: 1, PTE: 1 });
+courseSchema.index({ "stemDetails.stem": 1 });
+courseSchema.index({ "applicationDetails.applicationFeeWaiver": 1 });
+courseSchema.index({ globalRankingPosition: 1, _id: 1 });
 courseSchema.index({ description: "text", unisName: "text", schoolName: "text", "location.country": "text", "location.city": "text", "location.state": "text" });
 const courseModel = mongoose.model("course", courseSchema);
 export default courseModel

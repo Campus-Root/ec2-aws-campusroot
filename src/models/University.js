@@ -76,5 +76,12 @@ universitySchema.index({
     code: "text"
 });
 universitySchema.index({ geoCoordinates: "2dsphere" });
+universitySchema.index({ "location.country": 1 });
+universitySchema.index({ "location.state": 1 });
+universitySchema.index({ "location.city": 1 });
+universitySchema.index({ type: 1 });
+universitySchema.index({ uni_rating: -1 });
+universitySchema.index({ courses: -1 });
+universitySchema.index({ globalRankingPosition: 1 });
 const universityModel = mongoose.model("university", universitySchema);
 export default universityModel

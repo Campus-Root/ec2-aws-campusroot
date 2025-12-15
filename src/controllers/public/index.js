@@ -25,6 +25,17 @@ export const filters = errorWrapper(async (req, res, next) => {
     let facetResults, facets = {}, countrySelected = false, stateSelected = false, disciplineSelected = false, filter = {}
     switch (req.params.name) {
         case "universities":
+            for (const ele of filterData) {
+                if (ele.type === "country") {
+                    filter["location.country"] = { $in: ele.data };
+                    countrySelected = true;
+                }
+                else if (ele.type === "city") filter["location.city"] = { $in: ele.data };
+                else if (ele.type === "state") {
+                    filter["location.state"] = { $in: ele.data };
+                    stateSelected = true;
+                }
+            }
             filterData.forEach(ele => {
                 if (ele.type === "country") {
                     filter["location.country"] = { $in: ele.data };
@@ -200,7 +211,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             sort.globalRankingPosition = 1,
                 sort._id = 1
             sort.courses = -1
-            req.body.filterData.forEach(ele => {
+            for (const ele of req.body.filterData) {
                 switch (ele.type) {
                     case "country":
                         filter["location.country"] = { $in: ele.data };
@@ -237,7 +248,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     default:
                         break;
                 }
-            });
+            }
             const listOfUniversities = await universityModel.find(filter, { name: 1, uni_rating: 1, cost: 1, location: 1, currency: 1, logoSrc: 1, pictureSrc: 1, type: 1, rank: 1, establishedYear: 1, campusrootReview: 1, graduationRate: 1, acceptanceRate: 1, courses: 1, geoCoordinates: 1 }).sort(sort).skip(skip).limit(perPage);
             totalDocs = await universityModel.countDocuments(filter)
             for (const university of listOfUniversities) {
