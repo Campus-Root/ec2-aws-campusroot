@@ -209,7 +209,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     switch (req.params.name) {
         case "universities":
             // sort.globalRankingPosition = 1,
-            //     sort._id = 1
+            // sort._id = 1
             // sort.courses = -1
             for (const ele of req.body.filterData) {
                 switch (ele.type) {
