@@ -374,7 +374,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 console.time("myFunction");
                 [courses, totalDocs] = await Promise.all([
                     courseModel.aggregate(aggregationPipeline),
-                    courseModel.countDocuments({
+                    courseModel.estimatedDocumentCount({
                         multipleLocations: { $exists: false },
                         ...filter
                     })
