@@ -448,7 +448,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 ...filter
                             }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements featured globalRankingPosition AdmissionsRequirements.LanguageRequirements loanDetails budget")
                             .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
-                            .sort({ globalRankingPosition: 1, _id: 1 })
+                            // .sort({ globalRankingPosition: 1, _id: 1 })
                             .skip(skip)
                             .limit(perPage),
                         courseModel.countDocuments({
