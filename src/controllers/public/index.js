@@ -19,11 +19,11 @@ import destinationModel from "../../models/Destination.js";
 import { MongoClient } from "mongodb";
 import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
 import { fetchJSON2GridLink } from "../../utils/json2grid.js";
-import { performance } from "node:perf_hooks";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
     let facetResults, facets = {}, countrySelected = false, stateSelected = false, disciplineSelected = false, filter = {}
+    console.time("filters");
     switch (req.params.name) {
         case "universities":
             for (const ele of filterData) {
@@ -201,6 +201,7 @@ export const filters = errorWrapper(async (req, res, next) => {
         default:
             break;
     }
+    console.timeEnd("filters");
     return ({ statusCode: 200, message: `facets`, data: facetResults })
 })
 export const listings = errorWrapper(async (req, res, next, session) => {
@@ -209,9 +210,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
     switch (req.params.name) {
         case "universities":
-            // sort.globalRankingPosition = 1,
-            // sort._id = 1
-            // sort.courses = -1
+            sort.globalRankingPosition = 1,
+            sort._id = 1
+            sort.courses = -1
             for (const ele of req.body.filterData) {
                 switch (ele.type) {
                     case "country":
@@ -344,18 +345,11 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         filter["budget.budgetAmount"] = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
                         break;
                     case "courseStartingMonth":
-                        const monthsRange = {
-                            "January to March": [0, 1, 2],
-                            "April to June": [3, 4, 5],
-                            "July to September": [6, 7, 8],
-                            "October to December": [9, 10, 11]
-                        };
+                        const monthsRange = { "January to March": [0, 1, 2], "April to June": [3, 4, 5], "July to September": [6, 7, 8], "October to December": [9, 10, 11] };
                         let allowedMonths = [];
                         for (const label of ele.data || []) if (monthsRange[label]) allowedMonths = allowedMonths.concat(monthsRange[label]);
-                        // Now use $in for filtering months
                         if (allowedMonths.length > 0) filter["startDate.courseStartingMonth"] = { $in: allowedMonths };
                         break;
-                    // Add cases for other filters
                     default:
                         break;
                 }
@@ -371,15 +365,10 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                     // 5️⃣ Flatten lookup result
                     { $addFields: { university: { $arrayElemAt: ["$university", 0] } } }
                 );
-                console.time("myFunction");
                 [courses, totalDocs] = await Promise.all([
                     courseModel.aggregate(aggregationPipeline),
-                    courseModel.estimatedDocumentCount({
-                        multipleLocations: { $exists: false },
-                        ...filter
-                    })
+                    courseModel.estimatedDocumentCount({ multipleLocations: { $exists: false }, ...filter })
                 ]);
-                console.timeEnd("myFunction");
             }
             else {
                 [courses, totalDocs] = await Promise.all(
@@ -394,19 +383,14 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                             .limit(perPage)
                             .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
                             .lean(),
-                        courseModel.estimatedDocumentCount({
-                            multipleLocations: { $exists: false },
-                            ...filter
-                        })
+                        courseModel.estimatedDocumentCount({ multipleLocations: { $exists: false }, ...filter })
                     ]
                 )
             }
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.currency) {
                 courses = courses.map(ele => {
-                    if (!rates[ele.currency.code] || !rates[req.body.currency]) {
-                        return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
-                    }
+                    if (!rates[ele.currency.code] || !rates[req.body.currency]) return { statusCode: 400, data: null, message: 'Exchange rates for the specified currencies are not available' };
                     if (ele.currency.code != req.body.currency) {
                         ele.tuitionFee.tuitionFee = costConversion(ele.tuitionFee.tuitionFee, ele.currency.code, req.body.currency, rates[ele.currency.code], rates[req.body.currency]);
                         ele.currency = { code: req.body.currency, symbol: currencySymbols[req.body.currency] };
