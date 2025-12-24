@@ -19,6 +19,7 @@ import destinationModel from "../../models/Destination.js";
 import { MongoClient } from "mongodb";
 import { categorizePrograms, constructFilters } from "../../utils/recommendations.js";
 import { fetchJSON2GridLink } from "../../utils/json2grid.js";
+import { performance } from "node:perf_hooks";
 const ExchangeRatesId = process.env.EXCHANGERATES_MONGOID
 export const filters = errorWrapper(async (req, res, next) => {
     let { filterData, project } = req.body;
@@ -441,8 +442,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             }
             else {
                 // add timing logger here 
-                console.time("find courses");
-                const startTime = performance.now();
+                console.time("myFunction");
+                const start = performance.now();
+
                 [courses, totalDocs] = await Promise.all(
                     [
                         courseModel
@@ -460,8 +462,10 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         })
                     ]
                 )
-                console.timeEnd("find courses without aggregation");
-                console.log(`find courses time: ${performance.now() - startTime}ms`);
+                console.timeEnd("myFunction");
+                const duration = performance.now() - start;
+                console.log(`myFunction executed in ${duration.toFixed(2)} ms`);
+              
             }
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.currency) {
