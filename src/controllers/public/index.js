@@ -443,8 +443,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             else {
                 // add timing logger here 
                 console.time("myFunction");
-                const start = performance.now();
-
                 [courses, totalDocs] = await Promise.all(
                     [
                         courseModel
@@ -452,20 +450,18 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                 multipleLocations: { $exists: false },
                                 ...filter
                             }, "name university discipline subDiscipline studyLevel applicationDetails tuitionFee.tuitionFeeType tuitionFee.tuitionFee startDate schoolName duration courseType studyMode currency stemDetails.stem AdmissionsRequirements.AcademicRequirements featured globalRankingPosition AdmissionsRequirements.LanguageRequirements loanDetails budget")
-                            .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
                             // .sort({ globalRankingPosition: 1, _id: 1 })
                             .skip(skip)
-                            .limit(perPage),
-                        courseModel.countDocuments({
+                            .limit(perPage)
+                            .populate("university", "name location logoSrc type uni_rating rank geoCoordinates")
+                            .lean(),
+                        courseModel.estimatedDocumentCount({
                             multipleLocations: { $exists: false },
                             ...filter
                         })
                     ]
                 )
                 console.timeEnd("myFunction");
-                const duration = performance.now() - start;
-                console.log(`myFunction executed in ${duration.toFixed(2)} ms`);
-              
             }
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.currency) {
