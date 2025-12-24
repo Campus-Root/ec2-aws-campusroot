@@ -306,15 +306,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         break;
                     case "name":
                         let vector = await stringToEmbedding(ele.data) // extract content from db  such as plot and courseLink 
-                        aggregationPipeline.push({
-                            $vectorSearch: {
-                                "queryVector": vector,
-                                "path": "embeddingVector",
-                                "numCandidates": 100,
-                                "limit": 40,
-                                "index": "vector_index"
-                            }
-                        });
+                        aggregationPipeline.push({ $vectorSearch: { "queryVector": vector, "path": "embeddingVector", "numCandidates": 100, "limit": 20, "index": "vector_index" } });
                         break;
                     case "TOEFL":
                         filter.TOEFL = { $in: ele.data };
@@ -369,39 +361,13 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 }
             }
             if (aggregationPipeline.length > 0) {
-                aggregationPipeline.push({
-                    $match: {
-                        multipleLocations: { $exists: false },
-                        ...filter // Apply dynamic filters
-                    }
-
-                },
+                aggregationPipeline.push(
+                    { $match: { multipleLocations: { $exists: false }, ...filter } },
                     { $sort: { globalRankingPosition: 1, _id: 1 } },
                     { $skip: skip },
                     { $limit: perPage },
                     // 4️⃣ Lookup ONLY for paged docs
-                    {
-                        $lookup: {
-                            from: "universities",
-                            localField: "university",
-                            foreignField: "_id",
-                            as: "university",
-                            pipeline: [
-                                {
-                                    $project: {
-                                        name: 1,
-                                        location: 1,
-                                        logoSrc: 1,
-                                        type: 1,
-                                        uni_rating: 1,
-                                        rank: 1,
-                                        geoCoordinates: 1
-                                    }
-                                }
-                            ]
-                        }
-                    },
-
+                    { $lookup: { from: "universities", localField: "university", foreignField: "_id", as: "university", pipeline: [{ $project: { name: 1, location: 1, logoSrc: 1, type: 1, uni_rating: 1, rank: 1, geoCoordinates: 1 } }] } },
                     // 5️⃣ Flatten lookup result
                     { $addFields: { university: { $arrayElemAt: ["$university", 0] } } }
                 );
@@ -416,8 +382,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 console.timeEnd("myFunction");
             }
             else {
-                // add timing logger here 
-                console.time("myFunction");
                 [courses, totalDocs] = await Promise.all(
                     [
                         courseModel
@@ -436,7 +400,6 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         })
                     ]
                 )
-                console.timeEnd("myFunction");
             }
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.currency) {

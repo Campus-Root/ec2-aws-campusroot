@@ -2,11 +2,13 @@ import courseModel from '../models/Course.js';
 import { openai } from './dbConnection.js';
 export const stringToEmbedding = async (text) => {
     try {
+        console.time("stringToEmbedding");
         const { data } = await openai.embeddings.create({
             model: "text-embedding-3-small",
             input: text,
             encoding_format: "float",
         });
+        console.timeEnd("stringToEmbedding");
         return data[0].embedding;
     } catch (error) {
         console.log(error);
