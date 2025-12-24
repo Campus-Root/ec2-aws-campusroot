@@ -440,6 +440,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                 totalDocs = result[0]?.metadata[0]?.totalDocs || 0;
             }
             else {
+                // add timing logger here 
+                console.time("find courses");
+                const startTime = performance.now();
                 [courses, totalDocs] = await Promise.all(
                     [
                         courseModel
@@ -457,6 +460,8 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         })
                     ]
                 )
+                console.timeEnd("find courses without aggregation");
+                console.log(`find courses time: ${performance.now() - startTime}ms`);
             }
             totalPages = Math.ceil(totalDocs / perPage);
             if (req.body.currency) {
