@@ -427,9 +427,9 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                                     budget: 1
                                 }
                             },
-                            {
-                                $sort: { globalRankingPosition: 1, _id: 1 } // Sort by ranking
-                            },
+                            // {
+                            //     $sort: { globalRankingPosition: 1, _id: 1 } // Sort by ranking
+                            // },
                             { $skip: skip }, // Pagination skip
                             { $limit: perPage }, // Pagination limit
                         ]
