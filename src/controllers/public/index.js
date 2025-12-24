@@ -374,71 +374,46 @@ export const listings = errorWrapper(async (req, res, next, session) => {
                         multipleLocations: { $exists: false },
                         ...filter // Apply dynamic filters
                     }
-                }, {
-                    $lookup: {
-                        from: "universities", // Related collection name
-                        localField: "university",
-                        foreignField: "_id",
-                        as: "university",
-                        pipeline: [
-                            {
-                                $project: {
-                                    name: 1,
-                                    location: 1,
-                                    logoSrc: 1,
-                                    type: 1,
-                                    uni_rating: 1,
-                                    rank: 1,
-                                    geoCoordinates: 1
-                                }
-                            }
-                        ]
-                    }
+
                 },
+                    { $sort: { globalRankingPosition: 1, _id: 1 } },
+                    { $skip: skip },
+                    { $limit: perPage },
+                    // 4️⃣ Lookup ONLY for paged docs
                     {
-                        $addFields: {
-                            university: { $arrayElemAt: ["$university", 0] } // Extract the first element
-                        }
-                    }, {
-                    $facet: {
-                        metadata: [{ $count: "totalDocs" }], // Count total matching documents
-                        data: [
-                            {
-                                $project: {
-                                    name: 1,
-                                    university: 1,
-                                    discipline: 1,
-                                    subDiscipline: 1,
-                                    studyLevel: 1,
-                                    applicationDetails: 1,
-                                    "tuitionFee.tuitionFeeType": 1,
-                                    "tuitionFee.tuitionFee": 1,
-                                    startDate: 1,
-                                    schoolName: 1,
-                                    duration: 1,
-                                    courseType: 1,
-                                    studyMode: 1,
-                                    currency: 1,
-                                    "stemDetails.stem": 1,
-                                    "AdmissionsRequirements.AcademicRequirements": 1,
-                                    featured: 1,
-                                    globalRankingPosition: 1,
-                                    "AdmissionsRequirements.LanguageRequirements": 1,
-                                    loanDetails: 1,
-                                    budget: 1
+                        $lookup: {
+                            from: "universities",
+                            localField: "university",
+                            foreignField: "_id",
+                            as: "university",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        name: 1,
+                                        location: 1,
+                                        logoSrc: 1,
+                                        type: 1,
+                                        uni_rating: 1,
+                                        rank: 1,
+                                        geoCoordinates: 1
+                                    }
                                 }
-                            },
-                            // {
-                            //     $sort: { globalRankingPosition: 1, _id: 1 } // Sort by ranking
-                            // },
-                            { $skip: skip }, // Pagination skip
-                            { $limit: perPage }, // Pagination limit
-                        ]
-                    }
-                });
-                let result = await courseModel.aggregate(aggregationPipeline);
-                courses = result[0]?.data || [];
-                totalDocs = result[0]?.metadata[0]?.totalDocs || 0;
+                            ]
+                        }
+                    },
+
+                    // 5️⃣ Flatten lookup result
+                    { $addFields: { university: { $arrayElemAt: ["$university", 0] } } }
+                );
+                console.time("myFunction");
+                [courses, totalDocs] = await Promise.all([
+                    courseModel.aggregate(aggregationPipeline),
+                    courseModel.countDocuments({
+                        multipleLocations: { $exists: false },
+                        ...filter
+                    })
+                ]);
+                console.timeEnd("myFunction");
             }
             else {
                 // add timing logger here 
