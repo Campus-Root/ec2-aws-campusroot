@@ -538,7 +538,7 @@ export const counsellors = errorWrapper(async (req, res, next, session) => {
 })
 export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
     let { page = 1, perPage = 5, search, institutions, universities, disciplines, subDisciplines, location, country, state, custom = false } = req.query, skip = (page - 1) * perPage;
-    let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = [], countrySearchResults = [], stateSearchResults = [], citySearchResults = [], totalPages = 1, queries = []
+    let institutionSearchResults = [], disciplineSearchResults = [], subDisciplineSearchResults = [], uniSearchResults = [], countrySearchResults = [], stateSearchResults = [], citySearchResults = [], totalPages = 1, queries = [], regexTime = 0
     if (!search) return res.status(400).json({ success: false, message: `blank search`, data: null })
     const specialCharRegex = /[^a-zA-Z0-9\s]/;
     if (specialCharRegex.test(search)) return res.status(400).json({ success: false, message: 'Invalid search. Special characters are not allowed.', data: null });
@@ -585,7 +585,7 @@ export const uniNameRegex = errorWrapper(async (req, res, next, session) => {
         (async () => {
             const { arr, totalDocs } = await subDisciplineRegexMatch(search, skip, perPage, custom);
             subDisciplineSearchResults = arr;
-            totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);
+            totalPages = Math.max(Math.ceil(totalDocs / perPage), totalPages);  
         })()
     );
     if (location == 1) queries.push(

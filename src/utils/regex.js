@@ -1,24 +1,37 @@
-import courseModel from "../models/Course.js";
 import { keywords } from "./enum.js"
-import { destinationList } from "./lists.js";
-export const disciplineRegexMatch = async (search, skip = 0, perPage = 5, custom) => {
+import { destinationList, disciplineList, subDisciplineList } from "./lists.js";
+export const disciplineRegexMatch = async (search, skip = 0, perPage = 5) => {
     const regex = new RegExp(search, "i");
-    const facetsPipeline = [{ $unwind: "$discipline" }, { $match: { discipline: regex } }, { $group: { _id: "$discipline" } }, { $facet: { results: [{ $project: { _id: 0, discipline: "$_id" } }], totalCount: [{ $count: "count" }] } }];
-    if (custom) facetsPipeline.unshift({$match: { coursefinder_Name: { $exists: true } }})
-    const results = await courseModel.aggregate(facetsPipeline);
-    const disciplines = results[0]?.results.map(doc => doc.discipline) || [];
-    const totalDocs = results[0]?.totalCount[0]?.count || 0;
-    return { arr: disciplines.slice(Number(skip), Number(skip) + Number(perPage)), totalDocs };
-}
-export const subDisciplineRegexMatch = async (search, skip = 0, perPage = 5, custom) => {
+    const filtered = disciplineList.filter(discipline => regex.test(discipline));
+    const totalDocs = filtered.length;
+    const arr = filtered.sort((a, b) => a.localeCompare(b)).slice(Number(skip), Number(skip) + Number(perPage));
+    return { arr, totalDocs };
+};
+export const subDisciplineRegexMatch = async (search, skip = 0, perPage = 5) => {
     const regex = new RegExp(search, "i");
-    const facetsPipeline = [{ $unwind: "$subDiscipline" }, { $match: { subDiscipline: regex } }, { $group: { _id: "$subDiscipline" } }, { $facet: { results: [{ $project: { _id: 0, subDiscipline: "$_id" } }], totalCount: [{ $count: "count" }] } }];
-    if (custom) facetsPipeline.unshift({$match: { coursefinder_Name: { $exists: true } }})
-    const results = await courseModel.aggregate(facetsPipeline);
-    const subDisciplines = results[0]?.results.map(doc => doc.subDiscipline) || [];
-    const totalDocs = results[0]?.totalCount[0]?.count || 0;
-    return { arr: subDisciplines.slice(Number(skip), Number(skip) + Number(perPage)), totalDocs };
-}
+    const filtered = subDisciplineList.filter(subDiscipline => regex.test(subDiscipline));
+    const totalDocs = filtered.length;
+    const arr = filtered.sort((a, b) => a.localeCompare(b)).slice(Number(skip), Number(skip) + Number(perPage));
+    return { arr, totalDocs };
+};
+// export const disciplineRegexMatch = async (search, skip = 0, perPage = 5, custom) => {
+//     const regex = new RegExp(search, "i");
+//     const facetsPipeline = [{ $unwind: "$discipline" }, { $match: { discipline: regex } }, { $group: { _id: "$discipline" } }, { $facet: { results: [{ $project: { _id: 0, discipline: "$_id" } }], totalCount: [{ $count: "count" }] } }];
+//     if (custom) facetsPipeline.unshift({$match: { coursefinder_Name: { $exists: true } }})
+//     const results = await courseModel.aggregate(facetsPipeline);
+//     const disciplines = results[0]?.results.map(doc => doc.discipline) || [];
+//     const totalDocs = results[0]?.totalCount[0]?.count || 0;
+//     return { arr: disciplines.slice(Number(skip), Number(skip) + Number(perPage)), totalDocs };
+// }
+// export const subDisciplineRegexMatch = async (search, skip = 0, perPage = 5, custom) => {
+//     const regex = new RegExp(search, "i");
+//     const facetsPipeline = [{ $unwind: "$subDiscipline" }, { $match: { subDiscipline: regex } }, { $group: { _id: "$subDiscipline" } }, { $facet: { results: [{ $project: { _id: 0, subDiscipline: "$_id" } }], totalCount: [{ $count: "count" }] } }];
+//     if (custom) facetsPipeline.unshift({$match: { coursefinder_Name: { $exists: true } }})
+//     const results = await courseModel.aggregate(facetsPipeline);
+//     const subDisciplines = results[0]?.results.map(doc => doc.subDiscipline) || [];
+//     const totalDocs = results[0]?.totalCount[0]?.count || 0;
+//     return { arr: subDisciplines.slice(Number(skip), Number(skip) + Number(perPage)), totalDocs };
+// }
 export const searchSimilarWords = (inputWord) => {
     let bestMatches = [];
     let bestSimilarity = 0.0;
