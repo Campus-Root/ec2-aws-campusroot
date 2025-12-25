@@ -58,6 +58,16 @@ export const filters = errorWrapper(async (req, res, next) => {
         case "courses":
             filter.university = { $exists: true }
             filter.multipleLocations = { $exists: false }
+
+            // Check if budget filter exists to pre-fetch exchange rates
+            const hasBudgetFilter = filterData.some(ele => ele.type === "budget");
+            let exchangeRates = null;
+            if (hasBudgetFilter) {
+                const exchangeData = await exchangeModel.findById(ExchangeRatesId, "rates");
+                exchangeRates = exchangeData?.rates;
+            }
+
+            // Build filter from filterData
             for (const ele of filterData) {
                 switch (ele.type) {
                     case "country":
@@ -113,10 +123,9 @@ export const filters = errorWrapper(async (req, res, next) => {
                         break;
                     case "budget":
                         let lowerLimit = ele.data[0], upperLimit = ele.data[1]
-                        const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates")
-                        if (req.body.currency !== "USD") {
-                            lowerLimit = costConversion(lowerLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
-                            upperLimit = costConversion(upperLimit, req.body.currency, "USD", rates[req.body.currency], rates["USD"]);
+                        if (exchangeRates && req.body.currency !== "USD") {
+                            lowerLimit = costConversion(lowerLimit, req.body.currency, "USD", exchangeRates[req.body.currency], exchangeRates["USD"]);
+                            upperLimit = costConversion(upperLimit, req.body.currency, "USD", exchangeRates[req.body.currency], exchangeRates["USD"]);
                         }
                         filter["budget.budgetAmount"] = { $lte: upperLimit + 100, $gte: Math.max(lowerLimit - 100, 0) };
                         break;
@@ -124,79 +133,134 @@ export const filters = errorWrapper(async (req, res, next) => {
                         break;
                 }
             }
+
+            // Initialize project array if empty and convert to Set for O(1) lookups
             if (project.length === 0) project = ["country", "state", "city", "discipline", "subDiscipline", "featured", "type", "studyLevel", "studyMode", "courseStartingMonth", "Language", "Academic", "stem", "ApplicationFeeWaver"]
-            if (project.includes("country")) facets.country = [{ $match: { "location.country": { $ne: null } } }, { $group: { _id: "$location.country", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("state") && countrySelected) facets.state = [{ $match: { "location.state": { $ne: null } } }, { $group: { _id: "$location.state", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            if (project.includes("city") && (stateSelected || countrySelected)) facets.city = [{ $match: { "location.city": { $ne: null } } }, { $group: { _id: "$location.city", count: { $sum: 1 } } }, { $sort: { count: -1 } }];
-            // if (project.includes("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("subDiscipline")) facets.subDiscipline = [{ $unwind: "$subDiscipline" }, { $group: { _id: "$subDiscipline", count: { $sum: 1 } } }, { $sort: { _id: 1 } }]
-            if (project.includes("featured")) facets.featured = [{ $group: { _id: "$featured", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("type")) facets.type = [{ $match: { type: { $nin: [null, "not reported"] } } }, { $group: { _id: "$type", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            // if (project.includes("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("studyMode")) facets.studyMode = [{ $unwind: "$studyMode" }, { $match: { studyMode: { $nin: [null, "Online"] } } }, { $group: { _id: "$studyMode", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            if (project.includes("courseStartingMonth")) facets.courseStartingMonth = [
-                { $unwind: "$startDate" },
-                {
-                    $group: {
-                        _id: {
-                            $cond: [
-                                { $in: ["$startDate.courseStartingMonth", [0, 1, 2]] },
-                                "January to March",
-                                {
-                                    $cond: [
-                                        { $in: ["$startDate.courseStartingMonth", [3, 4, 5]] },
-                                        "April to June",
-                                        {
-                                            $cond: [
-                                                { $in: ["$startDate.courseStartingMonth", [6, 7, 8]] },
-                                                "July to September",
-                                                "October to December"
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        count: { $sum: 1 }
-                    }
-                },
-                { $sort: { count: -1 } }
-            ]
-            if (project.includes("Academic")) {
+            const projectSet = new Set(project);
+
+            // Build facets more efficiently
+            if (projectSet.has("country")) {
+                facets.country = [
+                    { $group: { _id: "$location.country", count: { $sum: 1 } } },
+                    { $match: { _id: { $ne: null } } },
+                    { $sort: { count: -1 } }
+                ];
+            }
+            if (projectSet.has("state") && countrySelected) {
+                facets.state = [
+                    { $group: { _id: "$location.state", count: { $sum: 1 } } },
+                    { $match: { _id: { $ne: null } } },
+                    { $sort: { count: -1 } }
+                ];
+            }
+            if (projectSet.has("city") && (stateSelected || countrySelected)) {
+                facets.city = [
+                    { $group: { _id: "$location.city", count: { $sum: 1 } } },
+                    { $match: { _id: { $ne: null } } },
+                    { $sort: { count: -1 } }
+                ];
+            }
+            // if (projectSet.has("discipline")) facets.discipline = [{ $unwind: "$discipline" }, { $group: { _id: "$discipline", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            if (projectSet.has("subDiscipline")) {
+                facets.subDiscipline = [
+                    { $unwind: "$subDiscipline" },
+                    { $group: { _id: "$subDiscipline", count: { $sum: 1 } } },
+                    { $sort: { _id: 1 } }
+                ];
+            }
+            if (projectSet.has("featured")) {
+                facets.featured = [
+                    { $group: { _id: "$featured", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ];
+            }
+            if (projectSet.has("type")) {
+                facets.type = [
+                    { $group: { _id: "$type", count: { $sum: 1 } } },
+                    { $match: { _id: { $nin: [null, "not reported"] } } },
+                    { $sort: { count: -1 } }
+                ];
+            }
+            // if (projectSet.has("studyLevel")) facets.studyLevel = [{ $group: { _id: "$studyLevel", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            if (projectSet.has("studyMode")) {
+                facets.studyMode = [
+                    { $unwind: "$studyMode" },
+                    { $group: { _id: "$studyMode", count: { $sum: 1 } } },
+                    { $match: { _id: { $nin: [null, "Online"] } } },
+                    { $sort: { count: -1 } }
+                ];
+            }
+            if (projectSet.has("courseStartingMonth")) {
+                facets.courseStartingMonth = [
+                    { $unwind: "$startDate" },
+                    {
+                        $group: {
+                            _id: {
+                                $cond: [
+                                    { $in: ["$startDate.courseStartingMonth", [0, 1, 2]] },
+                                    "January to March",
+                                    {
+                                        $cond: [
+                                            { $in: ["$startDate.courseStartingMonth", [3, 4, 5]] },
+                                            "April to June",
+                                            {
+                                                $cond: [
+                                                    { $in: ["$startDate.courseStartingMonth", [6, 7, 8]] },
+                                                    "July to September",
+                                                    "October to December"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { count: -1 } }
+                ];
+            }
+            if (projectSet.has("Academic")) {
                 facets.GRE = [
                     { $group: { _id: "$GRE", count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
-                ]
+                ];
                 facets.GPA = [
                     { $group: { _id: "$GPA", count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
-                ]
+                ];
                 facets.GMAT = [
                     { $group: { _id: "$GMAT", count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
-                ]
+                ];
             }
-            if (project.includes("Language")) {
+            if (projectSet.has("Language")) {
                 facets.Duolingo = [
                     { $group: { _id: "$Duolingo", count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
-                ]
+                ];
                 facets.IELTS = [
                     { $group: { _id: "$IELTS", count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
-                ]
+                ];
                 facets.PTE = [
                     { $group: { _id: "$PTE", count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
-                ]
+                ];
                 facets.TOEFL = [
                     { $group: { _id: "$TOEFL", count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
-                ]
+                ];
             }
-            // if (project.includes("stem")) facets.stem = [{ $group: { _id: "$stemDetails.stem", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            // if (project.includes("ApplicationFeeWaver")) facets.waiver = [{ $group: { _id: "$applicationDetails.applicationFeeWaiver", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
-            facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
+            // if (projectSet.has("stem")) facets.stem = [{ $group: { _id: "$stemDetails.stem", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+            // if (projectSet.has("ApplicationFeeWaver")) facets.waiver = [{ $group: { _id: "$applicationDetails.applicationFeeWaiver", count: { $sum: 1 } } }, { $sort: { count: -1 } }]
+
+            // Only run aggregation if facets exist
+            if (Object.keys(facets).length > 0) {
+                facetResults = await courseModel.aggregate([{ $match: filter }, { $facet: facets }]);
+            } else {
+                facetResults = [{}];
+            }
             break;
         default:
             break;
@@ -211,7 +275,7 @@ export const listings = errorWrapper(async (req, res, next, session) => {
     switch (req.params.name) {
         case "universities":
             sort.globalRankingPosition = 1,
-            sort._id = 1
+                sort._id = 1
             sort.courses = -1
             for (const ele of req.body.filterData) {
                 switch (ele.type) {
