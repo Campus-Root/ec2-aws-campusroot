@@ -76,6 +76,8 @@ const courseSchema = mongoose.Schema(
             ScoreEvaluation: { type: Boolean },
         },
         university: { type: mongoose.Types.ObjectId, ref: "university", },
+        hasUniversity: Boolean,
+        multipleLocations: Boolean,
         type: { type: String },
         globalRankingPosition: { type: Number },
         globalTopRankingPercentage: { type: Number },
@@ -93,6 +95,8 @@ const courseSchema = mongoose.Schema(
     },
     { timestamps: true }
 );
+courseSchema.index({ multipleLocations: 1 });
+courseSchema.index({ hasUniversity: 1 });
 courseSchema.index({ "location.country": 1 });
 courseSchema.index({ "location.state": 1 });
 courseSchema.index({ "location.city": 1 });
