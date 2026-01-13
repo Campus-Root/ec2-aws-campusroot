@@ -277,7 +277,7 @@ export const filters = errorWrapper(async (req, res, next) => {
             // Only run aggregation if facets exist
             if (Object.keys(facets).length > 0) {
                 // console.log(JSON.stringify([{ $match: filter }, { $project: projection }, { $facet: facets }], null, 2));
-                facetResults = await courseModel.aggregate([{ $match: filter }, { $project: projection }, { $facet: facets }]).explain("executionStats");
+                facetResults = await courseModel.aggregate([{ $match: filter }, { $project: projection }, { $facet: facets }]);
             } else {
                 facetResults = [{}];
             }
