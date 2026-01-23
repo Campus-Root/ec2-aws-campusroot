@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.93f7cd3b.css",
-    "main.js": "/static/js/main.5ecca369.js",
+    "main.js": "/static/js/main.8b77ea92.js",
     "static/js/687.56b1201c.chunk.js": "/static/js/687.56b1201c.chunk.js",
     "static/css/474.c22b02e4.chunk.css": "/static/css/474.c22b02e4.chunk.css",
     "static/js/474.640af27e.chunk.js": "/static/js/474.640af27e.chunk.js",
@@ -133,6 +133,7 @@
     "static/media/profilebg.png": "/static/media/profilebg.357f4785db0462cd3b48.png",
     "static/media/sec2Img2.jpeg": "/static/media/sec2Img2.2283f333bf5a77a60790.jpeg",
     "static/media/confusedImg.png": "/static/media/confusedImg.2551f34b102ede71caa6.png",
+    "static/media/pes-logo.png": "/static/media/pes-logo.870518a09fccf80c299b.png",
     "static/media/sec2Img4.png": "/static/media/sec2Img4.3c860bff98fe22fe6f97.png",
     "static/media/Moneybag.png": "/static/media/Moneybag.1a837c2beb1dfa8786dd.png",
     "static/media/How it works icon1.png": "/static/media/How it works icon1.7751e73f34c0db0d7ea6.png",
@@ -164,7 +165,6 @@
     "static/media/errorMsg.png": "/static/media/errorMsg.ed110c65e51c4b30c87c.png",
     "static/media/flightRight.png": "/static/media/flightRight.a0f6d75ec75cf74c0034.png",
     "static/media/Our success story icon 4.png": "/static/media/Our success story icon 4.443da3089f33abcbb677.png",
-    "static/media/pes-logo.png": "/static/media/pes-logo.999b1f844fd675cf1d15.png",
     "static/media/Signup_bg.png": "/static/media/Signup_bg.92ab426ba4f3d52b625c.png",
     "static/media/Our success story icon 3.png": "/static/media/Our success story icon 3.fe3dcb1bcb3955e76007.png",
     "static/media/CampusrootLogo.png": "/static/media/CampusrootLogo.bb6a8db3a579f4910f3f.png",
@@ -172,7 +172,7 @@
     "index.html": "/index.html",
     "static/media/underline.svg": "/static/media/underline.b64394a12e4b23d01a89c587c81d1bfb.svg",
     "main.93f7cd3b.css.map": "/static/css/main.93f7cd3b.css.map",
-    "main.5ecca369.js.map": "/static/js/main.5ecca369.js.map",
+    "main.8b77ea92.js.map": "/static/js/main.8b77ea92.js.map",
     "687.56b1201c.chunk.js.map": "/static/js/687.56b1201c.chunk.js.map",
     "474.c22b02e4.chunk.css.map": "/static/css/474.c22b02e4.chunk.css.map",
     "474.640af27e.chunk.js.map": "/static/js/474.640af27e.chunk.js.map",
@@ -228,6 +228,6 @@
   },
   "entrypoints": [
     "static/css/main.93f7cd3b.css",
-    "static/js/main.5ecca369.js"
+    "static/js/main.8b77ea92.js"
   ]
 }
