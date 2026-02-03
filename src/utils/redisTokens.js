@@ -88,6 +88,7 @@ export const deleteTokens = async (userId, source) => {
 };
 export const storeNewToken = async (name, newAccessToken) => {
     try {
+        console.log({name, newAccessToken});
         await redisClient.set(`${name}`, newAccessToken, { 'EX': 3660 }); // 1 hour
     } catch (error) {
         console.error('Error storing token:', error);
@@ -98,7 +99,7 @@ export const fetchToken = async (name) => {
     try {
         return await redisClient.get(name) || null
     } catch (error) {
-        console.error('Error storing token:', error);
+        console.error('Error getting token:', error);
         throw error;
     }
 }

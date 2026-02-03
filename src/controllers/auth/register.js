@@ -160,7 +160,6 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
             student.logs.push({ action: `Registered in using Google auth`, details: `Social registration done` });
             const { newAccessToken, newRefreshToken } = await generateTokens(student._id, req.headers['user-agent'])
             const doc = await createFolder(given_name + '-' + family_name + '-' + student._id, process.env.DEFAULT_STUDENT_PARENTID_FOLDER_ZOHO)
-            console.log(doc);
             student.docData = {
                 folder: doc.id,
                 name: doc.attributes.name,
