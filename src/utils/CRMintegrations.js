@@ -88,6 +88,7 @@ export const regenerateToken = async () => {
                     client_id: clientId
                 }
             })
+        console.log("access token",data.access_token);
         await storeNewToken("ZOHO_ACCESS_TOKEN", data.access_token)
         return data.access_token
     } catch (error) {
