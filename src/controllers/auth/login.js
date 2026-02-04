@@ -80,7 +80,7 @@ export const Login = errorWrapper(async (req, res, next) => {
     user.otp[type].expiry = expiry
     user.logs.push({ action: `otp sent for login`, details: `` })
     await user.save()
-    return ({ statusCode: 200, message: `otp sent for login, verify before expiry`, data: { expiry: expiry } });
+    return ({ statusCode: 200, message: `otp sent for login, verify before expiry`, data: { otp: otp, expiry: expiry } });
 }
 
 );
