@@ -95,17 +95,20 @@ const courseSchema = mongoose.Schema(
     },
     { timestamps: true }
 );
-courseSchema.index({ multipleLocations: 1 });
-courseSchema.index({ hasUniversity: 1 });
-courseSchema.index({ "location.country": 1 });
-courseSchema.index({ "location.state": 1 });
-courseSchema.index({ "location.city": 1 });
-courseSchema.index({ studyLevel: 1 });
-courseSchema.index({ studyMode: 1 });
-courseSchema.index({ featured: 1 });
-courseSchema.index({ subDiscipline: 1 });
-courseSchema.index({ discipline: 1 });
-courseSchema.index({ TOEFL: 1, IELTS: 1, PTE: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, "location.country": 1, "location.state": 1, "location.city": 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, "budget.budgetAmount": 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, subDiscipline: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, studyMode: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, featured: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, studyLevel: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, type: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, discipline: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, TOEFL: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, IELTS: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, PTE: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, GRE: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, GMAT: 1 });
+courseSchema.index({ hasUniversity: 1, multipleLocations: 1, GPA: 1 });
 courseSchema.index({ "stemDetails.stem": 1 });
 courseSchema.index({ "applicationDetails.applicationFeeWaiver": 1 });
 courseSchema.index({ globalRankingPosition: 1, _id: 1 });
