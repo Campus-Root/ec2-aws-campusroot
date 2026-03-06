@@ -36,6 +36,7 @@ export const cookieOptions = {
 /* ---------------- CORS ---------------- */
 
 const devWhiteList = new Set([
+    "https://pes.campusroot.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5500",
@@ -43,6 +44,7 @@ const devWhiteList = new Set([
 ]);
 
 const exactWhitelist = new Set([
+    "https://pes.campusroot.com",
     "https://campusroot.com",
     "https://team.campusroot.com",
     "https://onewindow.co",
