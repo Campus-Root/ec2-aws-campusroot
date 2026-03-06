@@ -14,10 +14,10 @@ import { startCronJob } from "./utils/cron.js";
 import indexRouter from "./routers/index.js";
 import webhookRouter from "./webhooks/index.js";
 const app = express();
-import path from 'path';
-const __filename = new URL(import.meta.url).pathname;
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, 'build')));
+// import path from 'path';
+// const __filename = new URL(import.meta.url).pathname;
+// const __dirname = path.dirname(__filename);
+// app.use(express.static(path.join(__dirname, 'build')));
 await startCronJob();
 await initialize();
 export const cookieOptions = {
