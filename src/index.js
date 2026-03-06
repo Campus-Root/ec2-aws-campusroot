@@ -140,7 +140,7 @@ app.use(mongoSanitize());
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use("/api/v1", indexRouter);
 app.use("/webhook/v1", webhookRouter)
-app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
+// app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 const port = process.env.PORT
