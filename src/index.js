@@ -17,7 +17,10 @@ import notFoundMiddleware from "./middleware/notFound.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 
 const app = express();
-
+import path from 'path';
+const __filename = new URL(import.meta.url).pathname;
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, 'build')));
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
@@ -153,9 +156,8 @@ app.use(
 
 /* ---------------- ROUTES ---------------- */
 
-app.get("/", (req, res) => {
-    res.send("Server is running");
-});
+app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
+
 
 app.use("/api/v1", indexRouter);
 
