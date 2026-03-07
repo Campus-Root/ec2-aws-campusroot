@@ -158,12 +158,13 @@ app.use(
 
 /* ---------------- ROUTES ---------------- */
 
-app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
+
 
 
 app.use("/api/v1", indexRouter);
 
 app.use("/webhook/v1", webhookRouter);
+app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 
 /* ---------------- ERROR HANDLING ---------------- */
 
