@@ -30,3 +30,22 @@ export const getNewAdvisor = async (role, country) => {
     }
     return advisors[0]
 }
+export const getLeadSource = (req) => {
+    const origin = req.headers.origin;
+
+    if (!origin) return "Direct";
+
+    if (origin.includes("yourdomain.com")) {
+        return "Website Visit";
+    }
+
+    if (origin.includes("facebook.com")) {
+        return "Facebook";
+    }
+
+    if (origin.includes("google.com")) {
+        return "Google";
+    }
+
+    return "External Website";
+}
