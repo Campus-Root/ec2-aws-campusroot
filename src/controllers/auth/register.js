@@ -148,7 +148,7 @@ export const googleLogin = errorWrapper(async (req, res, next, session) => {
                 queryDescription: "Registration initiated",
                 student: student._id,
                 remoteStudentAdvisor: RSA._id,
-                leadSource: "WebSite Visit",
+                leadSource: getLeadSource(req.headers["origin"]),
                 leadStatus: [{ status: "New Lead", }],
                 leadRating: "medium priority",
                 logs: [{ action: "lead Initiated" }]

@@ -11,7 +11,7 @@ import { loginSchema, OTPVerificationSchema } from "../../schemas/student.js";
 import { deleteTokens, generateTokens } from "../../utils/redisTokens.js";
 import { sendOTP } from "../../utils/sendSMS.js";
 import { fileURLToPath } from "url";
-import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
+import { getLeadSource, getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import leadsModel from "../../models/leads.js";
 import { teamModel } from "../../models/Team.js";
 import chatModel from "../../models/Chat.js";
@@ -58,7 +58,7 @@ export const Login = errorWrapper(async (req, res, next) => {
             queryDescription: "Registration initiated",
             student: user._id,
             remoteStudentAdvisor: RSA._id,
-            leadSource: "WebSite Visit",
+            leadSource: getLeadSource(req.headers["origin"]),
             leadStatus: [{ status: "New Lead" }],
             leadRating: "medium priority",
             logs: [{ action: "lead Initiated" }]
