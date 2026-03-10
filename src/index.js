@@ -160,20 +160,14 @@ app.use(
 
 
 
-app.use((req,res,next) => {
+app.use((req, res, next) => {
     console.log("Host:", req.headers["host"])
     console.log("Origin:", req.headers["origin"])
     console.log("Referer:", req.headers["referer"])
     next();
 });
 app.use("/api/v1", indexRouter);
-app.get("/api/test", (req, res) => {
-    // referer
-    console.log("Host:", req.headers["host"])
-    console.log("Origin:", req.headers["origin"])
-    console.log("Referer:", req.headers["referer"])
-    res.send({ success: true, message: "Test successful", data: null })
-});
+app.get("/api/test", (req, res) => { res.send({ success: true, message: "Test successful", data: null }) });
 app.use("/webhook/v1", webhookRouter);
 app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'build', 'index.html')));
 
