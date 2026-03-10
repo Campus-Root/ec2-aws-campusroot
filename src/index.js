@@ -163,7 +163,8 @@ app.use(
 
 app.use("/api/v1", indexRouter);
 app.get("/api/test", (req, res) => {
-    console.log(req.headers.origin);
+    // referer
+    console.log(JSON.stringify(req.headers, null, 2));
     res.send({ success: true, message: "Test successful", data: null })
 });
 app.use("/webhook/v1", webhookRouter);
