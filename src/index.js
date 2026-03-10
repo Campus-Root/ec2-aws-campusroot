@@ -160,7 +160,12 @@ app.use(
 
 
 
-
+app.use((req,res,next) => {
+    console.log("Host:", req.headers["host"])
+    console.log("Origin:", req.headers["origin"])
+    console.log("Referer:", req.headers["referer"])
+    next();
+});
 app.use("/api/v1", indexRouter);
 app.get("/api/test", (req, res) => {
     // referer
