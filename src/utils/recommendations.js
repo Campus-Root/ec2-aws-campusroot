@@ -78,7 +78,7 @@ export const calculateMatchPercentage = (testScores, program) => {
     }
     return ((matchScore / totalWeight) + bonus);
 };
-export const categorizePrograms = (testScores, programs, mode = "Student", limitPerBucket = 50) => {
+export const categorizePrograms = (testScores, programs, mode = "Student", limitPerBucket = 30) => {
 
     const results = [];
     const scored = programs.map(p => ({ ...p, matchPercentage: calculateMatchPercentage(testScores, p) })).filter(p => mode === "Student" ? p.matchPercentage >= 50 : true);
