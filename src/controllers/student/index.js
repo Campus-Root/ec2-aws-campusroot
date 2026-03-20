@@ -99,7 +99,7 @@ export const generateRecommendations = errorWrapper(async (req, res, next, sessi
   req.user.recommendations.data = [...counsellorRecommendedPrograms, ...recommendations]
   req.user.logs.push({ action: `recommendations Generated`, details: `recommendations${req.user.recommendations.data.length}` })
   await req.user.save();
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate featured" })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite startDate featured stemDetails" })
   await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear" })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
@@ -177,7 +177,7 @@ export const hideRecommendation = errorWrapper(async (req, res) => {
   if (!recommendation) return { statusCode: 400, data: null, message: `invalid recommendationId` };
   recommendation.notInterested = true;
   await req.user.save();
-  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite featured" })
+  await courseModel.populate(req.user, { path: "recommendations.data.course", select: "name discipline tuitionFee currency studyMode subDiscipline schoolName startDate studyLevel duration university elite featured stemDetails" })
   await universityModel.populate(req.user, { path: "recommendations.data.course.university", select: "name logoSrc location type establishedYear " })
   if (req.user.preference.currency) {
     const { rates } = await exchangeModel.findById(ExchangeRatesId, "rates");
