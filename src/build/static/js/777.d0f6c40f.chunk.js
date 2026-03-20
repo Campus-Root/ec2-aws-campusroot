@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkstudent_typescript=self.webpackChunkstudent_typescript||[]).push([[777],{92777:(t,s,e)=>{e.r(s),e.d(s,{default:()=>c});e(9950);var n=e(44414);const c=t=>(0,n.jsx)("div",{children:"destinations"})}}]);
