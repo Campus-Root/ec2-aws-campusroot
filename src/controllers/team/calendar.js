@@ -9,6 +9,7 @@ export const generatingAuthUrl = errorWrapper(async (req, res, next, session) =>
 })
 export const googleAuthentication = errorWrapper(async (req, res, next, session) => {
     const { tokens } = await oauth2Client.getToken(req.query.code)
+    console.log(JSON.stringify(tokens, null, 2));
     oauth2Client.setCredentials(tokens);
     const oauth2 = google.oauth2({
         version: 'v2',
