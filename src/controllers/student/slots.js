@@ -28,6 +28,8 @@ export const bookSlot = errorWrapper(async (req, res, next, session) => {
     if (alreadyScheduledAtSameTime) return { statusCode: 400, data: null, message: `Meeting already scheduled at ${alreadyScheduledAtSameTime.data.start.dateTime}` };
     let sessionName
     switch (teamMember.info.role) {
+        case "remoteStudentAdvisor": sessionName = `Remote Student Advisor Session - ${req.user.firstName} ${req.user.lastName}`
+            break;
         case "counsellor": sessionName = `Counselling Session - ${req.user.firstName} ${req.user.lastName}`
             break;
         case "processCoordinator": sessionName = `Application Processing Session - ${req.user.firstName} ${req.user.lastName}`
