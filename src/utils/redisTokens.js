@@ -60,9 +60,9 @@ export const verifyAccessToken = async (accessToken, source) => {
     try {
         const decoded = jwt.verify(accessToken, ACCESS_SECRET);
         if (!decoded || !decoded.id) return { success: false, message: 'Invalid access token payload', decoded: null };
-        const tokenKey = `accessToken:${decoded.id}:${source}`;
-        const storedAccessToken = await redisClient.get(tokenKey);
-        if (!storedAccessToken || storedAccessToken !== accessToken) return { success: false, message: 'Invalid or revoked access token', decoded: null };
+        // const tokenKey = `accessToken:${decoded.id}:${source}`;
+        // const storedAccessToken = await redisClient.get(tokenKey);
+        // if (!storedAccessToken || storedAccessToken !== accessToken) return { success: false, message: 'Invalid or revoked access token', decoded: null };
         return { success: true, message: "Valid Access Token", decoded };
     } catch (error) {
         const message = error.name === 'JsonWebTokenError' ? 'Invalid access token' : error.name === 'TokenExpiredError' ? 'jwt expired' : error.message;
