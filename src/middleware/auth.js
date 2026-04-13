@@ -5,7 +5,7 @@ import { verifyTokens } from "../utils/redisTokens.js";
 export const authMiddleware = async (req, res, next) => {
     try {
         if (!req.headers.authorization) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
-        const token = req.headers.authorization.split(" ");
+        const token = req.headers.authorization.split(" ")[1];
         if (!token) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
         const source = req.headers['user-agent']; // Use device token or user-agent string as the identifier
         console.log({source, token, refreshToken: req.cookies.CampusRoot_Refresh})
