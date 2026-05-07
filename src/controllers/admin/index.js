@@ -22,12 +22,12 @@ export const singleStudent = errorWrapper(async (req, res, next) => {
 
 
 export const allCounsellors = errorWrapper(async (req, res, next) => {
-    const counsellors = await teamModel.find({ role: "counsellor" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName  email displayPicSrc recommendation counsellor activity")
+    const counsellors = await teamModel.find({ role: "counsellor" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName  email displayPicSrc")
     return { statusCode: 200, message: `all counsellors`, data: counsellors };
 });
 
 export const allprocessCoordinators = errorWrapper(async (req, res, next) => {
-    const processCoordinators = await teamModel.find({ role: "processCoordinator" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName email displayPicSrc recommendation counsellor activity")
+    const processCoordinators = await teamModel.find({ role: "processCoordinator" }, "firstName lastName email students displayPicSrc").populate("students", "firstName lastName email displayPicSrc")
     return { statusCode: 200, message: `all processCoordinators`, data: processCoordinators };
 });
 
@@ -55,37 +55,12 @@ export const search = errorWrapper(async (req, res, next) => {
 });
 
 export const student_transfer = errorWrapper(async (req, res, next) => {
-    const { studentId, fromId, toId, role } = req.body
+    const { studentId, fromId, toId } = req.body
     const student = await studentModel.findById(studentId)
     if (!student) return { statusCode: 400, data: null, message: `Invalid StudentId` };
-    if (student[role].toString() != fromId) return {
-        statusCode: 400, data: null, message: `${role} mismatch from student side`
-    };
-    const from = await teamModel.findById(fromId)
-    if (!from || from.role != role) return {
-        statusCode: 400, data: null, message: `Invalid fromId`
-    };
-    from.students = from.students.filter(ele => ele.profile.toString() == studentId)
-    const to = await teamModel.findById(toId)
-    if (!to || to.role != role) return {
-        statusCode: 400, data: null, message: `Invalid toId`
-    };
-    to.students.push({ profile: studentId, stage: "Fresh Lead" })
-    student[role] = toId
-    from.logs.push({
-        action: "student transferred",
-        details: `studentId:${studentId}&to:${toId}`
-    })
-    to.logs.push({
-        action: "new student added",
-        details: `studentId:${studentId}&from:${fromId}`
-    })
-    student.logs.push({
-        action: `${role} changed`,
-        details: `from:${fromId}&to:${toId}`
-    })
-    await from.save()
-    await to.save()
+    const toBeReplaced = student.advisors.find(ele => ele.info.toString() == fromId)
+    if (!toBeReplaced) return { statusCode: 400, data: null, message: ` fromId Advisor not found` };
+    toBeReplaced.info = toId
     await student.save()
-    return { success: true, message: `Shift Successful`, data: to.students };
+    return { statusCode: 200, message: `Student transferred successfully`, data: student };
 })
