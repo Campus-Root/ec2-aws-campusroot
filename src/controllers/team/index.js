@@ -145,7 +145,21 @@ export const listings = errorWrapper(async (req, res, next, session) => {
             await universityModel.populate(applications, { path: "course.university", select: "name" })
             return ({ statusCode: 200, message: `applications list`, data: { list: applications, currentPage: page, totalPages: totalPages, totalItems: totalDocs } })
         case "leads":
-            filter[req.user.role] = req.user._id
+            switch(req.user.role) {
+                case "remoteStudentAdvisor":
+                    filter["remoteStudentAdvisor"] = req.user._id
+                    break;
+                case "counsellor":
+                    filter["counsellor"] = req.user._id
+                    break;
+                case "processCoordinator":
+                    filter["processCoordinator"] = req.user._id
+                    break;
+                case "admin":
+                    break;
+                default:
+                    break;
+            }
             const leads = await leadsModel.find(filter, "name email phone queryDescription ifPhoneIsSameAsWhatsapp whatsappNumber student leadSource leadRating").skip(skip).limit(perPage)
             totalDocs = await studentModel.countDocuments(filter)
             totalPages = Math.ceil(totalDocs / perPage);
