@@ -4,18 +4,18 @@ import { teamModel } from "../../models/Team.js";
 import universityModel from "../../models/University.js";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const allStudents = errorWrapper(async (req, res, next) => {
-    const students = await studentModel.find({}, "firstName lastName email displayPicSrc recommendation counsellor activity")
+    const students = await studentModel.find({}, "firstName lastName email displayPicSrc recommendation advisors activity")
     return { statusCode: 200, message: `all students`, data: students };
 });
 
 export const singleStudent = errorWrapper(async (req, res, next) => {
     const { id } = req.params
     const student = await studentModel.findById(id)
-    await student.populate("counsellor processCoordinator", "firstName lastName email")
-    await student.populate("activity.applied.application")
-    await student.populate("recommendation")
-    await universityModel.populate(student, [{ path: "activity.applied.application.university", select: "name code logoSrc" },]);
-    await courseModel.populate(student, [{ path: "activity.applied.application.course", select: "name" },]);
+    await student.populate("advisors.info", "firstName lastName email")
+    await student.populate("activity.products")
+    await student.populate("activity.wishList")
+    await courseModel.populate(student, [{ path: "activity.cart.course", select: "name" },]);
+    await universityModel.populate(student, [{ path: "activity.cart.course.university", select: "name code logoSrc" },]);
     if (!student) return { statusCode: 400, data: null, message: `Invalid id` }
     return { statusCode: 200, message: `single student details`, data: student };
 });
