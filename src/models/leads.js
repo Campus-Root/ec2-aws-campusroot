@@ -11,7 +11,7 @@ const leadsSchema = mongoose.Schema({
     whatsappNumber: { countryCode: { type: String }, number: { type: String } },
     student: { type: mongoose.Types.ObjectId, ref: "user" },
     remoteStudentAdvisor: { type: mongoose.Types.ObjectId, ref: "user" },
-    leadSource: { type: String, enum: { values: Object.values(leadSourceEnum), message: "Invalid leadSource" } },
+    leadSource: { type: String },
     leadStatus: [{
         status: { type: String, enum: { values: Object.values(leadStatusEnum), message: "Invalid leadStatus" } },
         followUp_Status: { type: String },
