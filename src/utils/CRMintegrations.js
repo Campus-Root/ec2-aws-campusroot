@@ -101,6 +101,7 @@ export const createFolder = async (name, parent_id) => {
     try {
         const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN")
         const ZOHO_ACCESS_TOKEN = (existingToken && await validateAccessToken(existingToken)) ? existingToken : await regenerateToken()
+        console.log("ZOHO_ACCESS_TOKEN",ZOHO_ACCESS_TOKEN);
         const { data } = await axios.post(
             `https://www.zohoapis.in/workdrive/api/v1/files`,
             {
