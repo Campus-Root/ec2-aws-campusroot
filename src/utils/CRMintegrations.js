@@ -101,7 +101,6 @@ export const createFolder = async (name, parent_id) => {
     try {
         const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN")
         const ZOHO_ACCESS_TOKEN = (existingToken && await validateAccessToken(existingToken)) ? existingToken : await regenerateToken()
-        console.log("ZOHO_ACCESS_TOKEN",ZOHO_ACCESS_TOKEN);
         const { data } = await axios.post(
             `https://www.zohoapis.in/workdrive/api/v1/files`,
             {
@@ -156,6 +155,7 @@ export const uploadFileToWorkDrive = async ({ originalname, path, mimetype, file
         const existingToken = await fetchToken("ZOHO_ACCESS_TOKEN");
         const isValidToken = await validateAccessToken(existingToken);
         const ZOHO_ACCESS_TOKEN = isValidToken ? existingToken : await regenerateToken();
+        console.log("ZOHO_ACCESS_TOKEN",ZOHO_ACCESS_TOKEN);
         const response = await axios.post('https://www.zohoapis.in/workdrive/api/v1/upload', formData, { headers: { Authorization: `Zoho-oauthtoken ${ZOHO_ACCESS_TOKEN}`, ...formData.getHeaders(), }, });
         const fileInfo = JSON.parse(response.data.data[0].attributes["File INFO"])
         switch (fileInfo.OPERATION) {
