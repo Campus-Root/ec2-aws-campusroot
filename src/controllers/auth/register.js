@@ -9,7 +9,7 @@ import axios from "axios";
 import qs from "qs";
 import { generateTokens } from "../../utils/redisTokens.js";
 import { createFolder } from "../../utils/CRMintegrations.js";
-import { getNewAdvisor } from "../../utils/dbHelperFunctions.js";
+import { getLeadSource, getNewAdvisor } from "../../utils/dbHelperFunctions.js";
 import leadsModel from "../../models/leads.js";
 import chatModel from "../../models/Chat.js";
 // export const StudentRegister = errorWrapper(async (req, res, next, session) => {
