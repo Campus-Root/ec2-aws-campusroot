@@ -6,7 +6,7 @@ import { errorWrapper } from "../../../middleware/errorWrapper.js";
 import { applicationStagesEnum } from "../../../utils/enum.js";
 import userModel from "../../../models/User.js";
 import { productModel } from "../../../models/Product.js";
-import { deleteFileInWorkDrive } from "../../../utils/CRMintegrations.js";
+import { deleteFileInWorkDrive, uploadFileToWorkDrive } from "../../../utils/CRMintegrations.js";
 export const switchStage = errorWrapper(async (req, res, next, session) => {
     const { applicationId, status, stage, note } = req.body
     const application = await productModel.findById(applicationId)
